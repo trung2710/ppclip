@@ -15,8 +15,8 @@ const config = {
   findExecutionTimeoutMs: numberEnv("FIND_EXECUTION_TIMEOUT_MS", 30_000),
   executionTimeoutMs: numberEnv("EXECUTION_TIMEOUT_MS", 300_000),
   matchTraceId: boolEnv("MATCH_TRACE_ID", true),
-  includeInputSummary: boolEnv("INCLUDE_INPUT_SUMMARY", false),
-  logDetail: process.env.LOG_DETAIL || "compact",
+  includeInputSummary: boolEnv("INCLUDE_INPUT_SUMMARY", true),
+  logDetail: process.env.LOG_DETAIL || "verbose",
 };
 
 const server = http.createServer(async (req, res) => {
