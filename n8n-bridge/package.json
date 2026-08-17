@@ -1,0 +1,10 @@
+{
+  "name": "paperclip-n8n-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node bridge.js",
+    "check": "node --check bridge.js"
+  }
+}
