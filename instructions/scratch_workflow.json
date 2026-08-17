@@ -1,0 +1,1057 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo",
+          "mode": "list",
+          "cachedResultName": "n8n_data_test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1356924688,
+          "mode": "list",
+          "cachedResultName": "don_hang_mau",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit#gid=1356924688"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "kenh_ban",
+              "lookupValue": "Tiki"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2000,
+        304
+      ],
+      "id": "2b8f4cbe-230f-46a0-8e8a-943ef2a8336f",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "WJebiYivAdrmRPiQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "toilatrung2710@gmail.com",
+        "subject": "Hello cập nhật đơn hàng",
+        "emailType": "text",
+        "message": "=Mã đơn hàng : {{ $json.ma_don }}\nNgày đặt : {{ $json.ngay_dat }}\nGiá : {{ $json.don_gia }}\nSố lượng : {{ $json.so_luong }}\nSản phẩm : {{ $json.san_pham }}\nKênh bán : {{ $json.kenh_ban }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1792,
+        304
+      ],
+      "id": "7343658b-1e28-4b2e-98f6-7d278a3bb10a",
+      "name": "Send a message",
+      "webhookId": "9377668b-f8d3-4ee5-9104-301bbb6136c9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KZ1sV7L10FWIspva",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -2192,
+        448
+      ],
+      "id": "90fbc81a-6f4a-446c-adfb-3fa7c4d809de",
+      "name": "Telegram Trigger",
+      "webhookId": "113f48b6-44ec-45cb-b687-4f6287e424ec",
+      "credentials": {
+        "telegramApi": {
+          "id": "mONYW8vVDlB0i3Iy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1616,
+        448
+      ],
+      "id": "654b1b66-2461-4ec6-be79-7bc0c8e28e4d",
+      "name": "Send a text message",
+      "webhookId": "91022e00-5c11-47c8-b1cf-927e83f13d04",
+      "credentials": {
+        "telegramApi": {
+          "id": "mONYW8vVDlB0i3Iy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Bạn là một trợ lí AI thông minh"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1984,
+        448
+      ],
+      "id": "f78a348f-b219-4222-82bd-78514f5b737a",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nvidia-nemotron-nano-9b-v2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatNvidia",
+      "typeVersion": 1,
+      "position": [
+        -2064,
+        656
+      ],
+      "id": "23c10aa2-c1be-4524-90fb-5ab5dedd5d3a",
+      "name": "NVIDIA Nemotron Chat Model1",
+      "credentials": {
+        "nvidiaApi": {
+          "id": "EVZUXOWNtr097Olt",
+          "name": "NVIDIA Nemotron account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query.Content }}",
+        "options": {
+          "systemMessage": "Bạn là một trợ lý ảo thông minh chuyên phân tích và tra cứu dữ liệu bán hàng từ Google Sheets. \n\nBạn có quyền truy cập vào công cụ Google Sheets chứa dữ liệu đơn hàng với các trường thông tin sau:\n- ma_don: Mã đơn hàng (ví dụ: ORD001, ORD002...)\n- ngay_dat: Ngày đặt hàng\n- khu_vuc: Khu vực (HN, HCM, DN, CT...)\n- kenh_ban: Kênh bán hàng (Shopee, Lazada, Tiki, Web...)\n- san_pham: Tên sản phẩm (Ao polo, Laptop, Giay, Balo...)\n- so_luong: Số lượng sản phẩm mua\n- don_gia: Đơn giá của sản phẩm\n- trang_thai: Trạng thái đơn hàng (done, pending, cancelled)\n\nQUY TẮC HOẠT ĐỘNG:\n1. Bất cứ khi nào người dùng hỏi về thông tin đơn hàng, sản phẩm, doanh thu, thống kê hoặc tìm kiếm theo điều kiện (số lượng, khu vực, trạng thái...), BẠN PHẢI SỬ DỤNG CÔNG CỤ GOOGLE SHEETS ĐỂ LẤY DỮ LIỆU. Tuyệt đối không tự bịa ra dữ liệu.\n2. Sau khi lấy được dữ liệu từ công cụ, hãy tổng hợp, phân tích và trả lời người dùng bằng một câu trả lời rõ ràng, mạch lạc bằng tiếng Việt."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2048,
+        912
+      ],
+      "id": "89949299-79ff-43fb-8325-a21bbad1989b",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatNvidia",
+      "typeVersion": 1,
+      "position": [
+        -2096,
+        1120
+      ],
+      "id": "f97b3470-42b4-45da-b7de-62cb85e3df8d",
+      "name": "NVIDIA Nemotron Chat Model",
+      "credentials": {
+        "nvidiaApi": {
+          "id": "EVZUXOWNtr097Olt",
+          "name": "NVIDIA Nemotron account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Công cụ này dùng để tra cứu, đọc thông tin đơn hàng, dữ liệu sản phẩm từ file Google Sheets don_hang_mau. Hãy sử dụng công cụ này bất cứ khi nào người dùng hỏi về thông tin đơn hàng hoặc dữ liệu trong bảng.",
+        "documentId": {
+          "__rl": true,
+          "value": "1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo",
+          "mode": "list",
+          "cachedResultName": "n8n_data_test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1356924688,
+          "mode": "list",
+          "cachedResultName": "don_hang_mau",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit#gid=1356924688"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -1904,
+        1120
+      ],
+      "id": "64af4d59-f6b9-4055-bc6c-bd6fa3411841",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "WJebiYivAdrmRPiQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "12a45acf-aa81-462a-bd68-d6273152946f",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2256,
+        976
+      ],
+      "id": "3921ec4b-91b3-4e04-a27d-a3d27ced24bf",
+      "name": "Webhook",
+      "webhookId": "12a45acf-aa81-462a-bd68-d6273152946f"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatNvidia",
+      "typeVersion": 1,
+      "position": [
+        -2512,
+        1792
+      ],
+      "id": "ce52f94d-1d0f-4c3e-8523-17bf6ef0d121",
+      "name": "NVIDIA Nemotron Chat Model2",
+      "credentials": {
+        "nvidiaApi": {
+          "id": "EVZUXOWNtr097Olt",
+          "name": "NVIDIA Nemotron account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Nhận request từ Agent').item.json.body.context.paperclipWake.issue.title }}",
+        "options": {
+          "systemMessage": "Bạn là một trợ lý ảo thông minh chuyên phân tích và tra cứu dữ liaệu bán hàng từ Google Sheets. \n\nBạn có quyền truy cập vào công cụ Google Sheets chứa dữ liệu đơn hàng với các trường thông tin sau:\n- ma_don: Mã đơn hàng (ví dụ: ORD001, ORD002...)\n- ngay_dat: Ngày đặt hàng\n- khu_vuc: Khu vực (HN, HCM, DN, CT...)\n- kenh_ban: Kênh bán hàng (Shopee, Lazada, Tiki, Web...)\n- san_pham: Tên sản phẩm (Ao polo, Laptop, Giay, Balo...)\n- so_luong: Số lượng sản phẩm mua\n- don_gia: Đơn giá của sản phẩm\n- trang_thai: Trạng thái đơn hàng (done, pending, cancelled)\n\nQUY TẮC HOẠT ĐỘNG:\n1. Bất cứ khi nào người dùng hỏi về thông tin đơn hàng, sản phẩm, doanh thu, thống kê hoặc tìm kiếm theo điều kiện (số lượng, khu vực, trạng thái...), BẠN PHẢI SỬ DỤNG CÔNG CỤ GOOGLE SHEETS ĐỂ LẤY DỮ LIỆU. Tuyệt đối không tự bịa ra dữ liệu.\n2. Sau khi lấy được dữ liệu từ công cụ, hãy tổng hợp, phân tích và trả lời người dùng bằng một câu trả lời rõ ràng, mạch lạc bằng tiếng Việt.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1744,
+        1648
+      ],
+      "id": "c22e32bf-1f9a-442b-b8c3-c015972d54e4",
+      "name": "AI Agent1",
+      "retryOnFail": true,
+      "alwaysOutputData": false,
+      "waitBetweenTries": 5000,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Công cụ này dùng để tra cứu, đọc thông tin đơn hàng, dữ liệu sản phẩm từ file Google Sheets don_hang_mau. Hãy sử dụng công cụ này bất cứ khi nào người dùng hỏi về thông tin đơn hàng hoặc dữ liệu trong bảng.",
+        "documentId": {
+          "__rl": true,
+          "value": "1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo",
+          "mode": "list",
+          "cachedResultName": "n8n_data_test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1356924688,
+          "mode": "list",
+          "cachedResultName": "don_hang_mau",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gcgwzr30xb2h6Lc31SOXATwh91QWNp3eOKKA8zG6BCo/edit#gid=1356924688"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -1648,
+        1904
+      ],
+      "id": "8984c042-2391-4ff7-a013-6707f21dedb3",
+      "name": "Get row(s) in sheet in Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "WJebiYivAdrmRPiQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "309453b4-5a59-4b75-badf-999972cd393b",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1792,
+        1456
+      ],
+      "id": "b7e5fba9-b1eb-4d80-8d8b-f68b7d7b249e",
+      "name": "Nhận Query từ người dùng",
+      "webhookId": "309453b4-5a59-4b75-badf-999972cd393b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/81ed1694-1183-47f8-8898-507b8b2f6520/agents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"name\": \"N8N Webhook Order Bot Price\",\n  \"role\": \"general\", \n  \"adapterType\": \"http\",\n  \"adapterConfig\": {\n    \"url\": \"https://inexpert-aleida-rostrally.ngrok-free.dev/webhook/0d5f2d01-03f4-4abb-bc62-4b206aa28bd1\",\n    \"method\": \"POST\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2144,
+        1344
+      ],
+      "id": "639650fc-c30e-4170-9246-3d5747eafd55",
+      "name": "Tạo mới 1 Agent",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/81ed1694-1183-47f8-8898-507b8b2f6520/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $('Nhận Query từ người dùng').item.json.query.Content }} \",\n  \"description\": \"Nhiệm vụ của bạn là đọc dữ liệu từ file Excel, tìm kiếm thông tin và trả lời câu hỏi của khách hàng một cách chuẩn xác nhất\",\n  \"assigneeAgentId\": \"ee6a0ccc-516c-49cb-ba51-c1bb939aa214\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1456,
+        1456
+      ],
+      "id": "e7ba7208-6a24-4037-bf85-2c53c7831f9d",
+      "name": "Tạo mới task và giao việc cho Agent",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "74005473-4c8c-46b4-a184-cb7a5c9e8500",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "5fd099f7-f0d7-4c02-8b04-4d324a1ac8fc",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1568,
+        2416
+      ],
+      "id": "a960fd0f-ac88-480b-8f90-46c752543ed0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0d5f2d01-03f4-4abb-bc62-4b206aa28bd1",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2192,
+        1648
+      ],
+      "id": "4296f8e0-02de-485f-9fef-511339e42ce6",
+      "name": "Nhận request từ Agent",
+      "webhookId": "0d5f2d01-03f4-4abb-bc62-4b206aa28bd1"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Nhận request từ Agent').item.json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -912,
+        1664
+      ],
+      "id": "b400cfbc-2e7f-4d61-9bfa-ffba2d6c0f86",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -2496,
+        1440
+      ],
+      "id": "01b37634-af1a-4f07-b6af-1cc78a8ea230",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "zbL7jSEiO9LYP3F2",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -2512,
+        1632
+      ],
+      "id": "345d632a-7084-4506-b0b1-a22447b7b2ff",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IoOhd05YbjGirAbz",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        1936
+      ],
+      "id": "9f6f7b4b-0e81-4be5-b738-c9ab9a9d9ccd",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "pbKi6ZL5L8nYxB9S",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2256,
+        2784
+      ],
+      "id": "7a9d1faa-0713-4dc2-97af-f4a49d66c036",
+      "name": "Click để tạo các agent con"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/81ed1694-1183-47f8-8898-507b8b2f6520/agents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"name\": \"QA Test Agent\",\n  \"role\": \"qa\",\n  \"title\": \"Agent test gán skill\",\n  \"reportsTo\": null,\n  \"adapterType\": \"http\",\n  \"adapterConfig\": {\n    \"url\": \"http://localhost:3000/webhook/test-agent\",\n    \"method\": \"POST\"\n  },\n  \"capabilities\": \"Chạy test flow, nhận request HTTP, phản hồi JSON\",\n  \"permissions\": {\n  \"read\": true,\n  \"write\": true\n},\n  \"desiredSkills\": [\"company/81ed1694-1183-47f8-8898-507b8b2f6520/agent-qa-skill\"],\n  \"budgetMonthlyCents\": 0,\n  \"metadata\": {\n    \"source\": \"postman\",\n    \"purpose\": \"skill-assignment-test\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2704,
+        2544
+      ],
+      "id": "dc366bf3-5995-4882-ac2f-9bc1e44ec1fc",
+      "name": "Tạo agent cấp dưới",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "9wPTWH5CJKBpOCEp",
+          "name": "Bearer Auth CEO Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "4a6ec30b-5ea0-47c7-a532-dbbc42e2dc93",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2272,
+        2400
+      ],
+      "id": "b83e1fa6-2b01-43f2-9c4f-9e9142c677e6",
+      "name": "CTO Webhook",
+      "webhookId": "4a6ec30b-5ea0-47c7-a532-dbbc42e2dc93"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "26d7da7e-2557-4634-ada9-6fb30d641211",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2256,
+        2208
+      ],
+      "id": "736f0b2f-a958-4bf2-8db7-0978ee6d07ea",
+      "name": "CFO Webhook",
+      "webhookId": "26d7da7e-2557-4634-ada9-6fb30d641211"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0789f440-c703-4960-9d11-40240d7205f3",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2256,
+        2080
+      ],
+      "id": "84edca78-0196-4ed4-a1b1-f257202027cd",
+      "name": "CMO Webhook",
+      "webhookId": "0789f440-c703-4960-9d11-40240d7205f3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c4f89f1c-a4e7-424d-a181-8559d31fd2d2",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2272,
+        2608
+      ],
+      "id": "b6adcb47-4d21-49d5-907d-3d82f0e8e9bf",
+      "name": "CEO Webhook",
+      "webhookId": "c4f89f1c-a4e7-424d-a181-8559d31fd2d2"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://host.docker.internal:3100/api/agents/ee6a0ccc-516c-49cb-ba51-c1bb939aa214",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"adapterType\": \"http\",\n  \"adapterConfig\": {\n    \"url\": \"https://inexpert-aleida-rostrally.ngrok-free.dev/webhook-test/c4f89f1c-a4e7-424d-a181-8559d31fd2d2\",\n    \"method\": \"POST\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2720,
+        2864
+      ],
+      "id": "cb423b2b-9b86-4100-a3bd-7377c728c74b",
+      "name": "Update Agent Detail"
+    },
+    {
+      "parameters": {
+        "formTitle": "Chăm sóc khách hàng",
+        "formDescription": "Yêu cầu của người dùng",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Query"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -2544,
+        1216
+      ],
+      "id": "49d5c1c4-7435-47df-965c-c8f03226d4d9",
+      "name": "On form submission",
+      "webhookId": "ab9100b0-f8dc-45cc-813f-41e5a4d3181b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/81ed1694-1183-47f8-8898-507b8b2f6520/skills",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"name\": \"Agent QA Skill\",\n  \"slug\": \"agent-qa-skill\",\n  \"description\": \"Skill chuyên dùng để test gán vào agent qua Postman\",\n  \"markdown\": \"# Agent QA Skill\\n\\n## Mục tiêu\\n- Xử lý test flow cơ bản\\n- Kiểm tra gán skill vào agent\\n\\n## Quy tắc\\n- Trả lời ngắn gọn\\n- Không tự ý thay đổi dữ liệu ngoài phạm vi test\",\n  \"tagline\": \"Skill test chuyên biệt cho agent\",\n  \"authorName\": \"Paperclip QA\",\n  \"sharingScope\": \"company\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2704,
+        2688
+      ],
+      "id": "8260c311-6347-4aa1-aec3-c463c89e942d",
+      "name": "Tạo 1 Skill cho agent",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3100/api/agents/ee6a0ccc-516c-49cb-ba51-c1bb939aa214/instructions-bundle",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3184,
+        2784
+      ],
+      "id": "d00aadc0-e5c2-4ce5-89e7-edecd4137e8a",
+      "name": "Lấy instruction",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "9wPTWH5CJKBpOCEp",
+          "name": "Bearer Auth CEO Agent"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "[paperclip] ================== N8N WORKFLOW TRACE ==================\n[paperclip] ▶ 1. AI Agent: Đã truy vấn Google Sheets & xử lý bởi Groq!\n[paperclip]    - Kết quả AI: {{ $('AI Agent1').item.json.output }}\n[paperclip] ▶ 2. HTTP Request: Đã hoàn thành bước 2\n[paperclip]    - Payload: {{ JSON.stringify($('HTTP Request').item.json) }}\n[paperclip] ▶ 3. HTTP Request1: Đã hoàn thành bước cuối\n[paperclip] ========================================================\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -704,
+        2032
+      ],
+      "id": "c8e062e7-f5cd-470c-bfe6-920ed6faba8a",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.body.context.issueId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"body\": \"Đang xử lí yêu cầu của khách hàng.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1952,
+        1648
+      ],
+      "id": "b8e110ee-f86d-44a6-8444-88f7001c7826",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Nhận request từ Agent').item.json.body.context.taskId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"body\": \"Đã xử lý xong task\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1120,
+        1664
+      ],
+      "id": "7df39ba2-e6c5-41e9-95d4-b3fe42c0c521",
+      "name": "comment thành công",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Nhận request từ Agent').item.json.body.context.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1328,
+        1664
+      ],
+      "id": "812e5396-4883-486c-8a6c-3bea31c59763",
+      "name": "Cập nhật status",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "NYJai5a3H8KtmPQm",
+          "name": "Bearer Auth Board"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVIDIA Nemotron Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVIDIA Nemotron Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVIDIA Nemotron Chat Model2": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo mới 1 Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Nhận Query từ người dùng": {
+      "main": [
+        [
+          {
+            "node": "Tạo mới task và giao việc cho Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Cập nhật status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nhận request từ Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Click để tạo các agent con": {
+      "main": [
+        []
+      ]
+    },
+    "CEO Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "On form submission": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comment thành công": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cập nhật status": {
+      "main": [
+        [
+          {
+            "node": "comment thành công",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3de041f0-60a9-4366-ba33-bc92b0c6a48d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b66cb53272a507f3e66162641126412800886265ea84284e19ed491bef2394d1"
+  },
+  "nodeGroups": [],
+  "id": "AXa9GvhJ7SkQ2brv",
+  "tags": []
+}
