@@ -452,7 +452,7 @@ function isMaxTurnExhaustionRun(
   const resultJson = parseObject(run.resultJson);
   return Boolean(
     normalizeMaxTurnStopReason(resultJson.stopReason) ??
-      normalizeMaxTurnStopReason(run.errorCode),
+    normalizeMaxTurnStopReason(run.errorCode),
   );
 }
 
@@ -472,9 +472,9 @@ function readTransientRecoveryContractFromRun(
   const errorFamily = readHeartbeatRunErrorFamily(run);
   return errorFamily === "transient_upstream" || errorFamily === "provider_quota"
     ? {
-        errorFamily,
-        retryNotBefore: readTransientRetryNotBeforeFromRun(run),
-      }
+      errorFamily,
+      retryNotBefore: readTransientRetryNotBeforeFromRun(run),
+    }
     : null;
 }
 
@@ -531,10 +531,10 @@ function mergeAdapterRecoveryMetadata(input: {
     ...(errorFamily ? { errorFamily } : {}),
     ...(retryNotBefore
       ? {
-          retryNotBefore,
-          transientRetryNotBefore: retryNotBefore,
-          ...(errorFamily === "provider_quota" ? { providerQuotaRetryNotBefore: retryNotBefore } : {}),
-        }
+        retryNotBefore,
+        transientRetryNotBefore: retryNotBefore,
+        ...(errorFamily === "provider_quota" ? { providerQuotaRetryNotBefore: retryNotBefore } : {}),
+      }
       : {}),
   };
 }
@@ -722,9 +722,9 @@ export async function resolveExecutionRunAdapterConfig(input: {
       requiredScopedEnvBinding.consumerScopes.includes("agent")
       && isConfiguredEnvBindingValue(agentEnv[key])
     ) || (
-      requiredScopedEnvBinding.consumerScopes.includes("project")
-      && isConfiguredEnvBindingValue(projectEnv?.[key])
-    ))
+        requiredScopedEnvBinding.consumerScopes.includes("project")
+        && isConfiguredEnvBindingValue(projectEnv?.[key])
+      ))
     : false;
   if (requiredScopedEnvBinding && !requiredScopedBindingsConfigured) {
     throw new ConfigurationIncompleteFailure(`configuration incomplete: ${requiredScopedEnvBinding.remediation}`, {
@@ -857,36 +857,36 @@ export async function resolveExecutionRunAdapterConfig(input: {
   }
   const environmentEnvResolution = environmentEnv
     ? await input.secretsSvc.resolveEnvBindings(
-        input.companyId,
-        environmentEnv,
-        input.environmentId
-          ? {
-              consumerType: "environment",
-              consumerId: input.environmentId,
-              actorType: "agent",
-              actorId: input.agentId ?? null,
-              responsibleUserId: input.responsibleUserId ?? null,
-              issueId: input.issueId ?? null,
-              heartbeatRunId: input.heartbeatRunId ?? null,
-              ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
-            }
-          : undefined,
-      )
+      input.companyId,
+      environmentEnv,
+      input.environmentId
+        ? {
+          consumerType: "environment",
+          consumerId: input.environmentId,
+          actorType: "agent",
+          actorId: input.agentId ?? null,
+          responsibleUserId: input.responsibleUserId ?? null,
+          issueId: input.issueId ?? null,
+          heartbeatRunId: input.heartbeatRunId ?? null,
+          ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
+        }
+        : undefined,
+    )
     : { env: {}, secretKeys: new Set<string>(), manifest: [] };
   const { config: resolvedConfig, secretKeys, manifest } = await input.secretsSvc.resolveAdapterConfigForRuntime(
     input.companyId,
     executionRunConfig,
     input.agentId
       ? {
-          consumerType: "agent",
-          consumerId: input.agentId,
-          actorType: "agent",
-          actorId: input.agentId,
-          responsibleUserId: input.responsibleUserId ?? null,
-          issueId: input.issueId ?? null,
-          heartbeatRunId: input.heartbeatRunId ?? null,
-          ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
-        }
+        consumerType: "agent",
+        consumerId: input.agentId,
+        actorType: "agent",
+        actorId: input.agentId,
+        responsibleUserId: input.responsibleUserId ?? null,
+        issueId: input.issueId ?? null,
+        heartbeatRunId: input.heartbeatRunId ?? null,
+        ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
+      }
       : undefined,
     { adapterType: input.adapterType ?? null },
   );
@@ -901,21 +901,21 @@ export async function resolveExecutionRunAdapterConfig(input: {
   }
   const projectEnvResolution = projectEnv
     ? await input.secretsSvc.resolveEnvBindings(
-        input.companyId,
-        projectEnv,
-        input.projectId
-          ? {
-              consumerType: "project",
-              consumerId: input.projectId,
-              actorType: "agent",
-              actorId: input.agentId ?? null,
-              responsibleUserId: input.responsibleUserId ?? null,
-              issueId: input.issueId ?? null,
-              heartbeatRunId: input.heartbeatRunId ?? null,
-              ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
-            }
-          : undefined,
-      )
+      input.companyId,
+      projectEnv,
+      input.projectId
+        ? {
+          consumerType: "project",
+          consumerId: input.projectId,
+          actorType: "agent",
+          actorId: input.agentId ?? null,
+          responsibleUserId: input.responsibleUserId ?? null,
+          issueId: input.issueId ?? null,
+          heartbeatRunId: input.heartbeatRunId ?? null,
+          ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
+        }
+        : undefined,
+    )
     : { env: {}, secretKeys: new Set<string>(), manifest: [] };
   if (Object.keys(projectEnvResolution.env).length > 0) {
     resolvedConfig.env = {
@@ -928,21 +928,21 @@ export async function resolveExecutionRunAdapterConfig(input: {
   }
   const routineEnvResolution = routineEnv
     ? await input.secretsSvc.resolveEnvBindings(
-        input.companyId,
-        routineEnv,
-        input.routineId
-          ? {
-              consumerType: "routine",
-              consumerId: input.routineId,
-              actorType: "agent",
-              actorId: input.agentId ?? null,
-              responsibleUserId: input.responsibleUserId ?? null,
-              issueId: input.issueId ?? null,
-              heartbeatRunId: input.heartbeatRunId ?? null,
-              ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
-            }
-          : undefined,
-      )
+      input.companyId,
+      routineEnv,
+      input.routineId
+        ? {
+          consumerType: "routine",
+          consumerId: input.routineId,
+          actorType: "agent",
+          actorId: input.agentId ?? null,
+          responsibleUserId: input.responsibleUserId ?? null,
+          issueId: input.issueId ?? null,
+          heartbeatRunId: input.heartbeatRunId ?? null,
+          ...(lowTrustAllowedBindingIds !== undefined ? { allowedBindingIds: lowTrustAllowedBindingIds } : {}),
+        }
+        : undefined,
+    )
     : { env: {}, secretKeys: new Set<string>(), manifest: [] };
   if (Object.keys(routineEnvResolution.env).length > 0) {
     resolvedConfig.env = {
@@ -973,7 +973,7 @@ export async function resolveExecutionRunAdapterConfig(input: {
     if (readiness.managed && !readiness.ready) {
       throw new ConfigurationIncompleteFailure(
         `configuration incomplete: no Codex credentials available for managed home "${readiness.effectiveHome}". ` +
-          `Sign in to Codex on the host with a ChatGPT subscription, or bind a per-agent OPENAI_API_KEY secret for this agent.`,
+        `Sign in to Codex on the host with a ChatGPT subscription, or bind a per-agent OPENAI_API_KEY secret for this agent.`,
         {
           configurationIncomplete: {
             reason: "codex_credentials_missing",
@@ -1238,10 +1238,10 @@ function buildExecutionWorkspaceConfigSnapshot(
     const serviceStates = parseObject(config.serviceStates);
     snapshot.serviceStates = Object.keys(serviceStates).length > 0
       ? Object.fromEntries(
-          Object.entries(serviceStates).filter(([, state]) =>
-            state === "running" || state === "stopped" || state === "manual"
-          ),
-        ) as ExecutionWorkspaceConfig["serviceStates"]
+        Object.entries(serviceStates).filter(([, state]) =>
+          state === "running" || state === "stopped" || state === "manual"
+        ),
+      ) as ExecutionWorkspaceConfig["serviceStates"]
       : null;
   }
 
@@ -1400,10 +1400,10 @@ function isWorkspaceValidationFailure(error: unknown): error is WorkspaceValidat
   const maybe = error as { code?: unknown; resultJson?: unknown } | null;
   return Boolean(
     maybe &&
-      maybe.code === WORKSPACE_VALIDATION_FAILURE_CODE &&
-      maybe.resultJson &&
-      typeof maybe.resultJson === "object" &&
-      !Array.isArray(maybe.resultJson),
+    maybe.code === WORKSPACE_VALIDATION_FAILURE_CODE &&
+    maybe.resultJson &&
+    typeof maybe.resultJson === "object" &&
+    !Array.isArray(maybe.resultJson),
   );
 }
 
@@ -2757,9 +2757,9 @@ export function buildExplicitResumeSessionOverride(input: {
     : resumeRunSessionIdAfter ?? resumeRunSessionIdBefore;
   const runSessionParams = requiresCanonicalSessionIds(input.adapterType)
     ? normalizeResumeParamsForAdapter(
-        input.adapterType,
-        input.sessionCodec.deserialize(input.resumeRunSessionParams ?? null),
-      )
+      input.adapterType,
+      input.sessionCodec.deserialize(input.resumeRunSessionParams ?? null),
+    )
     : null;
   const runSessionDisplayId = truncateDisplayId(readNonEmptyString(runSessionParams?.sessionId));
   const taskSessionParams = normalizeResumeParamsForAdapter(
@@ -2770,10 +2770,10 @@ export function buildExplicitResumeSessionOverride(input: {
   const taskSessionDisplayId = truncateDisplayId(
     requiresCanonicalSessionIds(input.adapterType)
       ? readNonEmptyString(taskSessionParams?.sessionId) ??
-        (isCanonicalSessionIdForAdapter(input.adapterType, taskSessionRawDisplayId) ? taskSessionRawDisplayId : null)
+      (isCanonicalSessionIdForAdapter(input.adapterType, taskSessionRawDisplayId) ? taskSessionRawDisplayId : null)
       : taskSessionRawDisplayId ??
-        (input.sessionCodec.getDisplayId ? input.sessionCodec.getDisplayId(taskSessionParams) : null) ??
-        readNonEmptyString(taskSessionParams?.sessionId),
+      (input.sessionCodec.getDisplayId ? input.sessionCodec.getDisplayId(taskSessionParams) : null) ??
+      readNonEmptyString(taskSessionParams?.sessionId),
   );
   const canReuseTaskSessionParams =
     input.taskSession != null &&
@@ -3911,16 +3911,16 @@ export function resolveExecutionWorkspaceConfigFreshness(input: {
   const stored = readWorkspaceConfigFingerprintFromMetadata(input.existingWorkspaceMetadata);
   const previous = stored
     ? {
-        version: stored.version,
-        fingerprint: stored.fingerprint,
-        categoryFingerprints: stored.categoryFingerprints,
-      }
+      version: stored.version,
+      fingerprint: stored.fingerprint,
+      categoryFingerprints: stored.categoryFingerprints,
+    }
     : input.inferredMetadata
       ? {
-          version: input.inferredMetadata.version,
-          fingerprint: input.inferredMetadata.fingerprint,
-          categoryFingerprints: input.inferredMetadata.categoryFingerprints,
-        }
+        version: input.inferredMetadata.version,
+        fingerprint: input.inferredMetadata.fingerprint,
+        categoryFingerprints: input.inferredMetadata.categoryFingerprints,
+      }
       : null;
 
   if (!input.nextMetadata) {
@@ -4403,27 +4403,27 @@ export async function buildPaperclipWakePayload(input: {
   companyId: string;
   contextSnapshot: Record<string, unknown>;
   continuationSummary?:
-    | {
-        key: string;
-        title: string | null;
-        body: string;
-        sourceTrust?: SourceTrustMetadata | null;
-        updatedAt: Date;
-      }
-    | null;
+  | {
+    key: string;
+    title: string | null;
+    body: string;
+    sourceTrust?: SourceTrustMetadata | null;
+    updatedAt: Date;
+  }
+  | null;
   issueSummary?:
-    | {
-        id: string;
-        identifier: string | null;
-        title: string;
-        description: string | null;
-        status: string;
-        priority: string;
-        workMode: string;
-        projectId?: string | null;
-        executionPolicy?: unknown;
-      }
-    | null;
+  | {
+    id: string;
+    identifier: string | null;
+    title: string;
+    description: string | null;
+    status: string;
+    priority: string;
+    workMode: string;
+    projectId?: string | null;
+    executionPolicy?: unknown;
+  }
+  | null;
   exposeLowTrustRaw?: boolean;
 }) {
   const executionStage = parseObject(input.contextSnapshot.executionStage);
@@ -4437,18 +4437,18 @@ export async function buildPaperclipWakePayload(input: {
     input.issueSummary ??
     (issueId
       ? await input.db
-          .select({
-            id: issues.id,
-            identifier: issues.identifier,
-            title: issues.title,
-            description: issues.description,
-            status: issues.status,
-            priority: issues.priority,
-            workMode: issues.workMode,
-          })
-          .from(issues)
-          .where(and(eq(issues.id, issueId), eq(issues.companyId, input.companyId)))
-          .then((rows) => rows[0] ?? null)
+        .select({
+          id: issues.id,
+          identifier: issues.identifier,
+          title: issues.title,
+          description: issues.description,
+          status: issues.status,
+          priority: issues.priority,
+          workMode: issues.workMode,
+        })
+        .from(issues)
+        .where(and(eq(issues.id, issueId), eq(issues.companyId, input.companyId)))
+        .then((rows) => rows[0] ?? null)
       : null);
   if (
     commentIds.length === 0
@@ -4461,30 +4461,30 @@ export async function buildPaperclipWakePayload(input: {
     commentIds.length === 0
       ? []
       : await input.db
-          .select({
-            id: issueComments.id,
-            issueId: issueComments.issueId,
-            body: issueComments.body,
-            authorType: issueComments.authorType,
-            authorAgentId: issueComments.authorAgentId,
-            authorUserId: issueComments.authorUserId,
-            presentation: issueComments.presentation,
-            metadata: issueComments.metadata,
-            deletedAt: issueComments.deletedAt,
-            deletedByType: issueComments.deletedByType,
-            deletedByAgentId: issueComments.deletedByAgentId,
-            deletedByUserId: issueComments.deletedByUserId,
-            deletedByRunId: issueComments.deletedByRunId,
-            sourceTrust: issueComments.sourceTrust,
-            createdAt: issueComments.createdAt,
-          })
-          .from(issueComments)
-          .where(
-            and(
-              eq(issueComments.companyId, input.companyId),
-              inArray(issueComments.id, commentIds),
-            ),
-          );
+        .select({
+          id: issueComments.id,
+          issueId: issueComments.issueId,
+          body: issueComments.body,
+          authorType: issueComments.authorType,
+          authorAgentId: issueComments.authorAgentId,
+          authorUserId: issueComments.authorUserId,
+          presentation: issueComments.presentation,
+          metadata: issueComments.metadata,
+          deletedAt: issueComments.deletedAt,
+          deletedByType: issueComments.deletedByType,
+          deletedByAgentId: issueComments.deletedByAgentId,
+          deletedByUserId: issueComments.deletedByUserId,
+          deletedByRunId: issueComments.deletedByRunId,
+          sourceTrust: issueComments.sourceTrust,
+          createdAt: issueComments.createdAt,
+        })
+        .from(issueComments)
+        .where(
+          and(
+            eq(issueComments.companyId, input.companyId),
+            inArray(issueComments.id, commentIds),
+          ),
+        );
 
   const commentsById = new Map(commentRows.map((comment) => [comment.id, comment]));
   const issueDescription = issueSummary?.description ?? null;
@@ -4646,38 +4646,38 @@ export async function buildPaperclipWakePayload(input: {
     reason: readNonEmptyString(input.contextSnapshot.wakeReason),
     recovery: recoveryAction || recoveryCause
       ? {
-          cause: recoveryAction?.cause ?? recoveryCause,
-          failureSummary: readNonEmptyString(recoveryEvidence.failureSummary),
-          originalAssignee: originalAssignee
-            ? { id: originalAssignee.id, name: originalAssignee.name }
-            : originalAssigneeId
-              ? { id: originalAssigneeId, name: null }
-              : null,
-          attemptCount: recoveryAction?.attemptCount ?? null,
-          maxAttempts: recoveryAction?.maxAttempts ?? null,
-          nextAction: recoveryAction?.nextAction ?? null,
-          routingFallbackReason: readNonEmptyString(recoveryEvidence.routingFallbackReason),
-        }
+        cause: recoveryAction?.cause ?? recoveryCause,
+        failureSummary: readNonEmptyString(recoveryEvidence.failureSummary),
+        originalAssignee: originalAssignee
+          ? { id: originalAssignee.id, name: originalAssignee.name }
+          : originalAssigneeId
+            ? { id: originalAssigneeId, name: null }
+            : null,
+        attemptCount: recoveryAction?.attemptCount ?? null,
+        maxAttempts: recoveryAction?.maxAttempts ?? null,
+        nextAction: recoveryAction?.nextAction ?? null,
+        routingFallbackReason: readNonEmptyString(recoveryEvidence.routingFallbackReason),
+      }
       : null,
     issue: issueSummary
       ? {
-          id: issueSummary.id,
-          identifier: issueSummary.identifier,
-          title: issueSummary.title,
-          description: inlineIssueDescription,
-          descriptionTruncated: issueDescriptionTruncated,
-          status: issueSummary.status,
-          priority: issueSummary.priority,
-          workMode: issueSummary.workMode,
-        }
+        id: issueSummary.id,
+        identifier: issueSummary.identifier,
+        title: issueSummary.title,
+        description: inlineIssueDescription,
+        descriptionTruncated: issueDescriptionTruncated,
+        status: issueSummary.status,
+        priority: issueSummary.priority,
+        workMode: issueSummary.workMode,
+      }
       : null,
     agentMessage: agentMessageText
       ? {
-          text: agentMessageText,
-          source: readNonEmptyString(agentMessage.source),
-          pluginKey: readNonEmptyString(agentMessage.pluginKey),
-          sessionId: readNonEmptyString(agentMessage.sessionId),
-        }
+        text: agentMessageText,
+        source: readNonEmptyString(agentMessage.source),
+        pluginKey: readNonEmptyString(agentMessage.pluginKey),
+        sessionId: readNonEmptyString(agentMessage.sessionId),
+      }
       : null,
     childIssueSummaries: Array.isArray(input.contextSnapshot.childIssueSummaries)
       ? input.contextSnapshot.childIssueSummaries
@@ -4688,13 +4688,13 @@ export async function buildPaperclipWakePayload(input: {
       readNonEmptyString(input.contextSnapshot.livenessContinuationSourceRunId) ||
       typeof input.contextSnapshot.livenessContinuationAttempt === "number"
       ? {
-          attempt: input.contextSnapshot.livenessContinuationAttempt,
-          maxAttempts: input.contextSnapshot.livenessContinuationMaxAttempts,
-          sourceRunId: readNonEmptyString(input.contextSnapshot.livenessContinuationSourceRunId),
-          state: readNonEmptyString(input.contextSnapshot.livenessContinuationState),
-          reason: readNonEmptyString(input.contextSnapshot.livenessContinuationReason),
-          instruction: readNonEmptyString(input.contextSnapshot.livenessContinuationInstruction),
-        }
+        attempt: input.contextSnapshot.livenessContinuationAttempt,
+        maxAttempts: input.contextSnapshot.livenessContinuationMaxAttempts,
+        sourceRunId: readNonEmptyString(input.contextSnapshot.livenessContinuationSourceRunId),
+        state: readNonEmptyString(input.contextSnapshot.livenessContinuationState),
+        reason: readNonEmptyString(input.contextSnapshot.livenessContinuationReason),
+        instruction: readNonEmptyString(input.contextSnapshot.livenessContinuationInstruction),
+      }
       : null,
     interactionKind,
     interactionStatus,
@@ -4714,16 +4714,16 @@ export async function buildPaperclipWakePayload(input: {
     skillTest: (input.contextSnapshot.paperclipSkillTest ?? null) as unknown,
     continuationSummary: safeContinuationSummary
       ? {
-          key: safeContinuationSummary.key,
-          title: safeContinuationSummary.title,
-          body:
-            safeContinuationSummary.body.length > 4_000
-              ? safeContinuationSummary.body.slice(0, 4_000)
-              : safeContinuationSummary.body,
-          bodyTruncated: safeContinuationSummary.body.length > 4_000,
-          sourceTrust: safeContinuationSummary.sourceTrust ?? null,
-          updatedAt: safeContinuationSummary.updatedAt.toISOString(),
-        }
+        key: safeContinuationSummary.key,
+        title: safeContinuationSummary.title,
+        body:
+          safeContinuationSummary.body.length > 4_000
+            ? safeContinuationSummary.body.slice(0, 4_000)
+            : safeContinuationSummary.body,
+        bodyTruncated: safeContinuationSummary.body.length > 4_000,
+        sourceTrust: safeContinuationSummary.sourceTrust ?? null,
+        updatedAt: safeContinuationSummary.updatedAt.toISOString(),
+      }
       : null,
     commentIds,
     latestCommentId: commentIds[commentIds.length - 1] ?? null,
@@ -4839,10 +4839,10 @@ function decorateHeartbeatRunRuntimeStatus<T extends HeartbeatRunRuntimeStatusRu
   const currentStatus =
     isHeartbeatRunRuntimeStatusActive(run.status) && companyId && agentId
       ? getHeartbeatRunRuntimeStatus(run.id, {
-          companyId,
-          agentId,
-          ...(issueId !== undefined ? { issueId } : {}),
-        })
+        companyId,
+        agentId,
+        ...(issueId !== undefined ? { issueId } : {}),
+      })
       : null;
 
   return {
@@ -5364,11 +5364,11 @@ export function resolveNextSessionState(input: {
 
     const displayId = truncateDisplayId(
       explicitDisplayId ??
-        (codec.getDisplayId ? codec.getDisplayId(deserialized) : null) ??
-        readNonEmptyString(deserialized?.sessionId) ??
-        (shouldUsePrevious ? previousDisplayId : null) ??
-        explicitSessionId ??
-        (shouldUsePrevious ? previousLegacySessionId : null),
+      (codec.getDisplayId ? codec.getDisplayId(deserialized) : null) ??
+      readNonEmptyString(deserialized?.sessionId) ??
+      (shouldUsePrevious ? previousDisplayId : null) ??
+      explicitSessionId ??
+      (shouldUsePrevious ? previousLegacySessionId : null),
     );
 
     const legacySessionId =
@@ -5397,8 +5397,8 @@ export function resolveNextSessionState(input: {
   const previousState = () => {
     const displayId = truncateDisplayId(
       readNonEmptyString(previousSerializedParams?.sessionId) ??
-        validPreviousDisplayId ??
-        validPreviousLegacySessionId,
+      validPreviousDisplayId ??
+      validPreviousLegacySessionId,
     );
     return {
       params: previousSerializedParams,
@@ -5423,9 +5423,9 @@ export function resolveNextSessionState(input: {
     : null;
   const explicitSerializedParams = hasExplicitParams
     ? normalizeResumeParamsForAdapter(
-        adapterType,
-        codec.serialize(normalizeSessionParams(explicitParams) ?? null),
-      )
+      adapterType,
+      codec.serialize(normalizeSessionParams(explicitParams) ?? null),
+    )
     : null;
   const explicitCanonicalSessionId =
     readNonEmptyString(explicitSerializedParams?.sessionId) ??
@@ -5442,8 +5442,8 @@ export function resolveNextSessionState(input: {
   );
   const displayId = truncateDisplayId(
     readNonEmptyString(serialized?.sessionId) ??
-      (codec.getDisplayId ? codec.getDisplayId(serialized) : null) ??
-      explicitCanonicalSessionId,
+    (codec.getDisplayId ? codec.getDisplayId(serialized) : null) ??
+    explicitCanonicalSessionId,
   );
   const legacySessionId = readNonEmptyString(serialized?.sessionId) ?? explicitCanonicalSessionId;
 
@@ -6074,19 +6074,19 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
 
     const routineRun = issueContext.originRunId
       ? await db
-          .select({
-            routineRevisionId: routineRuns.routineRevisionId,
-            responsibleUserId: routineRuns.responsibleUserId,
-          })
-          .from(routineRuns)
-          .where(
-            and(
-              eq(routineRuns.id, issueContext.originRunId),
-              eq(routineRuns.companyId, companyId),
-              eq(routineRuns.routineId, issueContext.originId),
-            ),
-          )
-          .then((rows) => rows[0] ?? null)
+        .select({
+          routineRevisionId: routineRuns.routineRevisionId,
+          responsibleUserId: routineRuns.responsibleUserId,
+        })
+        .from(routineRuns)
+        .where(
+          and(
+            eq(routineRuns.id, issueContext.originRunId),
+            eq(routineRuns.companyId, companyId),
+            eq(routineRuns.routineId, issueContext.originId),
+          ),
+        )
+        .then((rows) => rows[0] ?? null)
       : null;
 
     if (routineRun?.routineRevisionId) {
@@ -6740,12 +6740,12 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       : input.wakeReason;
     const reviewRecoveryContext = isProviderQuotaReviewMonitor
       ? {
-          retryReason: EXECUTION_REVIEW_PARTICIPANT_RECOVERY_RETRY_REASON,
-          currentStageId: executionState?.currentStageId ?? null,
-          currentStageType: executionState?.currentStageType ?? null,
-          reviewRecoveryInstruction:
-            "The previous reviewer run reached provider quota. Resume this execution-review stage now that the quota wait has elapsed.",
-        }
+        retryReason: EXECUTION_REVIEW_PARTICIPANT_RECOVERY_RETRY_REASON,
+        currentStageId: executionState?.currentStageId ?? null,
+        currentStageType: executionState?.currentStageType ?? null,
+        reviewRecoveryInstruction:
+          "The previous reviewer run reached provider quota. Resume this execution-review stage now that the quota wait has elapsed.",
+      }
       : {};
 
     if (clearReason) {
@@ -7145,9 +7145,9 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const sessionAgeHours =
       latestRun && oldestRun
         ? Math.max(
-            0,
-            (new Date(latestRun.createdAt).getTime() - new Date(oldestRun.createdAt).getTime()) / (1000 * 60 * 60),
-          )
+          0,
+          (new Date(latestRun.createdAt).getTime() - new Date(oldestRun.createdAt).getTime()) / (1000 * 60 * 60),
+        )
         : 0;
 
     let reason: string | null = null;
@@ -7228,8 +7228,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       );
       return truncateDisplayId(
         existingTaskSession?.sessionDisplayId ??
-          (codec.getDisplayId ? codec.getDisplayId(parsedParams) : null) ??
-          readNonEmptyString(parsedParams?.sessionId),
+        (codec.getDisplayId ? codec.getDisplayId(parsedParams) : null) ??
+        readNonEmptyString(parsedParams?.sessionId),
       );
     }
 
@@ -7339,13 +7339,13 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const contextProjectWorkspaceId = readNonEmptyString(context.projectWorkspaceId);
     const issueProjectRef = issueId
       ? await db
-          .select({
-            projectId: issues.projectId,
-            projectWorkspaceId: issues.projectWorkspaceId,
-          })
-          .from(issues)
-          .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
-          .then((rows) => rows[0] ?? null)
+        .select({
+          projectId: issues.projectId,
+          projectWorkspaceId: issues.projectWorkspaceId,
+        })
+        .from(issues)
+        .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
+        .then((rows) => rows[0] ?? null)
       : null;
     const issueProjectId = issueProjectRef?.projectId ?? null;
     const preferredProjectWorkspaceId =
@@ -7356,15 +7356,15 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
 
     const unorderedProjectWorkspaceRows = workspaceProjectId
       ? await db
-          .select()
-          .from(projectWorkspaces)
-          .where(
-            and(
-              eq(projectWorkspaces.companyId, agent.companyId),
-              eq(projectWorkspaces.projectId, workspaceProjectId),
-            ),
-          )
-          .orderBy(asc(projectWorkspaces.createdAt), asc(projectWorkspaces.id))
+        .select()
+        .from(projectWorkspaces)
+        .where(
+          and(
+            eq(projectWorkspaces.companyId, agent.companyId),
+            eq(projectWorkspaces.projectId, workspaceProjectId),
+          ),
+        )
+        .orderBy(asc(projectWorkspaces.createdAt), asc(projectWorkspaces.id))
       : [];
     const projectWorkspaceRows = prioritizeProjectWorkspaceCandidatesForRun(
       unorderedProjectWorkspaceRows,
@@ -9222,23 +9222,23 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
   type ScheduledRetryGate =
     | { allowed: true }
     | {
-        allowed: false;
-        reason: string;
-        errorCode:
-          | "agent_not_invokable"
-          | "budget_blocked"
-          | "issue_not_found"
-          | "issue_reassigned"
-          | "issue_cancelled"
-          | "issue_terminal_status"
-          | "issue_not_in_progress"
-          | "issue_execution_lock_changed"
-          | "issue_review_participant_changed"
-          | "issue_paused"
-          | "issue_dependencies_blocked";
-        issueId: string | null;
-        details: Record<string, unknown>;
-      };
+      allowed: false;
+      reason: string;
+      errorCode:
+      | "agent_not_invokable"
+      | "budget_blocked"
+      | "issue_not_found"
+      | "issue_reassigned"
+      | "issue_cancelled"
+      | "issue_terminal_status"
+      | "issue_not_in_progress"
+      | "issue_execution_lock_changed"
+      | "issue_review_participant_changed"
+      | "issue_paused"
+      | "issue_dependencies_blocked";
+      issueId: string | null;
+      details: Record<string, unknown>;
+    };
   type BlockedScheduledRetryGate = Extract<ScheduledRetryGate, { allowed: false }>;
 
   async function evaluateScheduledRetryGate(input: {
@@ -9495,11 +9495,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
   ): Promise<
     | { outcome: "promoted"; run: typeof heartbeatRuns.$inferSelect }
     | {
-        outcome: "gate_suppressed";
-        run: typeof heartbeatRuns.$inferSelect;
-        reason: string;
-        errorCode: BlockedScheduledRetryGate["errorCode"];
-      }
+      outcome: "gate_suppressed";
+      run: typeof heartbeatRuns.$inferSelect;
+      reason: string;
+      errorCode: BlockedScheduledRetryGate["errorCode"];
+    }
     | { outcome: "not_promoted"; run: typeof heartbeatRuns.$inferSelect | null }
   > {
     const agent = await getAgent(dueRun.agentId);
@@ -9514,11 +9514,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       const cancelled = await cancelScheduledRetryForGate(dueRun, gate, now);
       return cancelled
         ? {
-            outcome: "gate_suppressed",
-            run: cancelled,
-            reason: gate.reason,
-            errorCode: gate.errorCode,
-          }
+          outcome: "gate_suppressed",
+          run: cancelled,
+          reason: gate.reason,
+          errorCode: gate.errorCode,
+        }
         : { outcome: "not_promoted", run: null };
     }
 
@@ -9541,11 +9541,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         const cancelled = await cancelScheduledRetryForGate(dueRun, gate, now);
         return cancelled
           ? {
-              outcome: "gate_suppressed",
-              run: cancelled,
-              reason: gate.reason,
-              errorCode: gate.errorCode,
-            }
+            outcome: "gate_suppressed",
+            run: cancelled,
+            reason: gate.reason,
+            errorCode: gate.errorCode,
+          }
           : { outcome: "not_promoted", run: null };
       }
     }
@@ -9614,12 +9614,12 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const computedBaseSchedule = opts?.delayMs != null
       ? nextAttempt <= maxAttempts
         ? {
-            attempt: nextAttempt,
-            baseDelayMs: Math.max(0, Math.floor(opts.delayMs)),
-            delayMs: Math.max(0, Math.floor(opts.delayMs)),
-            dueAt: new Date(now.getTime() + Math.max(0, Math.floor(opts.delayMs))),
-            maxAttempts,
-          }
+          attempt: nextAttempt,
+          baseDelayMs: Math.max(0, Math.floor(opts.delayMs)),
+          delayMs: Math.max(0, Math.floor(opts.delayMs)),
+          dueAt: new Date(now.getTime() + Math.max(0, Math.floor(opts.delayMs))),
+          maxAttempts,
+        }
         : null
       : nextAttempt <= maxAttempts
         ? computeBoundedTransientHeartbeatRetrySchedule(nextAttempt, now, opts?.random)
@@ -9698,10 +9698,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const schedule =
       transientRetryNotBefore && transientRetryNotBefore.getTime() > baseSchedule.dueAt.getTime()
         ? {
-            ...baseSchedule,
-            dueAt: transientRetryNotBefore,
-            delayMs: Math.max(0, transientRetryNotBefore.getTime() - now.getTime()),
-          }
+          ...baseSchedule,
+          dueAt: transientRetryNotBefore,
+          delayMs: Math.max(0, transientRetryNotBefore.getTime() - now.getTime()),
+        }
         : baseSchedule;
 
     const requiresIssueGate =
@@ -9740,12 +9740,12 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const sessionBefore = await resolveSessionBeforeForWakeup(agent, taskKey);
     const interactionContinuationPayload = retryReason === INTERACTION_CONTINUATION_INFRA_RETRY_REASON
       ? {
-          mutation: "interaction",
-          interactionId: readNonEmptyString(contextSnapshot.interactionId),
-          interactionKind: readNonEmptyString(contextSnapshot.interactionKind),
-          interactionStatus: readNonEmptyString(contextSnapshot.interactionStatus),
-          continuationPolicy: readNonEmptyString(contextSnapshot.continuationPolicy),
-        }
+        mutation: "interaction",
+        interactionId: readNonEmptyString(contextSnapshot.interactionId),
+        interactionKind: readNonEmptyString(contextSnapshot.interactionKind),
+        interactionStatus: readNonEmptyString(contextSnapshot.interactionStatus),
+        continuationPolicy: readNonEmptyString(contextSnapshot.continuationPolicy),
+      }
       : {};
     const workspaceValidationRetryPayload =
       retryReason === INTERACTION_CONTINUATION_INFRA_RETRY_REASON && isWorkspaceValidationFailedRun(run)
@@ -9761,14 +9761,14 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       retryReason,
       ...(shouldQuarantineWorkspaceForRetry
         ? {
-            workspaceValidationRecovery: {
-              strategy: "quarantine_failed_workspace_and_retry_clean",
-              sourceRunId: run.id,
-              reason: readNonEmptyString(workspaceValidationRetryPayload?.reason) ?? WORKSPACE_VALIDATION_FAILURE_CODE,
-              fingerprint: readNonEmptyString(workspaceValidationRetryPayload?.fingerprint),
-              failedExecutionWorkspaceId: readNonEmptyString(workspaceValidationRetryPayload?.executionWorkspaceId),
-            },
-          }
+          workspaceValidationRecovery: {
+            strategy: "quarantine_failed_workspace_and_retry_clean",
+            sourceRunId: run.id,
+            reason: readNonEmptyString(workspaceValidationRetryPayload?.reason) ?? WORKSPACE_VALIDATION_FAILURE_CODE,
+            fingerprint: readNonEmptyString(workspaceValidationRetryPayload?.fingerprint),
+            failedExecutionWorkspaceId: readNonEmptyString(workspaceValidationRetryPayload?.executionWorkspaceId),
+          },
+        }
         : {}),
       ...(transientRecovery ? { errorFamily: transientRecovery.errorFamily } : {}),
       scheduledRetryAttempt: schedule.attempt,
@@ -9788,23 +9788,23 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
 
     type ScheduledRetryTransactionResult =
       | {
-          outcome: "scheduled";
-          run: typeof heartbeatRuns.$inferSelect;
-          reusedExisting: boolean;
-        }
+        outcome: "scheduled";
+        run: typeof heartbeatRuns.$inferSelect;
+        reusedExisting: boolean;
+      }
       | {
-          outcome: "not_scheduled";
-          reason: string;
-          errorCode:
-            | "issue_not_found"
-            | "issue_reassigned"
-            | "issue_cancelled"
-            | "issue_terminal_status"
-            | "issue_not_in_progress"
-            | "issue_execution_lock_changed";
-          issueId: string | null;
-          details: Record<string, unknown>;
-        };
+        outcome: "not_scheduled";
+        reason: string;
+        errorCode:
+        | "issue_not_found"
+        | "issue_reassigned"
+        | "issue_cancelled"
+        | "issue_terminal_status"
+        | "issue_not_in_progress"
+        | "issue_execution_lock_changed";
+        issueId: string | null;
+        details: Record<string, unknown>;
+      };
 
     const scheduleResult = await db.transaction(async (tx): Promise<ScheduledRetryTransactionResult> => {
       if (retryReason === INTERACTION_CONTINUATION_INFRA_RETRY_REASON) {
@@ -10147,9 +10147,9 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             executionLockedAt: now,
             ...(detachWorkspaceFromIssue
               ? {
-                  executionWorkspaceId: null,
-                  executionWorkspacePreference: null,
-                }
+                executionWorkspaceId: null,
+                executionWorkspacePreference: null,
+              }
               : {}),
             updatedAt: now,
           })
@@ -10504,8 +10504,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       maxConcurrentRuns: normalizeMaxConcurrentRuns(heartbeat.maxConcurrentRuns),
       skipTimerWhenNoActionableWork: asBoolean(
         heartbeat.skipTimerWhenNoActionableWork ??
-          heartbeat.requireActionableTimerWork ??
-          heartbeat.issueOnlyTimer,
+        heartbeat.requireActionableTimerWork ??
+        heartbeat.issueOnlyTimer,
         false,
       ),
       maxDailyRuns: normalizeOptionalNonNegativeInteger(
@@ -10513,9 +10513,9 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       ),
       maxDailyCostCents: normalizeOptionalNonNegativeInteger(
         heartbeat.maxDailyCostCents ??
-          heartbeat.dailyCostCentsLimit ??
-          heartbeat.dailySpendCentsLimit ??
-          heartbeat.dailyBudgetCents,
+        heartbeat.dailyCostCentsLimit ??
+        heartbeat.dailySpendCentsLimit ??
+        heartbeat.dailyBudgetCents,
       ),
     };
   }
@@ -10936,18 +10936,18 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
   type QueuedRunStaleness =
     | { stale: false }
     | {
-        stale: true;
-        reason: string;
-        errorCode:
-          | "issue_not_found"
-          | "issue_assignee_changed"
-          | "issue_terminal_status"
-          | "issue_not_in_progress"
-          | "issue_execution_lock_changed"
-          | "issue_review_participant_changed"
-          | "issue_continuation_waiting_on_review";
-        details: Record<string, unknown>;
-      };
+      stale: true;
+      reason: string;
+      errorCode:
+      | "issue_not_found"
+      | "issue_assignee_changed"
+      | "issue_terminal_status"
+      | "issue_not_in_progress"
+      | "issue_execution_lock_changed"
+      | "issue_review_participant_changed"
+      | "issue_continuation_waiting_on_review";
+      details: Record<string, unknown>;
+    };
 
   async function evaluateQueuedRunStaleness(
     run: typeof heartbeatRuns.$inferSelect,
@@ -11887,56 +11887,56 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     let runScratch: HeartbeatRunScratch | null = null;
 
     try {
-    const agent = await getAgent(run.agentId);
-    if (!agent) {
-      await setRunStatus(runId, "failed", {
-        error: "Agent not found",
-        errorCode: "agent_not_found",
-        finishedAt: new Date(),
-      });
-      await setWakeupStatus(run.wakeupRequestId, "failed", {
-        finishedAt: new Date(),
-        error: "Agent not found",
-      });
-      const failedRun = await getRun(runId);
-      if (failedRun) await releaseIssueExecutionAndPromote(failedRun);
-      return;
-    }
-
-    const runtime = await ensureRuntimeState(agent);
-    const context = parseObject(run.contextSnapshot);
-    const taskKey = deriveTaskKeyWithHeartbeatFallback(context, null);
-    const sessionCodec = getAdapterSessionCodec(agent.adapterType);
-    const issueId = readNonEmptyString(context.issueId);
-    let issueContext = issueId ? await getIssueExecutionContext(agent.companyId, issueId) : null;
-    const issueDependencyReadiness = issueId
-      ? await issuesSvc.listDependencyReadiness(agent.companyId, [issueId]).then((rows) => rows.get(issueId) ?? null)
-      : null;
-    if (
-      issueId &&
-      issueContext &&
-      shouldAutoCheckoutIssueForWake({
-        contextSnapshot: context,
-        issueStatus: issueContext.status,
-        issueAssigneeAgentId: issueContext.assigneeAgentId,
-        issueExecutionState: issueContext.executionState,
-        isDependencyReady: issueDependencyReadiness?.isDependencyReady ?? true,
-        agentId: agent.id,
-      })
-    ) {
-      try {
-        await issuesSvc.checkout(issueId, agent.id, ["todo", "backlog", "blocked"], run.id);
-        context[PAPERCLIP_HARNESS_CHECKOUT_KEY] = true;
-      } catch (error) {
-        if (!isCheckoutConflictError(error)) throw error;
-        context[PAPERCLIP_HARNESS_CHECKOUT_KEY] = false;
+      const agent = await getAgent(run.agentId);
+      if (!agent) {
+        await setRunStatus(runId, "failed", {
+          error: "Agent not found",
+          errorCode: "agent_not_found",
+          finishedAt: new Date(),
+        });
+        await setWakeupStatus(run.wakeupRequestId, "failed", {
+          finishedAt: new Date(),
+          error: "Agent not found",
+        });
+        const failedRun = await getRun(runId);
+        if (failedRun) await releaseIssueExecutionAndPromote(failedRun);
+        return;
       }
-      issueContext = await getIssueExecutionContext(agent.companyId, issueId);
-    }
-    const wakeCommentId = deriveCommentId(context, null);
-    const wakeCommentContext =
-      issueContext && wakeCommentId
-        ? await db
+
+      const runtime = await ensureRuntimeState(agent);
+      const context = parseObject(run.contextSnapshot);
+      const taskKey = deriveTaskKeyWithHeartbeatFallback(context, null);
+      const sessionCodec = getAdapterSessionCodec(agent.adapterType);
+      const issueId = readNonEmptyString(context.issueId);
+      let issueContext = issueId ? await getIssueExecutionContext(agent.companyId, issueId) : null;
+      const issueDependencyReadiness = issueId
+        ? await issuesSvc.listDependencyReadiness(agent.companyId, [issueId]).then((rows) => rows.get(issueId) ?? null)
+        : null;
+      if (
+        issueId &&
+        issueContext &&
+        shouldAutoCheckoutIssueForWake({
+          contextSnapshot: context,
+          issueStatus: issueContext.status,
+          issueAssigneeAgentId: issueContext.assigneeAgentId,
+          issueExecutionState: issueContext.executionState,
+          isDependencyReady: issueDependencyReadiness?.isDependencyReady ?? true,
+          agentId: agent.id,
+        })
+      ) {
+        try {
+          await issuesSvc.checkout(issueId, agent.id, ["todo", "backlog", "blocked"], run.id);
+          context[PAPERCLIP_HARNESS_CHECKOUT_KEY] = true;
+        } catch (error) {
+          if (!isCheckoutConflictError(error)) throw error;
+          context[PAPERCLIP_HARNESS_CHECKOUT_KEY] = false;
+        }
+        issueContext = await getIssueExecutionContext(agent.companyId, issueId);
+      }
+      const wakeCommentId = deriveCommentId(context, null);
+      const wakeCommentContext =
+        issueContext && wakeCommentId
+          ? await db
             .select({
               id: issueComments.id,
               body: issueComments.body,
@@ -11962,35 +11962,35 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               const row = rows[0] ?? null;
               return row?.deletedAt
                 ? {
-                    ...row,
-                    body: "",
-                    presentation: null,
-                    metadata: null,
-                  }
+                  ...row,
+                  body: "",
+                  presentation: null,
+                  metadata: null,
+                }
                 : row;
             })
-        : null;
-    const issueAssigneeOverrides =
-      issueContext && issueContext.assigneeAgentId === agent.id
-        ? parseIssueAssigneeAdapterOverrides(
+          : null;
+      const issueAssigneeOverrides =
+        issueContext && issueContext.assigneeAgentId === agent.id
+          ? parseIssueAssigneeAdapterOverrides(
             issueContext.assigneeAdapterOverrides,
           )
+          : null;
+      const isolatedWorkspacesEnabled = (await instanceSettings.getExperimental()).enableIsolatedWorkspaces;
+      const parsedIssueExecutionWorkspaceSettings = parseIssueExecutionWorkspaceSettings(
+        issueContext?.executionWorkspaceSettings,
+      );
+      const issueExecutionWorkspaceSettings = isolatedWorkspacesEnabled
+        ? parsedIssueExecutionWorkspaceSettings
         : null;
-    const isolatedWorkspacesEnabled = (await instanceSettings.getExperimental()).enableIsolatedWorkspaces;
-    const parsedIssueExecutionWorkspaceSettings = parseIssueExecutionWorkspaceSettings(
-      issueContext?.executionWorkspaceSettings,
-    );
-    const issueExecutionWorkspaceSettings = isolatedWorkspacesEnabled
-      ? parsedIssueExecutionWorkspaceSettings
-      : null;
-    const environmentExecutionWorkspaceSettings = selectEnvironmentExecutionWorkspaceSettings(
-      parsedIssueExecutionWorkspaceSettings,
-      isolatedWorkspacesEnabled,
-    );
-    const contextProjectId = readNonEmptyString(context.projectId);
-    const executionProjectId = issueContext?.projectId ?? contextProjectId;
-    const projectContext = executionProjectId
-      ? await db
+      const environmentExecutionWorkspaceSettings = selectEnvironmentExecutionWorkspaceSettings(
+        parsedIssueExecutionWorkspaceSettings,
+        isolatedWorkspacesEnabled,
+      );
+      const contextProjectId = readNonEmptyString(context.projectId);
+      const executionProjectId = issueContext?.projectId ?? contextProjectId;
+      const projectContext = executionProjectId
+        ? await db
           .select({
             id: projects.id,
             executionWorkspacePolicy: projects.executionWorkspacePolicy,
@@ -12000,17 +12000,17 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           .from(projects)
           .where(and(eq(projects.id, executionProjectId), eq(projects.companyId, agent.companyId)))
           .then((rows) => rows[0] ?? null)
-      : null;
-    const acceptedPlanContinuationWake = issueContext
-      ? readNonEmptyString(context.workspaceRefreshReason) === "accepted_plan_confirmation"
+        : null;
+      const acceptedPlanContinuationWake = issueContext
+        ? readNonEmptyString(context.workspaceRefreshReason) === "accepted_plan_confirmation"
         || (
           issueContext.workMode === "planning"
           && readNonEmptyString(context.interactionKind) === "request_confirmation"
           && readNonEmptyString(context.interactionStatus) === "accepted"
         )
-      : false;
-    const acceptedPlanWakeRoutingDecision = issueContext
-      ? await resolveAcceptedPlanWakeRoutingDecision({
+        : false;
+      const acceptedPlanWakeRoutingDecision = issueContext
+        ? await resolveAcceptedPlanWakeRoutingDecision({
           db,
           companyId: agent.companyId,
           agentId: agent.id,
@@ -12018,93 +12018,93 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           acceptedPlanContinuationWake,
           contextSnapshot: context,
         })
-      : null;
-    if (acceptedPlanWakeRoutingDecision) {
-      context.forceFreshSession = true;
-      context.acceptedPlanWakeRouting = {
-        reason: "other_issue_claim_in_flight",
-        otherActiveClaimIssueId: acceptedPlanWakeRoutingDecision.otherActiveClaimIssueId,
-        otherActiveClaimIdentifier: acceptedPlanWakeRoutingDecision.otherActiveClaimIdentifier,
-        otherActiveClaimTitle: acceptedPlanWakeRoutingDecision.otherActiveClaimTitle,
-      };
-      if (acceptedPlanWakeRoutingDecision.suppressAcceptedContinuation) {
-        clearInteractionContinuationWakeContext(context);
-        delete context.workspaceRefreshReason;
+        : null;
+      if (acceptedPlanWakeRoutingDecision) {
+        context.forceFreshSession = true;
+        context.acceptedPlanWakeRouting = {
+          reason: "other_issue_claim_in_flight",
+          otherActiveClaimIssueId: acceptedPlanWakeRoutingDecision.otherActiveClaimIssueId,
+          otherActiveClaimIdentifier: acceptedPlanWakeRoutingDecision.otherActiveClaimIdentifier,
+          otherActiveClaimTitle: acceptedPlanWakeRoutingDecision.otherActiveClaimTitle,
+        };
+        if (acceptedPlanWakeRoutingDecision.suppressAcceptedContinuation) {
+          clearInteractionContinuationWakeContext(context);
+          delete context.workspaceRefreshReason;
+        }
+      } else {
+        delete context.acceptedPlanWakeRouting;
       }
-    } else {
-      delete context.acceptedPlanWakeRouting;
-    }
-    const routineEnvContext = await getRoutineEnvForExecutionIssue(agent.companyId, issueContext);
-    const responsibleUserId = await resolveResponsibleUserIdForRun({
-      run,
-      contextSnapshot: context,
-      issueContext,
-      routineEnvContext,
-    });
-    if (responsibleUserId && run.responsibleUserId !== responsibleUserId) {
-      await db
-        .update(heartbeatRuns)
-        .set({ responsibleUserId, updatedAt: new Date() })
-        .where(eq(heartbeatRuns.id, run.id));
-      run = { ...run, responsibleUserId };
-    }
-    if (responsibleUserId && issueContext && !issueContext.responsibleUserId) {
-      await db
-        .update(issues)
-        .set({ responsibleUserId, updatedAt: new Date() })
-        .where(and(eq(issues.companyId, agent.companyId), eq(issues.id, issueContext.id), isNull(issues.responsibleUserId)));
-      issueContext = { ...issueContext, responsibleUserId };
-    }
-    const projectExecutionWorkspacePolicy = gateProjectExecutionWorkspacePolicy(
-      parseProjectExecutionWorkspacePolicy(projectContext?.executionWorkspacePolicy),
-      isolatedWorkspacesEnabled,
-    );
-    const trustPreset = resolveCoreTrustPreset({
-      companyId: agent.companyId,
-      agent: {
+      const routineEnvContext = await getRoutineEnvForExecutionIssue(agent.companyId, issueContext);
+      const responsibleUserId = await resolveResponsibleUserIdForRun({
+        run,
+        contextSnapshot: context,
+        issueContext,
+        routineEnvContext,
+      });
+      if (responsibleUserId && run.responsibleUserId !== responsibleUserId) {
+        await db
+          .update(heartbeatRuns)
+          .set({ responsibleUserId, updatedAt: new Date() })
+          .where(eq(heartbeatRuns.id, run.id));
+        run = { ...run, responsibleUserId };
+      }
+      if (responsibleUserId && issueContext && !issueContext.responsibleUserId) {
+        await db
+          .update(issues)
+          .set({ responsibleUserId, updatedAt: new Date() })
+          .where(and(eq(issues.companyId, agent.companyId), eq(issues.id, issueContext.id), isNull(issues.responsibleUserId)));
+        issueContext = { ...issueContext, responsibleUserId };
+      }
+      const projectExecutionWorkspacePolicy = gateProjectExecutionWorkspacePolicy(
+        parseProjectExecutionWorkspacePolicy(projectContext?.executionWorkspacePolicy),
+        isolatedWorkspacesEnabled,
+      );
+      const trustPreset = resolveCoreTrustPreset({
         companyId: agent.companyId,
-        permissions: agent.permissions,
-      },
-      project: projectContext
-        ? {
+        agent: {
+          companyId: agent.companyId,
+          permissions: agent.permissions,
+        },
+        project: projectContext
+          ? {
             companyId: agent.companyId,
             executionWorkspacePolicy: projectExecutionWorkspacePolicy,
           }
-        : null,
-      issue: issueContext
-        ? {
+          : null,
+        issue: issueContext
+          ? {
             companyId: agent.companyId,
             executionPolicy: issueContext.executionPolicy,
           }
-        : null,
-    });
-    const config = parseObject(agent.adapterConfig);
-    const taskSession = taskKey
-      ? await getTaskSession(agent.companyId, agent.id, agent.adapterType, taskKey)
-      : null;
-    const taskSessionDecodedParams = normalizeSessionParams(
-      sessionCodec.deserialize(taskSession?.sessionParamsJson ?? null),
-    );
-    const explicitResumeSessionParams = normalizeResumeParamsForAdapter(
-      agent.adapterType,
-      sessionCodec.deserialize(parseObject(context.resumeSessionParams)),
-    );
-    const explicitResumeSessionDisplayId = truncateDisplayId(
-      readNonEmptyString(context.resumeSessionDisplayId) ??
+          : null,
+      });
+      const config = parseObject(agent.adapterConfig);
+      const taskSession = taskKey
+        ? await getTaskSession(agent.companyId, agent.id, agent.adapterType, taskKey)
+        : null;
+      const taskSessionDecodedParams = normalizeSessionParams(
+        sessionCodec.deserialize(taskSession?.sessionParamsJson ?? null),
+      );
+      const explicitResumeSessionParams = normalizeResumeParamsForAdapter(
+        agent.adapterType,
+        sessionCodec.deserialize(parseObject(context.resumeSessionParams)),
+      );
+      const explicitResumeSessionDisplayId = truncateDisplayId(
+        readNonEmptyString(context.resumeSessionDisplayId) ??
         (sessionCodec.getDisplayId ? sessionCodec.getDisplayId(explicitResumeSessionParams) : null) ??
         readNonEmptyString(explicitResumeSessionParams?.sessionId),
-    );
-    const resolvedExecutionWorkspaceMode = resolveExecutionWorkspaceMode({
-      projectPolicy: projectExecutionWorkspacePolicy,
-      issueSettings: issueExecutionWorkspaceSettings,
-      legacyUseProjectWorkspace: issueAssigneeOverrides?.useProjectWorkspace ?? null,
-    });
-    const requestedExecutionWorkspaceMode =
-      trustPreset.kind === "low_trust_review" && resolvedExecutionWorkspaceMode === "shared_workspace"
-        ? "isolated_workspace"
-        : resolvedExecutionWorkspaceMode;
-    const issueRef = issueContext
-      ? {
+      );
+      const resolvedExecutionWorkspaceMode = resolveExecutionWorkspaceMode({
+        projectPolicy: projectExecutionWorkspacePolicy,
+        issueSettings: issueExecutionWorkspaceSettings,
+        legacyUseProjectWorkspace: issueAssigneeOverrides?.useProjectWorkspace ?? null,
+      });
+      const requestedExecutionWorkspaceMode =
+        trustPreset.kind === "low_trust_review" && resolvedExecutionWorkspaceMode === "shared_workspace"
+          ? "isolated_workspace"
+          : resolvedExecutionWorkspaceMode;
+      const issueRef = issueContext
+        ? {
           id: issueContext.id,
           identifier: issueContext.identifier,
           title: issueContext.title,
@@ -12117,52 +12117,52 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           executionWorkspaceId: issueContext.executionWorkspaceId,
           executionWorkspacePreference: issueContext.executionWorkspacePreference,
         }
-      : null;
-    const continuationSummary = issueRef
-      ? await getIssueContinuationSummaryDocument(db, issueRef.id)
-      : null;
-    const exposeLowTrustRaw = trustPreset.kind === "low_trust_review";
-    const safeContinuationSummary =
-      continuationSummary && !exposeLowTrustRaw
-        ? redactQuarantinedBodyForHigherTrust(continuationSummary)
-        : continuationSummary;
-    const safeWakeCommentContext =
-      wakeCommentContext && !exposeLowTrustRaw
-        ? sanitizeQuarantinedCommentForHigherTrust(wakeCommentContext)
-        : wakeCommentContext;
-    const issueAncestors = issueRef
-      ? await issuesSvc.getAncestors(issueRef.id)
-      : [];
-    if (continuationSummary) {
-      context.paperclipContinuationSummary = {
-        key: safeContinuationSummary!.key,
-        title: safeContinuationSummary!.title,
-        body: safeContinuationSummary!.body,
-        sourceTrust: safeContinuationSummary!.sourceTrust ?? null,
-        updatedAt: safeContinuationSummary!.updatedAt.toISOString(),
-      };
-    } else {
-      delete context.paperclipContinuationSummary;
-    }
-    const pinnedSkillTestContext =
-      issueRef?.workMode === "skill_test"
-        ? await getPinnedSkillTestContext(agent.companyId, issueRef.id)
         : null;
-    if (pinnedSkillTestContext) {
-      context.paperclipSkillTest = {
-        ...pinnedSkillTestContext,
-        directive: "Use this pinned file inventory as the exact skill revision under test, regardless of synced runtime skills.",
-      };
-    } else {
-      delete context.paperclipSkillTest;
-    }
-    const paperclipWakePayload = await buildPaperclipWakePayload({
-      db,
-      companyId: agent.companyId,
-      contextSnapshot: context,
-      continuationSummary,
-      issueSummary: issueRef
-        ? {
+      const continuationSummary = issueRef
+        ? await getIssueContinuationSummaryDocument(db, issueRef.id)
+        : null;
+      const exposeLowTrustRaw = trustPreset.kind === "low_trust_review";
+      const safeContinuationSummary =
+        continuationSummary && !exposeLowTrustRaw
+          ? redactQuarantinedBodyForHigherTrust(continuationSummary)
+          : continuationSummary;
+      const safeWakeCommentContext =
+        wakeCommentContext && !exposeLowTrustRaw
+          ? sanitizeQuarantinedCommentForHigherTrust(wakeCommentContext)
+          : wakeCommentContext;
+      const issueAncestors = issueRef
+        ? await issuesSvc.getAncestors(issueRef.id)
+        : [];
+      if (continuationSummary) {
+        context.paperclipContinuationSummary = {
+          key: safeContinuationSummary!.key,
+          title: safeContinuationSummary!.title,
+          body: safeContinuationSummary!.body,
+          sourceTrust: safeContinuationSummary!.sourceTrust ?? null,
+          updatedAt: safeContinuationSummary!.updatedAt.toISOString(),
+        };
+      } else {
+        delete context.paperclipContinuationSummary;
+      }
+      const pinnedSkillTestContext =
+        issueRef?.workMode === "skill_test"
+          ? await getPinnedSkillTestContext(agent.companyId, issueRef.id)
+          : null;
+      if (pinnedSkillTestContext) {
+        context.paperclipSkillTest = {
+          ...pinnedSkillTestContext,
+          directive: "Use this pinned file inventory as the exact skill revision under test, regardless of synced runtime skills.",
+        };
+      } else {
+        delete context.paperclipSkillTest;
+      }
+      const paperclipWakePayload = await buildPaperclipWakePayload({
+        db,
+        companyId: agent.companyId,
+        contextSnapshot: context,
+        continuationSummary,
+        issueSummary: issueRef
+          ? {
             id: issueRef.id,
             identifier: issueRef.identifier,
             title: issueRef.title,
@@ -12173,278 +12173,277 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             projectId: issueRef.projectId,
             executionPolicy: issueContext?.executionPolicy ?? null,
           }
-        : null,
-      exposeLowTrustRaw,
-    });
-    if (paperclipWakePayload) {
-      context[PAPERCLIP_WAKE_PAYLOAD_KEY] = paperclipWakePayload;
-    } else {
-      delete context[PAPERCLIP_WAKE_PAYLOAD_KEY];
-    }
-    const taskMarkdownInput = {
-      issue: issueRef
-        ? {
+          : null,
+        exposeLowTrustRaw,
+      });
+      if (paperclipWakePayload) {
+        context[PAPERCLIP_WAKE_PAYLOAD_KEY] = paperclipWakePayload;
+      } else {
+        delete context[PAPERCLIP_WAKE_PAYLOAD_KEY];
+      }
+      const taskMarkdownInput = {
+        issue: issueRef
+          ? {
             id: issueRef.id,
             identifier: issueRef.identifier,
             title: issueRef.title,
             workMode: issueRef.workMode,
             description: issueRef.description,
           }
-        : null,
-      ancestors: issueAncestors,
-      wakeComment: safeWakeCommentContext,
-      interaction: {
-        kind: readNonEmptyString(context.interactionKind),
-        status: readNonEmptyString(context.interactionStatus),
-      },
-      acceptedPlanContinuation:
-        readNonEmptyString(context.workspaceRefreshReason) === "accepted_plan_confirmation"
-        && Object.keys(parseObject(context.acceptedPlanWakeRouting)).length === 0,
-    };
-    const taskMarkdown = buildPaperclipTaskMarkdown(taskMarkdownInput);
-    const taskMarkdownCompact = buildPaperclipTaskMarkdown({ ...taskMarkdownInput, includeDescription: false });
-    if (issueRef) {
-      context.paperclipIssue = {
-        id: issueRef.id,
-        identifier: issueRef.identifier,
-        title: issueRef.title,
-        description: issueRef.description,
-        workMode: issueRef.workMode,
+          : null,
+        ancestors: issueAncestors,
+        wakeComment: safeWakeCommentContext,
+        interaction: {
+          kind: readNonEmptyString(context.interactionKind),
+          status: readNonEmptyString(context.interactionStatus),
+        },
+        acceptedPlanContinuation:
+          readNonEmptyString(context.workspaceRefreshReason) === "accepted_plan_confirmation"
+          && Object.keys(parseObject(context.acceptedPlanWakeRouting)).length === 0,
       };
-    } else {
-      delete context.paperclipIssue;
-    }
-    if (wakeCommentContext) {
-      context.paperclipWakeComment = safeWakeCommentContext;
-    } else {
-      delete context.paperclipWakeComment;
-    }
-    if (taskMarkdown) {
-      context.paperclipTaskMarkdown = taskMarkdown;
-    } else {
-      delete context.paperclipTaskMarkdown;
-    }
-    if (taskMarkdownCompact && taskMarkdownCompact !== taskMarkdown) {
-      context.paperclipTaskMarkdownCompact = taskMarkdownCompact;
-    } else {
-      delete context.paperclipTaskMarkdownCompact;
-    }
-    const requestedExecutionWorkspaceId = readNonEmptyString(issueRef?.executionWorkspaceId);
-    const existingExecutionWorkspace =
-      requestedExecutionWorkspaceId ? await executionWorkspacesSvc.getById(requestedExecutionWorkspaceId) : null;
-    const workspaceReuseRequest = resolveExecutionWorkspaceReuseRequestForIssue({
-      issueExecutionWorkspaceId: requestedExecutionWorkspaceId,
-      issueExecutionWorkspacePreference: issueRef?.executionWorkspacePreference ?? null,
-      existingExecutionWorkspaceStatus: existingExecutionWorkspace?.status ?? null,
-    });
-    const requestedShouldReuseExisting = workspaceReuseRequest.requestedShouldReuseExisting;
-    const reusableExistingExecutionWorkspace = workspaceReuseRequest.existingExecutionWorkspaceAvailable
-      ? existingExecutionWorkspace
-      : null;
-    const requestedReusableExecutionWorkspaceConfig = reusableExistingExecutionWorkspace?.config ?? null;
-    const localEnvironment = await environmentsSvc.ensureLocalEnvironment(agent.companyId);
-    const resolvedInstanceSettings = await instanceSettings.get();
-    const environmentResolution = resolveExecutionWorkspaceEnvironmentId({
-      agentDefaultEnvironmentId: agent.defaultEnvironmentId,
-      instanceDefaultEnvironmentId: resolvedInstanceSettings.defaultEnvironmentId ?? null,
-      localDefaultEnvironmentId: localEnvironment.id,
-    });
-    const effectiveExecutionWorkspaceMode: ReturnType<typeof resolveExecutionWorkspaceMode> =
-      requestedExecutionWorkspaceMode;
-    const executionPolicy = { executionMode: (await instanceSettings.getGeneral()).executionMode };
-    let selectedEnvironmentId = environmentResolution.environmentId;
-    if (isExecutionForcedToKubernetes(executionPolicy)) {
-      let kubernetesEnvironment = await environmentsSvc.findKubernetesEnvironment(agent.companyId);
-      if (!kubernetesEnvironment) {
-        // Lazy recovery for companies created after the startup bootstrap ran
-        // (the boot hook only provisions environments for companies that exist
-        // at boot). Re-derive the managed-env config from the bootstrap env.
-        // If the process env no longer forces Kubernetes (rollback / config
-        // drift relative to the persisted executionMode setting), skip the
-        // provisioning gracefully: the guard below still refuses local
-        // fallback with the explicit error, instead of crashing here on
-        // undefined config.
-        let bootstrap: ReturnType<typeof parseExecutionPolicyBootstrapEnv> = null;
-        let bootstrapSkipReason: string | null = null;
-        try {
-          bootstrap = parseExecutionPolicyBootstrapEnv(process.env);
-          if (!bootstrap) {
-            bootstrapSkipReason =
-              'PAPERCLIP_EXECUTION_MODE bootstrap env is not kubernetes-forced (absent or "any")';
-          }
-        } catch (err) {
-          bootstrapSkipReason = `PAPERCLIP_EXECUTION_MODE bootstrap env failed to parse: ${
-            err instanceof Error ? err.message : String(err)
-          }`;
-        }
-        if (bootstrap) {
-          await environmentsSvc.ensureKubernetesEnvironment(
-            agent.companyId,
-            bootstrap.kubernetesConfig,
-          );
-          kubernetesEnvironment = await environmentsSvc.findKubernetesEnvironment(agent.companyId);
-        } else {
-          logger.warn(
-            {
-              runId: run.id,
-              agentId: agent.id,
-              companyId: agent.companyId,
-              reason: bootstrapSkipReason,
-            },
-            "executionMode=kubernetes is persisted but the bootstrap env cannot provision a managed Kubernetes environment; skipping lazy provisioning for this company (the run will fail with the explicit no-managed-environment error)",
-          );
-        }
+      const taskMarkdown = buildPaperclipTaskMarkdown(taskMarkdownInput);
+      const taskMarkdownCompact = buildPaperclipTaskMarkdown({ ...taskMarkdownInput, includeDescription: false });
+      if (issueRef) {
+        context.paperclipIssue = {
+          id: issueRef.id,
+          identifier: issueRef.identifier,
+          title: issueRef.title,
+          description: issueRef.description,
+          workMode: issueRef.workMode,
+        };
+      } else {
+        delete context.paperclipIssue;
       }
-      if (!kubernetesEnvironment) {
-        throw new Error(
-          "Instance execution policy requires the Kubernetes sandbox provider " +
+      if (wakeCommentContext) {
+        context.paperclipWakeComment = safeWakeCommentContext;
+      } else {
+        delete context.paperclipWakeComment;
+      }
+      if (taskMarkdown) {
+        context.paperclipTaskMarkdown = taskMarkdown;
+      } else {
+        delete context.paperclipTaskMarkdown;
+      }
+      if (taskMarkdownCompact && taskMarkdownCompact !== taskMarkdown) {
+        context.paperclipTaskMarkdownCompact = taskMarkdownCompact;
+      } else {
+        delete context.paperclipTaskMarkdownCompact;
+      }
+      const requestedExecutionWorkspaceId = readNonEmptyString(issueRef?.executionWorkspaceId);
+      const existingExecutionWorkspace =
+        requestedExecutionWorkspaceId ? await executionWorkspacesSvc.getById(requestedExecutionWorkspaceId) : null;
+      const workspaceReuseRequest = resolveExecutionWorkspaceReuseRequestForIssue({
+        issueExecutionWorkspaceId: requestedExecutionWorkspaceId,
+        issueExecutionWorkspacePreference: issueRef?.executionWorkspacePreference ?? null,
+        existingExecutionWorkspaceStatus: existingExecutionWorkspace?.status ?? null,
+      });
+      const requestedShouldReuseExisting = workspaceReuseRequest.requestedShouldReuseExisting;
+      const reusableExistingExecutionWorkspace = workspaceReuseRequest.existingExecutionWorkspaceAvailable
+        ? existingExecutionWorkspace
+        : null;
+      const requestedReusableExecutionWorkspaceConfig = reusableExistingExecutionWorkspace?.config ?? null;
+      const localEnvironment = await environmentsSvc.ensureLocalEnvironment(agent.companyId);
+      const resolvedInstanceSettings = await instanceSettings.get();
+      const environmentResolution = resolveExecutionWorkspaceEnvironmentId({
+        agentDefaultEnvironmentId: agent.defaultEnvironmentId,
+        instanceDefaultEnvironmentId: resolvedInstanceSettings.defaultEnvironmentId ?? null,
+        localDefaultEnvironmentId: localEnvironment.id,
+      });
+      const effectiveExecutionWorkspaceMode: ReturnType<typeof resolveExecutionWorkspaceMode> =
+        requestedExecutionWorkspaceMode;
+      const executionPolicy = { executionMode: (await instanceSettings.getGeneral()).executionMode };
+      let selectedEnvironmentId = environmentResolution.environmentId;
+      if (isExecutionForcedToKubernetes(executionPolicy)) {
+        let kubernetesEnvironment = await environmentsSvc.findKubernetesEnvironment(agent.companyId);
+        if (!kubernetesEnvironment) {
+          // Lazy recovery for companies created after the startup bootstrap ran
+          // (the boot hook only provisions environments for companies that exist
+          // at boot). Re-derive the managed-env config from the bootstrap env.
+          // If the process env no longer forces Kubernetes (rollback / config
+          // drift relative to the persisted executionMode setting), skip the
+          // provisioning gracefully: the guard below still refuses local
+          // fallback with the explicit error, instead of crashing here on
+          // undefined config.
+          let bootstrap: ReturnType<typeof parseExecutionPolicyBootstrapEnv> = null;
+          let bootstrapSkipReason: string | null = null;
+          try {
+            bootstrap = parseExecutionPolicyBootstrapEnv(process.env);
+            if (!bootstrap) {
+              bootstrapSkipReason =
+                'PAPERCLIP_EXECUTION_MODE bootstrap env is not kubernetes-forced (absent or "any")';
+            }
+          } catch (err) {
+            bootstrapSkipReason = `PAPERCLIP_EXECUTION_MODE bootstrap env failed to parse: ${err instanceof Error ? err.message : String(err)
+              }`;
+          }
+          if (bootstrap) {
+            await environmentsSvc.ensureKubernetesEnvironment(
+              agent.companyId,
+              bootstrap.kubernetesConfig,
+            );
+            kubernetesEnvironment = await environmentsSvc.findKubernetesEnvironment(agent.companyId);
+          } else {
+            logger.warn(
+              {
+                runId: run.id,
+                agentId: agent.id,
+                companyId: agent.companyId,
+                reason: bootstrapSkipReason,
+              },
+              "executionMode=kubernetes is persisted but the bootstrap env cannot provision a managed Kubernetes environment; skipping lazy provisioning for this company (the run will fail with the explicit no-managed-environment error)",
+            );
+          }
+        }
+        if (!kubernetesEnvironment) {
+          throw new Error(
+            "Instance execution policy requires the Kubernetes sandbox provider " +
             "(executionMode=kubernetes) but no managed Kubernetes environment is " +
             "configured for this company. Configure one (PAPERCLIP_K8S_* env on the " +
             "cloud instance) before running agents; refusing to fall back to local execution.",
-        );
+          );
+        }
+        if (kubernetesEnvironment.id !== selectedEnvironmentId) {
+          logger.info(
+            {
+              runId: run.id,
+              issueId,
+              agentId: agent.id,
+              resolvedEnvironmentId: selectedEnvironmentId,
+              forcedKubernetesEnvironmentId: kubernetesEnvironment.id,
+            },
+            "Forcing run onto the managed Kubernetes environment (executionMode=kubernetes)",
+          );
+        }
+        selectedEnvironmentId = kubernetesEnvironment.id;
       }
-      if (kubernetesEnvironment.id !== selectedEnvironmentId) {
-        logger.info(
+      const workspaceManagedConfig = buildExecutionWorkspaceAdapterConfig({
+        agentConfig: config,
+        projectPolicy: projectExecutionWorkspacePolicy,
+        issueSettings: issueExecutionWorkspaceSettings,
+        mode: requestedExecutionWorkspaceMode,
+        legacyUseProjectWorkspace: issueAssigneeOverrides?.useProjectWorkspace ?? null,
+      });
+      let adapterModelProfiles: AdapterModelProfileDefinition[] = [];
+      let profileResolutionFallbackReason: string | null = null;
+      try {
+        adapterModelProfiles = await listAdapterModelProfiles(agent.adapterType);
+      } catch (error) {
+        profileResolutionFallbackReason = "adapter_profile_resolution_failed";
+        logger.warn(
           {
-            runId: run.id,
-            issueId,
+            err: error,
+            companyId: agent.companyId,
             agentId: agent.id,
-            resolvedEnvironmentId: selectedEnvironmentId,
-            forcedKubernetesEnvironmentId: kubernetesEnvironment.id,
+            adapterType: agent.adapterType,
+            runId: run.id,
           },
-          "Forcing run onto the managed Kubernetes environment (executionMode=kubernetes)",
+          "Failed to resolve adapter model profiles; falling back to primary adapter config",
         );
       }
-      selectedEnvironmentId = kubernetesEnvironment.id;
-    }
-    const workspaceManagedConfig = buildExecutionWorkspaceAdapterConfig({
-      agentConfig: config,
-      projectPolicy: projectExecutionWorkspacePolicy,
-      issueSettings: issueExecutionWorkspaceSettings,
-      mode: requestedExecutionWorkspaceMode,
-      legacyUseProjectWorkspace: issueAssigneeOverrides?.useProjectWorkspace ?? null,
-    });
-    let adapterModelProfiles: AdapterModelProfileDefinition[] = [];
-    let profileResolutionFallbackReason: string | null = null;
-    try {
-      adapterModelProfiles = await listAdapterModelProfiles(agent.adapterType);
-    } catch (error) {
-      profileResolutionFallbackReason = "adapter_profile_resolution_failed";
-      logger.warn(
-        {
-          err: error,
-          companyId: agent.companyId,
-          agentId: agent.id,
-          adapterType: agent.adapterType,
-          runId: run.id,
-        },
-        "Failed to resolve adapter model profiles; falling back to primary adapter config",
-      );
-    }
-    const modelProfileApplication = resolveModelProfileApplication({
-      adapterModelProfiles,
-      agentRuntimeConfig: agent.runtimeConfig,
-      issueModelProfile: issueAssigneeOverrides?.modelProfile ?? null,
-      contextSnapshot: context,
-      profileResolutionFallbackReason,
-    });
-    const modelProfileMetadata = modelProfileRunMetadata(modelProfileApplication);
-    if (modelProfileMetadata) {
-      context.paperclipModelProfile = modelProfileMetadata;
-      if (modelProfileApplication.requested) context.modelProfile = modelProfileApplication.requested;
-    } else {
-      delete context.paperclipModelProfile;
-    }
-    const mergedConfig = mergeModelProfileAdapterConfig({
-      baseConfig: workspaceManagedConfig,
-      modelProfile: modelProfileApplication,
-      issueAdapterConfig: issueAssigneeOverrides?.adapterConfig ?? null,
-    });
-    const configSnapshot = buildExecutionWorkspaceConfigSnapshot(mergedConfig, selectedEnvironmentId);
-    const executionRunConfig = stripWorkspaceRuntimeFromExecutionRunConfig(mergedConfig);
-    const selectedEnvironmentForConfig = selectedEnvironmentId === localEnvironment.id
-      ? localEnvironment
-      : selectedEnvironmentId
-        ? await environmentsSvc.getById(selectedEnvironmentId)
-        : null;
-    const runScopedMentionedSkillKeys = await resolveRunScopedMentionedSkillKeys({
-      db,
-      companyId: agent.companyId,
-      issueId,
-    });
-    const pushCapabilityPreflightRequired = requiresPushCapabilityPreflight({
-      adapterType: agent.adapterType,
-      issueId,
-      explicitRunScopedSkillKeys: runScopedMentionedSkillKeys,
-    });
-    const { resolvedConfig, secretKeys, secretManifest } = await resolveExecutionRunAdapterConfig({
-      companyId: agent.companyId,
-      agentId: agent.id,
-      adapterType: agent.adapterType,
-      issueId,
-      heartbeatRunId: run.id,
-      environmentId: selectedEnvironmentForConfig?.id ?? null,
-      environmentEnv: selectedEnvironmentForConfig?.envVars ?? null,
-      projectId: projectContext?.id ?? null,
-      routineId: routineEnvContext.routineId,
-      responsibleUserId,
-      executionRunConfig,
-      projectEnv: projectContext?.env ?? null,
-      routineEnv: routineEnvContext.env,
-      secretsSvc,
-      trustPreset,
-      requiredScopedEnvBinding: pushCapabilityPreflightRequired
-        ? {
+      const modelProfileApplication = resolveModelProfileApplication({
+        adapterModelProfiles,
+        agentRuntimeConfig: agent.runtimeConfig,
+        issueModelProfile: issueAssigneeOverrides?.modelProfile ?? null,
+        contextSnapshot: context,
+        profileResolutionFallbackReason,
+      });
+      const modelProfileMetadata = modelProfileRunMetadata(modelProfileApplication);
+      if (modelProfileMetadata) {
+        context.paperclipModelProfile = modelProfileMetadata;
+        if (modelProfileApplication.requested) context.modelProfile = modelProfileApplication.requested;
+      } else {
+        delete context.paperclipModelProfile;
+      }
+      const mergedConfig = mergeModelProfileAdapterConfig({
+        baseConfig: workspaceManagedConfig,
+        modelProfile: modelProfileApplication,
+        issueAdapterConfig: issueAssigneeOverrides?.adapterConfig ?? null,
+      });
+      const configSnapshot = buildExecutionWorkspaceConfigSnapshot(mergedConfig, selectedEnvironmentId);
+      const executionRunConfig = stripWorkspaceRuntimeFromExecutionRunConfig(mergedConfig);
+      const selectedEnvironmentForConfig = selectedEnvironmentId === localEnvironment.id
+        ? localEnvironment
+        : selectedEnvironmentId
+          ? await environmentsSvc.getById(selectedEnvironmentId)
+          : null;
+      const runScopedMentionedSkillKeys = await resolveRunScopedMentionedSkillKeys({
+        db,
+        companyId: agent.companyId,
+        issueId,
+      });
+      const pushCapabilityPreflightRequired = requiresPushCapabilityPreflight({
+        adapterType: agent.adapterType,
+        issueId,
+        explicitRunScopedSkillKeys: runScopedMentionedSkillKeys,
+      });
+      const { resolvedConfig, secretKeys, secretManifest } = await resolveExecutionRunAdapterConfig({
+        companyId: agent.companyId,
+        agentId: agent.id,
+        adapterType: agent.adapterType,
+        issueId,
+        heartbeatRunId: run.id,
+        environmentId: selectedEnvironmentForConfig?.id ?? null,
+        environmentEnv: selectedEnvironmentForConfig?.envVars ?? null,
+        projectId: projectContext?.id ?? null,
+        routineId: routineEnvContext.routineId,
+        responsibleUserId,
+        executionRunConfig,
+        projectEnv: projectContext?.env ?? null,
+        routineEnv: routineEnvContext.env,
+        secretsSvc,
+        trustPreset,
+        requiredScopedEnvBinding: pushCapabilityPreflightRequired
+          ? {
             keys: [...PUSH_CAPABILITY_ENV_KEYS],
             consumerScopes: ["agent", "project"],
             reason: "push_write_credential_missing",
             remediation:
               "GitHub PR workflow requires GH_TOKEN or GITHUB_TOKEN bound at project or agent scope.",
           }
-        : undefined,
-    });
-    if (secretManifest.length > 0) {
-      context.paperclipSecrets = {
-        manifest: secretManifest,
+          : undefined,
+      });
+      if (secretManifest.length > 0) {
+        context.paperclipSecrets = {
+          manifest: secretManifest,
+        };
+      } else {
+        delete context.paperclipSecrets;
+      }
+      const effectiveResolvedConfig = applyRunScopedMentionedSkillKeys(
+        resolvedConfig,
+        runScopedMentionedSkillKeys,
+      );
+      const runtimeSkillPreference = readPaperclipSkillSyncPreference(effectiveResolvedConfig);
+      const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(agent.companyId, {
+        versionSelections: skillVersionSelectionMap(runtimeSkillPreference.desiredSkillEntries, {
+          versionPinsEnabled: resolvedInstanceSettings.experimental.enableBetaSkills === true,
+        }),
+      });
+      let runtimeConfig: Record<string, unknown> = {
+        ...effectiveResolvedConfig,
+        paperclipRuntimeSkills: runtimeSkillEntries,
       };
-    } else {
-      delete context.paperclipSecrets;
-    }
-    const effectiveResolvedConfig = applyRunScopedMentionedSkillKeys(
-      resolvedConfig,
-      runScopedMentionedSkillKeys,
-    );
-    const runtimeSkillPreference = readPaperclipSkillSyncPreference(effectiveResolvedConfig);
-    const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(agent.companyId, {
-      versionSelections: skillVersionSelectionMap(runtimeSkillPreference.desiredSkillEntries, {
-        versionPinsEnabled: resolvedInstanceSettings.experimental.enableBetaSkills === true,
-      }),
-    });
-    let runtimeConfig: Record<string, unknown> = {
-      ...effectiveResolvedConfig,
-      paperclipRuntimeSkills: runtimeSkillEntries,
-    };
-    const latestAgentConfigRevision = await getLatestAgentConfigRevision(agent.companyId, agent.id);
-    const sessionConfigMetadata = await buildEffectiveRunSessionConfigMetadata({
-      adapterType: agent.adapterType,
-      effectiveAdapterConfig: runtimeConfig,
-      agentRuntimeConfig: agent.runtimeConfig,
-      modelProfile: modelProfileMetadata,
-      issueOverrides: issueAssigneeOverrides,
-      workspaceConfig: {
-        requestedMode: requestedExecutionWorkspaceMode,
-        effectiveMode: effectiveExecutionWorkspaceMode,
-        issueConfigRevisionAt: issueContext?.updatedAt instanceof Date
-          ? issueContext.updatedAt.toISOString()
-          : issueContext?.updatedAt ?? null,
-        projectConfigRevisionAt: projectContext?.updatedAt instanceof Date
-          ? projectContext.updatedAt.toISOString()
-          : projectContext?.updatedAt ?? null,
-        projectPolicy: projectExecutionWorkspacePolicy,
-        issueSettings: issueExecutionWorkspaceSettings,
-        reusableExecutionWorkspaceConfig: requestedReusableExecutionWorkspaceConfig,
-        existingExecutionWorkspace: reusableExistingExecutionWorkspace
-          ? {
+      const latestAgentConfigRevision = await getLatestAgentConfigRevision(agent.companyId, agent.id);
+      const sessionConfigMetadata = await buildEffectiveRunSessionConfigMetadata({
+        adapterType: agent.adapterType,
+        effectiveAdapterConfig: runtimeConfig,
+        agentRuntimeConfig: agent.runtimeConfig,
+        modelProfile: modelProfileMetadata,
+        issueOverrides: issueAssigneeOverrides,
+        workspaceConfig: {
+          requestedMode: requestedExecutionWorkspaceMode,
+          effectiveMode: effectiveExecutionWorkspaceMode,
+          issueConfigRevisionAt: issueContext?.updatedAt instanceof Date
+            ? issueContext.updatedAt.toISOString()
+            : issueContext?.updatedAt ?? null,
+          projectConfigRevisionAt: projectContext?.updatedAt instanceof Date
+            ? projectContext.updatedAt.toISOString()
+            : projectContext?.updatedAt ?? null,
+          projectPolicy: projectExecutionWorkspacePolicy,
+          issueSettings: issueExecutionWorkspaceSettings,
+          reusableExecutionWorkspaceConfig: requestedReusableExecutionWorkspaceConfig,
+          existingExecutionWorkspace: reusableExistingExecutionWorkspace
+            ? {
               id: reusableExistingExecutionWorkspace.id,
               mode: reusableExistingExecutionWorkspace.mode,
               strategyType: reusableExistingExecutionWorkspace.strategyType,
@@ -12454,13 +12453,13 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               branchName: reusableExistingExecutionWorkspace.branchName,
               config: reusableExistingExecutionWorkspace.config,
             }
-          : null,
-      },
-      environment: {
-        selectionSource: environmentResolution.source,
-        selectedEnvironmentId,
-        selectedEnvironment: selectedEnvironmentForConfig
-          ? {
+            : null,
+        },
+        environment: {
+          selectionSource: environmentResolution.source,
+          selectedEnvironmentId,
+          selectedEnvironment: selectedEnvironmentForConfig
+            ? {
               id: selectedEnvironmentForConfig.id,
               driver: selectedEnvironmentForConfig.driver,
               config: selectedEnvironmentForConfig.config,
@@ -12468,106 +12467,106 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
                 ? selectedEnvironmentForConfig.updatedAt.toISOString()
                 : selectedEnvironmentForConfig.updatedAt ?? null,
             }
-          : null,
-        executionPolicy,
-      },
-      environmentEnv: selectedEnvironmentForConfig?.envVars ?? null,
-      projectEnv: projectContext?.env ?? null,
-      routineEnv: routineEnvContext.env,
-      secretManifest,
-      runtimeSkills: runtimeSkillEntries,
-      agentConfigRevision: latestAgentConfigRevision
-        ? {
+            : null,
+          executionPolicy,
+        },
+        environmentEnv: selectedEnvironmentForConfig?.envVars ?? null,
+        projectEnv: projectContext?.env ?? null,
+        routineEnv: routineEnvContext.env,
+        secretManifest,
+        runtimeSkills: runtimeSkillEntries,
+        agentConfigRevision: latestAgentConfigRevision
+          ? {
             id: latestAgentConfigRevision.id,
             changedKeys: latestAgentConfigRevision.changedKeys,
             configRevisionAt: latestAgentConfigRevision.createdAt.toISOString(),
           }
-        : null,
-    });
-    const configuredModel = readConfiguredModelFromAdapterConfig(runtimeConfig);
-    const wakeSessionResetReason = describeSessionResetReason(context);
-    const sessionConfigFreshness = resolveTaskSessionConfigFreshness({
-      hasTaskSession: taskSession != null,
-      configuredModel,
-      taskSessionParams: taskSession?.sessionParamsJson ?? taskSessionDecodedParams,
-      configMetadata: sessionConfigMetadata,
-      wakeResetReason: wakeSessionResetReason,
-      preserveLegacySessionWithoutConfigMetadata: acceptedPlanContinuationWake && !acceptedPlanWakeRoutingDecision,
-    });
-    const resetTaskSession = shouldResetTaskSessionForWake(context) || sessionConfigFreshness.reset;
-    const sessionResetReason = sessionConfigFreshness.reasons.join("; ") || null;
-    const taskSessionForRun = resetTaskSession ? null : taskSession;
-    const previousSessionParams =
-      explicitResumeSessionParams ??
-      (isCanonicalSessionIdForAdapter(agent.adapterType, explicitResumeSessionDisplayId)
-        ? { sessionId: explicitResumeSessionDisplayId }
-        : null) ??
-      normalizeResumeParamsForAdapter(
-        agent.adapterType,
-        stripPaperclipSessionMetadataFromSessionParams(
-          sessionCodec.deserialize(taskSessionForRun?.sessionParamsJson ?? null),
-        ),
-      );
-    const {
-      selectedEnvironmentDriver: lowTrustPreflightEnvironmentDriver,
-      workspace: resolvedWorkspace,
-    } = await resolveWorkspaceAfterLowTrustPreflight({
-      db,
-      trustPreset,
-      isolatedWorkspacesEnabled,
-      effectiveExecutionWorkspaceMode,
-      issue: issueRef
-        ? {
+          : null,
+      });
+      const configuredModel = readConfiguredModelFromAdapterConfig(runtimeConfig);
+      const wakeSessionResetReason = describeSessionResetReason(context);
+      const sessionConfigFreshness = resolveTaskSessionConfigFreshness({
+        hasTaskSession: taskSession != null,
+        configuredModel,
+        taskSessionParams: taskSession?.sessionParamsJson ?? taskSessionDecodedParams,
+        configMetadata: sessionConfigMetadata,
+        wakeResetReason: wakeSessionResetReason,
+        preserveLegacySessionWithoutConfigMetadata: acceptedPlanContinuationWake && !acceptedPlanWakeRoutingDecision,
+      });
+      const resetTaskSession = shouldResetTaskSessionForWake(context) || sessionConfigFreshness.reset;
+      const sessionResetReason = sessionConfigFreshness.reasons.join("; ") || null;
+      const taskSessionForRun = resetTaskSession ? null : taskSession;
+      const previousSessionParams =
+        explicitResumeSessionParams ??
+        (isCanonicalSessionIdForAdapter(agent.adapterType, explicitResumeSessionDisplayId)
+          ? { sessionId: explicitResumeSessionDisplayId }
+          : null) ??
+        normalizeResumeParamsForAdapter(
+          agent.adapterType,
+          stripPaperclipSessionMetadataFromSessionParams(
+            sessionCodec.deserialize(taskSessionForRun?.sessionParamsJson ?? null),
+          ),
+        );
+      const {
+        selectedEnvironmentDriver: lowTrustPreflightEnvironmentDriver,
+        workspace: resolvedWorkspace,
+      } = await resolveWorkspaceAfterLowTrustPreflight({
+        db,
+        trustPreset,
+        isolatedWorkspacesEnabled,
+        effectiveExecutionWorkspaceMode,
+        issue: issueRef
+          ? {
             companyId: agent.companyId,
             id: issueRef.id,
             projectId: issueRef.projectId,
           }
-        : null,
-      resolveSelectedEnvironmentDriver: async () => {
-        const preflightEnvironment = await envOrchestrator.resolveEnvironment({
-          companyId: agent.companyId,
-          selectedEnvironmentId,
-          localEnvironmentId: localEnvironment.id,
-        });
-        return preflightEnvironment.driver;
-      },
-      resolveWorkspace: () =>
-        resolveWorkspaceForRun(
-          agent,
-          context,
-          previousSessionParams,
-          { useProjectWorkspace: requestedExecutionWorkspaceMode !== "agent_default" },
-        ),
-    });
-    const hostExecutionWorkspaceConfig = stripHostWorkspaceProvisionForLowTrustSandbox({
-      config: mergedConfig,
-      trustPreset,
-      selectedEnvironmentDriver: lowTrustPreflightEnvironmentDriver,
-    });
-    const executionWorkspaceBase = {
-      baseCwd: resolvedWorkspace.cwd,
-      source: resolvedWorkspace.source,
-      projectId: resolvedWorkspace.projectId,
-      workspaceId: resolvedWorkspace.workspaceId,
-      repoUrl: resolvedWorkspace.repoUrl,
-      repoRef: resolvedWorkspace.repoRef,
-    } satisfies ExecutionWorkspaceInput;
-    await assertGitWorktreeBaseWorkspaceReady({
-      requestedExecutionWorkspaceMode,
-      config: hostExecutionWorkspaceConfig,
-      issue: issueRef,
-      base: executionWorkspaceBase,
-    });
-    const workspaceStrategyForFingerprint = parseObject(hostExecutionWorkspaceConfig.workspaceStrategy);
-    const workspaceStrategyFingerprintValue =
-      Object.keys(workspaceStrategyForFingerprint).length > 0 ? workspaceStrategyForFingerprint : null;
-    const latestWorkspaceStrategyType = resolveEffectiveWorkspaceStrategyType(
-      requestedExecutionWorkspaceMode,
-      hostExecutionWorkspaceConfig,
-    );
-    const selectedEnvironmentConfigForFingerprint = parseObject(selectedEnvironmentForConfig?.config);
-    const workspaceEnvironmentFingerprint = selectedEnvironmentForConfig
-      ? {
+          : null,
+        resolveSelectedEnvironmentDriver: async () => {
+          const preflightEnvironment = await envOrchestrator.resolveEnvironment({
+            companyId: agent.companyId,
+            selectedEnvironmentId,
+            localEnvironmentId: localEnvironment.id,
+          });
+          return preflightEnvironment.driver;
+        },
+        resolveWorkspace: () =>
+          resolveWorkspaceForRun(
+            agent,
+            context,
+            previousSessionParams,
+            { useProjectWorkspace: requestedExecutionWorkspaceMode !== "agent_default" },
+          ),
+      });
+      const hostExecutionWorkspaceConfig = stripHostWorkspaceProvisionForLowTrustSandbox({
+        config: mergedConfig,
+        trustPreset,
+        selectedEnvironmentDriver: lowTrustPreflightEnvironmentDriver,
+      });
+      const executionWorkspaceBase = {
+        baseCwd: resolvedWorkspace.cwd,
+        source: resolvedWorkspace.source,
+        projectId: resolvedWorkspace.projectId,
+        workspaceId: resolvedWorkspace.workspaceId,
+        repoUrl: resolvedWorkspace.repoUrl,
+        repoRef: resolvedWorkspace.repoRef,
+      } satisfies ExecutionWorkspaceInput;
+      await assertGitWorktreeBaseWorkspaceReady({
+        requestedExecutionWorkspaceMode,
+        config: hostExecutionWorkspaceConfig,
+        issue: issueRef,
+        base: executionWorkspaceBase,
+      });
+      const workspaceStrategyForFingerprint = parseObject(hostExecutionWorkspaceConfig.workspaceStrategy);
+      const workspaceStrategyFingerprintValue =
+        Object.keys(workspaceStrategyForFingerprint).length > 0 ? workspaceStrategyForFingerprint : null;
+      const latestWorkspaceStrategyType = resolveEffectiveWorkspaceStrategyType(
+        requestedExecutionWorkspaceMode,
+        hostExecutionWorkspaceConfig,
+      );
+      const selectedEnvironmentConfigForFingerprint = parseObject(selectedEnvironmentForConfig?.config);
+      const workspaceEnvironmentFingerprint = selectedEnvironmentForConfig
+        ? {
           selectionSource: environmentResolution.source,
           selectedEnvironmentId,
           driver: selectedEnvironmentForConfig.driver,
@@ -12578,40 +12577,40 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             : selectedEnvironmentForConfig.updatedAt ?? null,
           executionPolicy,
         }
-      : null;
-    const workspaceRealizationFingerprint = {
-      environmentDriver: selectedEnvironmentForConfig?.driver ?? null,
-      environmentProvider: readNonEmptyString(selectedEnvironmentConfigForFingerprint.provider),
-      trustPreset: trustPreset.kind,
-      lowTrustSandboxDriver: lowTrustPreflightEnvironmentDriver,
-    };
-    const latestWorkspaceConfigMetadata = buildEffectiveRunWorkspaceConfigMetadata({
-      mode: requestedExecutionWorkspaceMode,
-      projectId: executionWorkspaceBase.projectId,
-      projectWorkspaceId: executionWorkspaceBase.workspaceId,
-      strategyType: latestWorkspaceStrategyType,
-      workspaceStrategy: workspaceStrategyFingerprintValue,
-      repoUrl: executionWorkspaceBase.repoUrl,
-      repoRef: readNonEmptyString(workspaceStrategyForFingerprint.baseRef) ?? executionWorkspaceBase.repoRef,
-      configSnapshot,
-      environment: workspaceEnvironmentFingerprint,
-      realization: workspaceRealizationFingerprint,
-      secretManifest,
-    });
-    const inferredExistingWorkspaceConfigMetadata = reusableExistingExecutionWorkspace
-      ? buildEffectiveRunWorkspaceConfigMetadata({
+        : null;
+      const workspaceRealizationFingerprint = {
+        environmentDriver: selectedEnvironmentForConfig?.driver ?? null,
+        environmentProvider: readNonEmptyString(selectedEnvironmentConfigForFingerprint.provider),
+        trustPreset: trustPreset.kind,
+        lowTrustSandboxDriver: lowTrustPreflightEnvironmentDriver,
+      };
+      const latestWorkspaceConfigMetadata = buildEffectiveRunWorkspaceConfigMetadata({
+        mode: requestedExecutionWorkspaceMode,
+        projectId: executionWorkspaceBase.projectId,
+        projectWorkspaceId: executionWorkspaceBase.workspaceId,
+        strategyType: latestWorkspaceStrategyType,
+        workspaceStrategy: workspaceStrategyFingerprintValue,
+        repoUrl: executionWorkspaceBase.repoUrl,
+        repoRef: readNonEmptyString(workspaceStrategyForFingerprint.baseRef) ?? executionWorkspaceBase.repoRef,
+        configSnapshot,
+        environment: workspaceEnvironmentFingerprint,
+        realization: workspaceRealizationFingerprint,
+        secretManifest,
+      });
+      const inferredExistingWorkspaceConfigMetadata = reusableExistingExecutionWorkspace
+        ? buildEffectiveRunWorkspaceConfigMetadata({
           mode: issueExecutionWorkspaceModeForPersistedWorkspace(reusableExistingExecutionWorkspace.mode),
           projectId: reusableExistingExecutionWorkspace.projectId,
           projectWorkspaceId: reusableExistingExecutionWorkspace.projectWorkspaceId,
           strategyType: reusableExistingExecutionWorkspace.strategyType,
           workspaceStrategy: workspaceStrategyFingerprintValue
             ? {
-                ...workspaceStrategyFingerprintValue,
-                type: reusableExistingExecutionWorkspace.strategyType,
-                ...(reusableExistingExecutionWorkspace.baseRef
-                  ? { baseRef: reusableExistingExecutionWorkspace.baseRef }
-                  : {}),
-              }
+              ...workspaceStrategyFingerprintValue,
+              type: reusableExistingExecutionWorkspace.strategyType,
+              ...(reusableExistingExecutionWorkspace.baseRef
+                ? { baseRef: reusableExistingExecutionWorkspace.baseRef }
+                : {}),
+            }
             : { type: reusableExistingExecutionWorkspace.strategyType },
           repoUrl: reusableExistingExecutionWorkspace.repoUrl,
           repoRef: reusableExistingExecutionWorkspace.baseRef,
@@ -12621,34 +12620,34 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           secretManifest,
           evaluatedAt: latestWorkspaceConfigMetadata.evaluatedAt,
         })
-      : null;
-    const workspaceConfigFreshness = resolveExecutionWorkspaceConfigFreshness({
-      hasExistingWorkspace: requestedShouldReuseExisting && Boolean(reusableExistingExecutionWorkspace),
-      existingWorkspaceMetadata: reusableExistingExecutionWorkspace?.metadata ?? null,
-      inferredMetadata: inferredExistingWorkspaceConfigMetadata,
-      nextMetadata: latestWorkspaceConfigMetadata,
-    });
-    const workspaceReuseProvisioningPolicy = resolveExecutionWorkspaceReuseProvisioningPolicy({
-      requestedShouldReuseExisting,
-      workspaceConfigFreshness,
-    });
-    const workspaceOperationRecorder = workspaceOperationsSvc.createRecorder({
-      companyId: agent.companyId,
-      heartbeatRunId: run.id,
-      executionWorkspaceId: workspaceReuseProvisioningPolicy.shouldRestoreExistingWorkspace
-        ? workspaceReuseRequest.requestedExecutionWorkspaceId
-        : null,
-      issueId,
-    });
-    const { executionWorkspace, reusedExecutionWorkspace, policy: resolvedWorkspaceReusePolicy } =
-      await provisionExecutionWorkspaceForFreshnessDecision<RealizedExecutionWorkspace>({
+        : null;
+      const workspaceConfigFreshness = resolveExecutionWorkspaceConfigFreshness({
+        hasExistingWorkspace: requestedShouldReuseExisting && Boolean(reusableExistingExecutionWorkspace),
+        existingWorkspaceMetadata: reusableExistingExecutionWorkspace?.metadata ?? null,
+        inferredMetadata: inferredExistingWorkspaceConfigMetadata,
+        nextMetadata: latestWorkspaceConfigMetadata,
+      });
+      const workspaceReuseProvisioningPolicy = resolveExecutionWorkspaceReuseProvisioningPolicy({
         requestedShouldReuseExisting,
-        existingExecutionWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
-        issueRef,
-        runId: run.id,
         workspaceConfigFreshness,
-        restoreExistingWorkspace: reusableExistingExecutionWorkspace
-          ? () => ensurePersistedExecutionWorkspaceAvailable({
+      });
+      const workspaceOperationRecorder = workspaceOperationsSvc.createRecorder({
+        companyId: agent.companyId,
+        heartbeatRunId: run.id,
+        executionWorkspaceId: workspaceReuseProvisioningPolicy.shouldRestoreExistingWorkspace
+          ? workspaceReuseRequest.requestedExecutionWorkspaceId
+          : null,
+        issueId,
+      });
+      const { executionWorkspace, reusedExecutionWorkspace, policy: resolvedWorkspaceReusePolicy } =
+        await provisionExecutionWorkspaceForFreshnessDecision<RealizedExecutionWorkspace>({
+          requestedShouldReuseExisting,
+          existingExecutionWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
+          issueRef,
+          runId: run.id,
+          workspaceConfigFreshness,
+          restoreExistingWorkspace: reusableExistingExecutionWorkspace
+            ? () => ensurePersistedExecutionWorkspaceAvailable({
               db,
               base: executionWorkspaceBase,
               workspace: {
@@ -12684,49 +12683,49 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
                 resolvedInstanceSettings.experimental.enableWorkspaceDirtyQuarantineRepair,
               recorder: workspaceOperationRecorder,
             })
+            : null,
+          realizeWorkspace: () => realizeExecutionWorkspace({
+            db,
+            base: executionWorkspaceBase,
+            config: hostExecutionWorkspaceConfig,
+            issue: issueRef,
+            agent: {
+              id: agent.id,
+              name: agent.name,
+              companyId: agent.companyId,
+            },
+            heartbeatRunId: run.id,
+            enableWorkspaceBranchReconcileForward:
+              resolvedInstanceSettings.experimental.enableWorkspaceBranchReconcileForward,
+            enableWorkspaceDirtyQuarantineRepair:
+              resolvedInstanceSettings.experimental.enableWorkspaceDirtyQuarantineRepair,
+            recorder: workspaceOperationRecorder,
+          }),
+        });
+      const resolvedProjectId = executionWorkspace.projectId ?? issueRef?.projectId ?? executionProjectId ?? null;
+      const resolvedProjectWorkspaceId = issueRef?.projectWorkspaceId ?? resolvedWorkspace.workspaceId ?? null;
+      let persistedExecutionWorkspace: ExecutionWorkspace | null = null;
+      const nextExecutionWorkspaceMetadata = mergeExecutionWorkspaceMetadataForPersistence({
+        existingMetadata: resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace
+          ? reusableExistingExecutionWorkspace?.metadata ?? null
           : null,
-        realizeWorkspace: () => realizeExecutionWorkspace({
-          db,
-          base: executionWorkspaceBase,
-          config: hostExecutionWorkspaceConfig,
-          issue: issueRef,
-          agent: {
-            id: agent.id,
-            name: agent.name,
-            companyId: agent.companyId,
-          },
-          heartbeatRunId: run.id,
-          enableWorkspaceBranchReconcileForward:
-            resolvedInstanceSettings.experimental.enableWorkspaceBranchReconcileForward,
-          enableWorkspaceDirtyQuarantineRepair:
-            resolvedInstanceSettings.experimental.enableWorkspaceDirtyQuarantineRepair,
-          recorder: workspaceOperationRecorder,
-        }),
+        source: executionWorkspace.source,
+        createdByRuntime: executionWorkspace.created,
+        configSnapshot,
+        shouldReuseExisting: resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace,
+        shouldRefreshConfigSnapshot: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
+        workspaceConfigMetadata: resolvedWorkspaceReusePolicy.shouldPersistLatestWorkspaceConfigMetadata
+          ? latestWorkspaceConfigMetadata
+          : null,
+        baseRef: executionWorkspace.repoRef,
+        baseRefSha: executionWorkspace.baseRefSha ?? null,
       });
-    const resolvedProjectId = executionWorkspace.projectId ?? issueRef?.projectId ?? executionProjectId ?? null;
-    const resolvedProjectWorkspaceId = issueRef?.projectWorkspaceId ?? resolvedWorkspace.workspaceId ?? null;
-    let persistedExecutionWorkspace: ExecutionWorkspace | null = null;
-    const nextExecutionWorkspaceMetadata = mergeExecutionWorkspaceMetadataForPersistence({
-      existingMetadata: resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace
-        ? reusableExistingExecutionWorkspace?.metadata ?? null
-        : null,
-      source: executionWorkspace.source,
-      createdByRuntime: executionWorkspace.created,
-      configSnapshot,
-      shouldReuseExisting: resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace,
-      shouldRefreshConfigSnapshot: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
-      workspaceConfigMetadata: resolvedWorkspaceReusePolicy.shouldPersistLatestWorkspaceConfigMetadata
-        ? latestWorkspaceConfigMetadata
-        : null,
-      baseRef: executionWorkspace.repoRef,
-      baseRefSha: executionWorkspace.baseRefSha ?? null,
-    });
-    const pendingForwardBranchReconcile = executionWorkspace.pendingForwardBranchReconcile ?? null;
-    const branchNameForInitialPersistence =
-      pendingForwardBranchReconcile?.recordedBranchName ?? executionWorkspace.branchName;
-    try {
-      persistedExecutionWorkspace = resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace && reusableExistingExecutionWorkspace
-        ? await executionWorkspacesSvc.update(reusableExistingExecutionWorkspace.id, {
+      const pendingForwardBranchReconcile = executionWorkspace.pendingForwardBranchReconcile ?? null;
+      const branchNameForInitialPersistence =
+        pendingForwardBranchReconcile?.recordedBranchName ?? executionWorkspace.branchName;
+      try {
+        persistedExecutionWorkspace = resolvedWorkspaceReusePolicy.shouldRestoreExistingWorkspace && reusableExistingExecutionWorkspace
+          ? await executionWorkspacesSvc.update(reusableExistingExecutionWorkspace.id, {
             cwd: executionWorkspace.cwd,
             repoUrl: executionWorkspace.repoUrl,
             baseRef: executionWorkspace.repoRef,
@@ -12737,8 +12736,8 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             lastUsedAt: new Date(),
             metadata: nextExecutionWorkspaceMetadata,
           })
-        : resolvedProjectId
-          ? await executionWorkspacesSvc.create({
+          : resolvedProjectId
+            ? await executionWorkspacesSvc.create({
               companyId: agent.companyId,
               projectId: resolvedProjectId,
               projectWorkspaceId: resolvedProjectWorkspaceId,
@@ -12764,218 +12763,218 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               openedAt: new Date(),
               metadata: nextExecutionWorkspaceMetadata,
             })
-          : null;
-    } catch (error) {
-      if (executionWorkspace.created) {
-        try {
-          await cleanupExecutionWorkspaceArtifacts({
-            workspace: {
-              id:
-                reusableExistingExecutionWorkspace?.id
-                ?? workspaceReuseRequest.requestedExecutionWorkspaceId
-                ?? `transient-${run.id}`,
-              cwd: executionWorkspace.cwd,
-              providerType: executionWorkspace.strategy === "git_worktree" ? "git_worktree" : "local_fs",
-              providerRef: executionWorkspace.worktreePath,
-              branchName: executionWorkspace.branchName,
-              repoUrl: executionWorkspace.repoUrl,
-              baseRef: executionWorkspace.repoRef,
-              projectId: resolvedProjectId,
-              projectWorkspaceId: resolvedProjectWorkspaceId,
-              sourceIssueId: issueRef?.id ?? null,
-              metadata: {
-                createdByRuntime: true,
-                source: executionWorkspace.source,
+            : null;
+      } catch (error) {
+        if (executionWorkspace.created) {
+          try {
+            await cleanupExecutionWorkspaceArtifacts({
+              workspace: {
+                id:
+                  reusableExistingExecutionWorkspace?.id
+                  ?? workspaceReuseRequest.requestedExecutionWorkspaceId
+                  ?? `transient-${run.id}`,
+                cwd: executionWorkspace.cwd,
+                providerType: executionWorkspace.strategy === "git_worktree" ? "git_worktree" : "local_fs",
+                providerRef: executionWorkspace.worktreePath,
+                branchName: executionWorkspace.branchName,
+                repoUrl: executionWorkspace.repoUrl,
+                baseRef: executionWorkspace.repoRef,
+                projectId: resolvedProjectId,
+                projectWorkspaceId: resolvedProjectWorkspaceId,
+                sourceIssueId: issueRef?.id ?? null,
+                metadata: {
+                  createdByRuntime: true,
+                  source: executionWorkspace.source,
+                },
               },
-            },
-            projectWorkspace: {
-              cwd: resolvedWorkspace.cwd,
-              cleanupCommand: null,
-            },
-            cleanupCommand: configSnapshot?.cleanupCommand ?? null,
-            teardownCommand: configSnapshot?.teardownCommand ?? projectExecutionWorkspacePolicy?.workspaceStrategy?.teardownCommand ?? null,
-            recorder: workspaceOperationRecorder,
-          });
-        } catch (cleanupError) {
-          logger.warn(
-            {
-              runId: run.id,
-              issueId,
-              executionWorkspaceCwd: executionWorkspace.cwd,
-              cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
-            },
-            "Failed to cleanup realized execution workspace after persistence failure",
-          );
+              projectWorkspace: {
+                cwd: resolvedWorkspace.cwd,
+                cleanupCommand: null,
+              },
+              cleanupCommand: configSnapshot?.cleanupCommand ?? null,
+              teardownCommand: configSnapshot?.teardownCommand ?? projectExecutionWorkspacePolicy?.workspaceStrategy?.teardownCommand ?? null,
+              recorder: workspaceOperationRecorder,
+            });
+          } catch (cleanupError) {
+            logger.warn(
+              {
+                runId: run.id,
+                issueId,
+                executionWorkspaceCwd: executionWorkspace.cwd,
+                cleanupError: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+              },
+              "Failed to cleanup realized execution workspace after persistence failure",
+            );
+          }
+        }
+        throw error;
+      }
+      await workspaceOperationRecorder.attachExecutionWorkspaceId(persistedExecutionWorkspace?.id ?? null);
+      await recordWorkspaceConfigFreshnessOperation({
+        recorder: workspaceOperationRecorder,
+        runId: run.id,
+        decision: workspaceConfigFreshness,
+        hasExistingWorkspace: Boolean(reusableExistingExecutionWorkspace),
+        reuseRequested: requestedShouldReuseExisting,
+        workspaceReused: Boolean(reusedExecutionWorkspace),
+        configSnapshotRefreshed: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
+        previousWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
+        activeWorkspaceId: persistedExecutionWorkspace?.id ?? null,
+      });
+      if (
+        reusableExistingExecutionWorkspace &&
+        persistedExecutionWorkspace &&
+        reusableExistingExecutionWorkspace.id !== persistedExecutionWorkspace.id &&
+        reusableExistingExecutionWorkspace.status === "active"
+      ) {
+        await executionWorkspacesSvc.update(reusableExistingExecutionWorkspace.id, {
+          status: "idle",
+          cleanupReason: null,
+        });
+      }
+      if (issueId && persistedExecutionWorkspace) {
+        const nextIssueWorkspaceMode = issueExecutionWorkspaceModeForPersistedWorkspace(persistedExecutionWorkspace.mode);
+        const shouldSwitchIssueToExistingWorkspace =
+          issueRef?.executionWorkspacePreference === "reuse_existing" ||
+          requestedExecutionWorkspaceMode === "isolated_workspace" ||
+          requestedExecutionWorkspaceMode === "operator_branch";
+        const nextIssuePatch: Record<string, unknown> = {};
+        if (issueRef?.executionWorkspaceId !== persistedExecutionWorkspace.id) {
+          nextIssuePatch.executionWorkspaceId = persistedExecutionWorkspace.id;
+        }
+        if (resolvedProjectWorkspaceId && issueRef?.projectWorkspaceId !== resolvedProjectWorkspaceId) {
+          nextIssuePatch.projectWorkspaceId = resolvedProjectWorkspaceId;
+        }
+        if (shouldSwitchIssueToExistingWorkspace) {
+          nextIssuePatch.executionWorkspacePreference = "reuse_existing";
+          nextIssuePatch.executionWorkspaceSettings = {
+            ...(issueExecutionWorkspaceSettings ?? {}),
+            mode: nextIssueWorkspaceMode,
+          };
+        }
+        if (Object.keys(nextIssuePatch).length > 0) {
+          await issuesSvc.update(issueId, nextIssuePatch);
         }
       }
-      throw error;
-    }
-    await workspaceOperationRecorder.attachExecutionWorkspaceId(persistedExecutionWorkspace?.id ?? null);
-    await recordWorkspaceConfigFreshnessOperation({
-      recorder: workspaceOperationRecorder,
-      runId: run.id,
-      decision: workspaceConfigFreshness,
-      hasExistingWorkspace: Boolean(reusableExistingExecutionWorkspace),
-      reuseRequested: requestedShouldReuseExisting,
-      workspaceReused: Boolean(reusedExecutionWorkspace),
-      configSnapshotRefreshed: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
-      previousWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
-      activeWorkspaceId: persistedExecutionWorkspace?.id ?? null,
-    });
-    if (
-      reusableExistingExecutionWorkspace &&
-      persistedExecutionWorkspace &&
-      reusableExistingExecutionWorkspace.id !== persistedExecutionWorkspace.id &&
-      reusableExistingExecutionWorkspace.status === "active"
-    ) {
-      await executionWorkspacesSvc.update(reusableExistingExecutionWorkspace.id, {
-        status: "idle",
-        cleanupReason: null,
+      if (persistedExecutionWorkspace) {
+        context.executionWorkspaceId = persistedExecutionWorkspace.id;
+        await db
+          .update(heartbeatRuns)
+          .set({
+            contextSnapshot: context,
+            updatedAt: new Date(),
+          })
+          .where(eq(heartbeatRuns.id, run.id));
+      }
+      const acquiredEnvironment = await envOrchestrator.acquireForRun({
+        companyId: agent.companyId,
+        selectedEnvironmentId,
+        localEnvironmentId: localEnvironment.id,
+        adapterType: agent.adapterType,
+        issueId: issueId ?? null,
+        heartbeatRunId: run.id,
+        agentId: agent.id,
+        persistedExecutionWorkspace,
+        executionWorkspaceSettings: environmentExecutionWorkspaceSettings,
       });
-    }
-    if (issueId && persistedExecutionWorkspace) {
-      const nextIssueWorkspaceMode = issueExecutionWorkspaceModeForPersistedWorkspace(persistedExecutionWorkspace.mode);
-      const shouldSwitchIssueToExistingWorkspace =
-        issueRef?.executionWorkspacePreference === "reuse_existing" ||
-        requestedExecutionWorkspaceMode === "isolated_workspace" ||
-        requestedExecutionWorkspaceMode === "operator_branch";
-      const nextIssuePatch: Record<string, unknown> = {};
-      if (issueRef?.executionWorkspaceId !== persistedExecutionWorkspace.id) {
-        nextIssuePatch.executionWorkspaceId = persistedExecutionWorkspace.id;
-      }
-      if (resolvedProjectWorkspaceId && issueRef?.projectWorkspaceId !== resolvedProjectWorkspaceId) {
-        nextIssuePatch.projectWorkspaceId = resolvedProjectWorkspaceId;
-      }
-      if (shouldSwitchIssueToExistingWorkspace) {
-        nextIssuePatch.executionWorkspacePreference = "reuse_existing";
-        nextIssuePatch.executionWorkspaceSettings = {
-          ...(issueExecutionWorkspaceSettings ?? {}),
-          mode: nextIssueWorkspaceMode,
-        };
-      }
-      if (Object.keys(nextIssuePatch).length > 0) {
-        await issuesSvc.update(issueId, nextIssuePatch);
-      }
-    }
-    if (persistedExecutionWorkspace) {
-      context.executionWorkspaceId = persistedExecutionWorkspace.id;
-      await db
-        .update(heartbeatRuns)
-        .set({
-          contextSnapshot: context,
-          updatedAt: new Date(),
-        })
-        .where(eq(heartbeatRuns.id, run.id));
-    }
-    const acquiredEnvironment = await envOrchestrator.acquireForRun({
-      companyId: agent.companyId,
-      selectedEnvironmentId,
-      localEnvironmentId: localEnvironment.id,
-      adapterType: agent.adapterType,
-      issueId: issueId ?? null,
-      heartbeatRunId: run.id,
-      agentId: agent.id,
-      persistedExecutionWorkspace,
-      executionWorkspaceSettings: environmentExecutionWorkspaceSettings,
-    });
-    const selectedEnvironment = acquiredEnvironment.environment;
-    // Defense-in-depth: re-check the actually-acquired environment against the
-    // execution allowlist. Even if selection were bypassed, a denied (local/ssh/
-    // non-k8s) environment FAILS the run here rather than executing untrusted.
-    const allowlistDecision = evaluateExecutionAllowlist(executionPolicy, {
-      driver: selectedEnvironment.driver,
-      provider:
-        typeof selectedEnvironment.config?.provider === "string"
-          ? selectedEnvironment.config.provider
-          : null,
-    });
-    if (!allowlistDecision.allowed) {
-      logger.error(
-        {
-          runId: run.id,
-          issueId,
-          agentId: agent.id,
-          environmentId: selectedEnvironment.id,
-          deniedDriver: allowlistDecision.deniedDriver,
-          deniedProvider: allowlistDecision.deniedProvider,
-        },
-        "Execution allowlist denied the resolved environment; failing run",
-      );
-      throw new Error(allowlistDecision.reason);
-    }
-    let activeEnvironmentLease = {
-      environment: acquiredEnvironment.environment,
-      lease: acquiredEnvironment.lease,
-      leaseContext: acquiredEnvironment.leaseContext,
-    };
-    const realizationResult = await envOrchestrator.realizeForRun({
-      environment: selectedEnvironment,
-      lease: activeEnvironmentLease.lease,
-      adapterType: agent.adapterType,
-      companyId: agent.companyId,
-      issueId: issueId ?? null,
-      heartbeatRunId: run.id,
-      executionWorkspace,
-      effectiveExecutionWorkspaceMode,
-      persistedExecutionWorkspace,
-    });
-    activeEnvironmentLease = {
-      ...activeEnvironmentLease,
-      lease: realizationResult.lease,
-    };
-    persistedExecutionWorkspace = realizationResult.persistedExecutionWorkspace;
-    const workspaceRealization = realizationResult.workspaceRealization;
-    const executionTarget = realizationResult.executionTarget;
-    const remoteExecution = realizationResult.remoteExecution;
-    if (!executionTarget || executionTarget.kind === "local") {
-      try {
-        runScratch = await prepareHeartbeatRunScratch({
-          companyId: agent.companyId,
-          agentId: agent.id,
-          runId: run.id,
-          issueId: issueRef?.id ?? null,
-          issueIdentifier: issueRef?.identifier ?? null,
-        });
-        const existingRuntimeEnv = parseObject(runtimeConfig.env);
-        const scratchEnv = buildHeartbeatRunScratchEnv(existingRuntimeEnv, runScratch);
-        runtimeConfig = {
-          ...runtimeConfig,
-          env: {
-            ...existingRuntimeEnv,
-            ...scratchEnv.env,
-          },
-        };
-        context.paperclipScratch = {
-          type: "heartbeat_run",
-          dir: runScratch.dir,
-          cleanupPolicy: "terminal_run",
-          marker: HEARTBEAT_RUN_SCRATCH_MARKER,
-          tempKeysApplied: scratchEnv.tempKeysApplied,
-        };
-      } catch (scratchPrepareError) {
-        runScratch = null;
-        delete context.paperclipScratch;
-        logger.warn(
+      const selectedEnvironment = acquiredEnvironment.environment;
+      // Defense-in-depth: re-check the actually-acquired environment against the
+      // execution allowlist. Even if selection were bypassed, a denied (local/ssh/
+      // non-k8s) environment FAILS the run here rather than executing untrusted.
+      const allowlistDecision = evaluateExecutionAllowlist(executionPolicy, {
+        driver: selectedEnvironment.driver,
+        provider:
+          typeof selectedEnvironment.config?.provider === "string"
+            ? selectedEnvironment.config.provider
+            : null,
+      });
+      if (!allowlistDecision.allowed) {
+        logger.error(
           {
-            err: scratchPrepareError,
             runId: run.id,
             issueId,
             agentId: agent.id,
+            environmentId: selectedEnvironment.id,
+            deniedDriver: allowlistDecision.deniedDriver,
+            deniedProvider: allowlistDecision.deniedProvider,
           },
-          "failed to prepare heartbeat run scratch directory; continuing without scratch env",
+          "Execution allowlist denied the resolved environment; failing run",
         );
+        throw new Error(allowlistDecision.reason);
       }
-    } else {
-      delete context.paperclipScratch;
-    }
-    context.paperclipEnvironment = {
-      id: selectedEnvironment.id,
-      name: selectedEnvironment.name,
-      driver: selectedEnvironment.driver,
-      leaseId: activeEnvironmentLease.lease.id,
-      workspaceRealization,
-      ...(typeof activeEnvironmentLease.lease.metadata?.remoteCwd === "string"
-        ? {
+      let activeEnvironmentLease = {
+        environment: acquiredEnvironment.environment,
+        lease: acquiredEnvironment.lease,
+        leaseContext: acquiredEnvironment.leaseContext,
+      };
+      const realizationResult = await envOrchestrator.realizeForRun({
+        environment: selectedEnvironment,
+        lease: activeEnvironmentLease.lease,
+        adapterType: agent.adapterType,
+        companyId: agent.companyId,
+        issueId: issueId ?? null,
+        heartbeatRunId: run.id,
+        executionWorkspace,
+        effectiveExecutionWorkspaceMode,
+        persistedExecutionWorkspace,
+      });
+      activeEnvironmentLease = {
+        ...activeEnvironmentLease,
+        lease: realizationResult.lease,
+      };
+      persistedExecutionWorkspace = realizationResult.persistedExecutionWorkspace;
+      const workspaceRealization = realizationResult.workspaceRealization;
+      const executionTarget = realizationResult.executionTarget;
+      const remoteExecution = realizationResult.remoteExecution;
+      if (!executionTarget || executionTarget.kind === "local") {
+        try {
+          runScratch = await prepareHeartbeatRunScratch({
+            companyId: agent.companyId,
+            agentId: agent.id,
+            runId: run.id,
+            issueId: issueRef?.id ?? null,
+            issueIdentifier: issueRef?.identifier ?? null,
+          });
+          const existingRuntimeEnv = parseObject(runtimeConfig.env);
+          const scratchEnv = buildHeartbeatRunScratchEnv(existingRuntimeEnv, runScratch);
+          runtimeConfig = {
+            ...runtimeConfig,
+            env: {
+              ...existingRuntimeEnv,
+              ...scratchEnv.env,
+            },
+          };
+          context.paperclipScratch = {
+            type: "heartbeat_run",
+            dir: runScratch.dir,
+            cleanupPolicy: "terminal_run",
+            marker: HEARTBEAT_RUN_SCRATCH_MARKER,
+            tempKeysApplied: scratchEnv.tempKeysApplied,
+          };
+        } catch (scratchPrepareError) {
+          runScratch = null;
+          delete context.paperclipScratch;
+          logger.warn(
+            {
+              err: scratchPrepareError,
+              runId: run.id,
+              issueId,
+              agentId: agent.id,
+            },
+            "failed to prepare heartbeat run scratch directory; continuing without scratch env",
+          );
+        }
+      } else {
+        delete context.paperclipScratch;
+      }
+      context.paperclipEnvironment = {
+        id: selectedEnvironment.id,
+        name: selectedEnvironment.name,
+        driver: selectedEnvironment.driver,
+        leaseId: activeEnvironmentLease.lease.id,
+        workspaceRealization,
+        ...(typeof activeEnvironmentLease.lease.metadata?.remoteCwd === "string"
+          ? {
             remoteCwd: activeEnvironmentLease.lease.metadata.remoteCwd,
             host:
               typeof activeEnvironmentLease.lease.metadata?.host === "string"
@@ -12990,591 +12989,638 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
                 ? activeEnvironmentLease.lease.metadata.username
                 : undefined,
           }
-        : {}),
-    };
-    await db
-      .update(heartbeatRuns)
-      .set({
-        contextSnapshot: context,
-        updatedAt: new Date(),
-      })
-      .where(eq(heartbeatRuns.id, run.id));
-    const runtimeSessionResolution = resolveRuntimeSessionParamsForWorkspace({
-      agentId: agent.id,
-      previousSessionParams,
-      resolvedWorkspace: {
-        ...resolvedWorkspace,
-        cwd: executionWorkspace.cwd,
-      },
-    });
-    const runtimeSessionParams = runtimeSessionResolution.sessionParams;
-    const runtimeWorkspaceWarnings = [
-      ...resolvedWorkspace.warnings,
-      ...executionWorkspace.warnings,
-      ...(runtimeSessionResolution.warning ? [runtimeSessionResolution.warning] : []),
-      ...(requestedShouldReuseExisting && workspaceConfigFreshness.reasons.length > 0
-        ? [
+          : {}),
+      };
+      await db
+        .update(heartbeatRuns)
+        .set({
+          contextSnapshot: context,
+          updatedAt: new Date(),
+        })
+        .where(eq(heartbeatRuns.id, run.id));
+      const runtimeSessionResolution = resolveRuntimeSessionParamsForWorkspace({
+        agentId: agent.id,
+        previousSessionParams,
+        resolvedWorkspace: {
+          ...resolvedWorkspace,
+          cwd: executionWorkspace.cwd,
+        },
+      });
+      const runtimeSessionParams = runtimeSessionResolution.sessionParams;
+      const runtimeWorkspaceWarnings = [
+        ...resolvedWorkspace.warnings,
+        ...executionWorkspace.warnings,
+        ...(runtimeSessionResolution.warning ? [runtimeSessionResolution.warning] : []),
+        ...(requestedShouldReuseExisting && workspaceConfigFreshness.reasons.length > 0
+          ? [
             `Execution workspace reuse freshness action "${workspaceConfigFreshness.action}" because ${workspaceConfigFreshness.reasons.join("; ")}.`,
           ]
-        : []),
-      ...(resetTaskSession && sessionResetReason
-        ? [
+          : []),
+        ...(resetTaskSession && sessionResetReason
+          ? [
             taskKey
               ? `Skipping saved session resume for task "${taskKey}" because ${sessionResetReason}.`
               : `Skipping saved session resume because ${sessionResetReason}.`,
           ]
-        : []),
-    ];
-    context.paperclipWorkspace = {
-      cwd: executionWorkspace.cwd,
-      source: executionWorkspace.source,
-      mode: effectiveExecutionWorkspaceMode,
-      strategy: executionWorkspace.strategy,
-      projectId: executionWorkspace.projectId,
-      workspaceId: executionWorkspace.workspaceId,
-      repoUrl: executionWorkspace.repoUrl,
-      repoRef: executionWorkspace.repoRef,
-      branchName: executionWorkspace.branchName,
-      worktreePath: executionWorkspace.worktreePath,
-      realization: workspaceRealization,
-      agentHome: await (async () => {
-        const home = resolveDefaultAgentWorkspaceDir(agent.id);
-        await fs.mkdir(home, { recursive: true });
-        return home;
-      })(),
-    };
-    context.paperclipWorkspaces = resolvedWorkspace.workspaceHints;
-    // The wake payload is built before the execution workspace is resolved, so
-    // attach the branch pin here; the shared wake-prompt renderer surfaces it as
-    // a one-time "stay on this branch" hint on non-resumed sessions.
-    if (executionWorkspace.branchName) {
-      const wakePayloadForWorkspace = parseObject(context[PAPERCLIP_WAKE_PAYLOAD_KEY]);
-      context[PAPERCLIP_WAKE_PAYLOAD_KEY] = {
-        ...wakePayloadForWorkspace,
-        executionWorkspace: { branchName: executionWorkspace.branchName },
+          : []),
+      ];
+      context.paperclipWorkspace = {
+        cwd: executionWorkspace.cwd,
+        source: executionWorkspace.source,
+        mode: effectiveExecutionWorkspaceMode,
+        strategy: executionWorkspace.strategy,
+        projectId: executionWorkspace.projectId,
+        workspaceId: executionWorkspace.workspaceId,
+        repoUrl: executionWorkspace.repoUrl,
+        repoRef: executionWorkspace.repoRef,
+        branchName: executionWorkspace.branchName,
+        worktreePath: executionWorkspace.worktreePath,
+        realization: workspaceRealization,
+        agentHome: await (async () => {
+          const home = resolveDefaultAgentWorkspaceDir(agent.id);
+          await fs.mkdir(home, { recursive: true });
+          return home;
+        })(),
       };
-    }
-    const runtimeServiceIntents = (() => {
-      const runtimeConfig = parseObject(hostExecutionWorkspaceConfig.workspaceRuntime);
-      return Array.isArray(runtimeConfig.services)
-        ? runtimeConfig.services.filter(
+      context.paperclipWorkspaces = resolvedWorkspace.workspaceHints;
+      // The wake payload is built before the execution workspace is resolved, so
+      // attach the branch pin here; the shared wake-prompt renderer surfaces it as
+      // a one-time "stay on this branch" hint on non-resumed sessions.
+      if (executionWorkspace.branchName) {
+        const wakePayloadForWorkspace = parseObject(context[PAPERCLIP_WAKE_PAYLOAD_KEY]);
+        context[PAPERCLIP_WAKE_PAYLOAD_KEY] = {
+          ...wakePayloadForWorkspace,
+          executionWorkspace: { branchName: executionWorkspace.branchName },
+        };
+      }
+      const runtimeServiceIntents = (() => {
+        const runtimeConfig = parseObject(hostExecutionWorkspaceConfig.workspaceRuntime);
+        return Array.isArray(runtimeConfig.services)
+          ? runtimeConfig.services.filter(
             (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
           )
-        : [];
-    })();
-    assertLowTrustRuntimeServicesAllowed({
-      resolution: trustPreset,
-      runtimeServiceCount: runtimeServiceIntents.length,
-    });
-    if (runtimeServiceIntents.length > 0) {
-      context.paperclipRuntimeServiceIntents = runtimeServiceIntents;
-    } else {
-      delete context.paperclipRuntimeServiceIntents;
-    }
-    if (executionWorkspace.projectId && !readNonEmptyString(context.projectId)) {
-      context.projectId = executionWorkspace.projectId;
-    }
-    const runtimeSessionFallback = taskKey || resetTaskSession
-      ? null
-      : isCanonicalSessionIdForAdapter(agent.adapterType, runtime.sessionId)
-        ? runtime.sessionId
-        : null;
-    const runtimeSessionDisplayId = truncateDisplayId(
-      explicitResumeSessionDisplayId ??
+          : [];
+      })();
+      assertLowTrustRuntimeServicesAllowed({
+        resolution: trustPreset,
+        runtimeServiceCount: runtimeServiceIntents.length,
+      });
+      if (runtimeServiceIntents.length > 0) {
+        context.paperclipRuntimeServiceIntents = runtimeServiceIntents;
+      } else {
+        delete context.paperclipRuntimeServiceIntents;
+      }
+      if (executionWorkspace.projectId && !readNonEmptyString(context.projectId)) {
+        context.projectId = executionWorkspace.projectId;
+      }
+      const runtimeSessionFallback = taskKey || resetTaskSession
+        ? null
+        : isCanonicalSessionIdForAdapter(agent.adapterType, runtime.sessionId)
+          ? runtime.sessionId
+          : null;
+      const runtimeSessionDisplayId = truncateDisplayId(
+        explicitResumeSessionDisplayId ??
         taskSessionForRun?.sessionDisplayId ??
         (sessionCodec.getDisplayId ? sessionCodec.getDisplayId(runtimeSessionParams) : null) ??
         readNonEmptyString(runtimeSessionParams?.sessionId) ??
         runtimeSessionFallback,
-    );
-    let previousSessionDisplayId = requiresCanonicalSessionIds(agent.adapterType)
-      ? truncateDisplayId(
+      );
+      let previousSessionDisplayId = requiresCanonicalSessionIds(agent.adapterType)
+        ? truncateDisplayId(
           readNonEmptyString(previousSessionParams?.sessionId) ??
-            (isCanonicalSessionIdForAdapter(agent.adapterType, runtimeSessionDisplayId) ? runtimeSessionDisplayId : null) ??
-            runtimeSessionFallback,
+          (isCanonicalSessionIdForAdapter(agent.adapterType, runtimeSessionDisplayId) ? runtimeSessionDisplayId : null) ??
+          runtimeSessionFallback,
         )
-      : runtimeSessionDisplayId;
-    let runtimeSessionIdForAdapter =
-      readNonEmptyString(runtimeSessionParams?.sessionId) ?? runtimeSessionFallback;
-    let runtimeSessionParamsForAdapter = normalizeSessionParams(
-      stripPaperclipSessionMetadataFromSessionParams(runtimeSessionParams),
-    );
+        : runtimeSessionDisplayId;
+      let runtimeSessionIdForAdapter =
+        readNonEmptyString(runtimeSessionParams?.sessionId) ?? runtimeSessionFallback;
+      let runtimeSessionParamsForAdapter = normalizeSessionParams(
+        stripPaperclipSessionMetadataFromSessionParams(runtimeSessionParams),
+      );
 
-    const sessionCompaction = await evaluateSessionCompaction({
-      agent,
-      sessionId: previousSessionDisplayId ?? runtimeSessionIdForAdapter,
-      issueId,
-      continuationSummaryBody: continuationSummary?.body ?? null,
-    });
-    if (sessionCompaction.rotate) {
-      context.paperclipSessionHandoffMarkdown = sessionCompaction.handoffMarkdown;
-      context.paperclipSessionRotationReason = sessionCompaction.reason;
-      context.paperclipPreviousSessionId = previousSessionDisplayId ?? runtimeSessionIdForAdapter;
-      runtimeSessionIdForAdapter = null;
-      runtimeSessionParamsForAdapter = null;
-      previousSessionDisplayId = null;
-      if (sessionCompaction.reason) {
-        runtimeWorkspaceWarnings.push(
-          `Starting a fresh session because ${sessionCompaction.reason}.`,
-        );
-      }
-    } else {
-      delete context.paperclipSessionHandoffMarkdown;
-      delete context.paperclipSessionRotationReason;
-      delete context.paperclipPreviousSessionId;
-    }
-
-    const runtimeForAdapter = {
-      sessionId: runtimeSessionIdForAdapter,
-      sessionParams: runtimeSessionParamsForAdapter,
-      sessionDisplayId: previousSessionDisplayId,
-      taskKey,
-    };
-    const configFreshnessResultMetadata = {
-      version: sessionConfigMetadata.version,
-      session: {
-        fingerprintVersion: sessionConfigMetadata.version,
-        categories: sessionConfigMetadata.categories,
-        reset: resetTaskSession,
-        resetReasons: sessionConfigFreshness.reasons,
-        changedCategories: sessionConfigFreshness.changedCategories,
-        taskSessionAvailable: taskSession != null,
-        taskSessionReused: taskSessionForRun != null,
-        storedFingerprintPresent: Boolean(sessionConfigFreshness.storedFingerprint),
-        nextFingerprint: sessionConfigFreshness.nextFingerprint,
-      },
-      workspace: {
-        fingerprintVersion: latestWorkspaceConfigMetadata.version,
-        categories: latestWorkspaceConfigMetadata.categories,
-        action: workspaceConfigFreshness.action,
-        changedCategories: workspaceConfigFreshness.changedCategories,
-        reasons: workspaceConfigFreshness.reasons,
-        reuseRequested: requestedShouldReuseExisting,
-        workspaceReused: Boolean(reusedExecutionWorkspace),
-        configSnapshotRefreshed: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
-        storedFingerprintPresent: workspaceConfigFreshness.storedFingerprintPresent,
-        storedFingerprint: workspaceConfigFreshness.storedFingerprint,
-        inferredFingerprint: workspaceConfigFreshness.inferredFingerprint,
-        nextFingerprint: workspaceConfigFreshness.nextFingerprint,
-        previousWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
-        activeWorkspaceId: persistedExecutionWorkspace?.id ?? null,
-      },
-    };
-
-    let seq = 1;
-    let handle: RunLogHandle | null = null;
-    let stdoutExcerpt = "";
-    let stderrExcerpt = "";
-    let outputSeq = Number(run.lastOutputSeq ?? 0);
-    let lastOutputFlushAt: Date | null = run.lastOutputAt ?? null;
-    let lastLogRuntimeStatusTouchMs = 0;
-    const outputProgressState: {
-      pending: {
-        at: Date;
-        seq: number;
-        stream: "stdout" | "stderr";
-        bytes: number;
-      } | null;
-    } = { pending: null };
-    let persistedLogBytes = Number(run.logBytes ?? 0);
-    const flushOutputProgress = async (opts?: { force?: boolean }) => {
-      const pendingOutputProgress = outputProgressState.pending;
-      if (!pendingOutputProgress) return;
-      const shouldFlush =
-        opts?.force === true ||
-        !lastOutputFlushAt ||
-        pendingOutputProgress.at.getTime() - lastOutputFlushAt.getTime() >= ACTIVE_RUN_OUTPUT_PROGRESS_FLUSH_INTERVAL_MS;
-      if (!shouldFlush) return;
-      await db
-        .update(heartbeatRuns)
-        .set({
-          lastOutputAt: pendingOutputProgress.at,
-          lastOutputSeq: pendingOutputProgress.seq,
-          lastOutputStream: pendingOutputProgress.stream,
-          lastOutputBytes: pendingOutputProgress.bytes,
-          updatedAt: new Date(),
-        })
-        .where(eq(heartbeatRuns.id, run.id));
-      lastOutputFlushAt = pendingOutputProgress.at;
-      outputProgressState.pending = null;
-    };
-    try {
-      const startedAt = run.startedAt ?? new Date();
-      const runningWithSession = await db
-        .update(heartbeatRuns)
-        .set({
-          startedAt,
-          sessionIdBefore: runtimeForAdapter.sessionDisplayId ?? runtimeForAdapter.sessionId,
-          contextSnapshot: context,
-          updatedAt: new Date(),
-        })
-        .where(eq(heartbeatRuns.id, run.id))
-        .returning()
-        .then((rows) => rows[0] ?? null);
-      if (runningWithSession) run = runningWithSession;
-
-      // Pause Durability: flip to "running" ONLY if the agent is still invokable.
-      // Atomic conditional UPDATE is the sole gate (no read-then-write); 0 rows => abort.
-      const runningAgent = await db
-        .update(agents)
-        .set({ status: "running", updatedAt: new Date() })
-        .where(and(eq(agents.id, agent.id), notInArray(agents.status, [...DIRECT_NON_INVOKABLE_STATUSES])))
-        .returning()
-        .then((rows) => rows[0] ?? null);
-
-      if (!runningAgent) {
-        logger.warn(
-          { agentId: agent.id, runId: run.id, previousStatus: agent.status },
-          "execution-start aborted: agent not invokable",
-        );
-        const abortReason = "Cancelled: agent not invokable at execution-start";
-        await setRunStatus(run.id, "cancelled", {
-          finishedAt: new Date(),
-          error: abortReason,
-          errorCode: "agent_not_invokable",
-          ...(agent ? {
-            resultJson: mergeRunStopMetadataForAgent(agent, "cancelled", {
-              resultJson: parseObject(run.resultJson),
-              errorCode: "agent_not_invokable",
-              errorMessage: abortReason,
-            }),
-          } : {}),
-        });
-        await setWakeupStatus(run.wakeupRequestId, "cancelled", {
-          finishedAt: new Date(),
-          error: abortReason,
-        });
-        await releaseIssueExecutionAndPromote(run);
-        return;
+      const sessionCompaction = await evaluateSessionCompaction({
+        agent,
+        sessionId: previousSessionDisplayId ?? runtimeSessionIdForAdapter,
+        issueId,
+        continuationSummaryBody: continuationSummary?.body ?? null,
+      });
+      if (sessionCompaction.rotate) {
+        context.paperclipSessionHandoffMarkdown = sessionCompaction.handoffMarkdown;
+        context.paperclipSessionRotationReason = sessionCompaction.reason;
+        context.paperclipPreviousSessionId = previousSessionDisplayId ?? runtimeSessionIdForAdapter;
+        runtimeSessionIdForAdapter = null;
+        runtimeSessionParamsForAdapter = null;
+        previousSessionDisplayId = null;
+        if (sessionCompaction.reason) {
+          runtimeWorkspaceWarnings.push(
+            `Starting a fresh session because ${sessionCompaction.reason}.`,
+          );
+        }
+      } else {
+        delete context.paperclipSessionHandoffMarkdown;
+        delete context.paperclipSessionRotationReason;
+        delete context.paperclipPreviousSessionId;
       }
 
-      publishLiveEvent({
-        companyId: runningAgent.companyId,
-        type: "agent.status",
-        payload: {
-          agentId: runningAgent.id,
-          status: runningAgent.status,
-          outcome: "running",
+      const runtimeForAdapter = {
+        sessionId: runtimeSessionIdForAdapter,
+        sessionParams: runtimeSessionParamsForAdapter,
+        sessionDisplayId: previousSessionDisplayId,
+        taskKey,
+      };
+      const configFreshnessResultMetadata = {
+        version: sessionConfigMetadata.version,
+        session: {
+          fingerprintVersion: sessionConfigMetadata.version,
+          categories: sessionConfigMetadata.categories,
+          reset: resetTaskSession,
+          resetReasons: sessionConfigFreshness.reasons,
+          changedCategories: sessionConfigFreshness.changedCategories,
+          taskSessionAvailable: taskSession != null,
+          taskSessionReused: taskSessionForRun != null,
+          storedFingerprintPresent: Boolean(sessionConfigFreshness.storedFingerprint),
+          nextFingerprint: sessionConfigFreshness.nextFingerprint,
         },
-      });
+        workspace: {
+          fingerprintVersion: latestWorkspaceConfigMetadata.version,
+          categories: latestWorkspaceConfigMetadata.categories,
+          action: workspaceConfigFreshness.action,
+          changedCategories: workspaceConfigFreshness.changedCategories,
+          reasons: workspaceConfigFreshness.reasons,
+          reuseRequested: requestedShouldReuseExisting,
+          workspaceReused: Boolean(reusedExecutionWorkspace),
+          configSnapshotRefreshed: resolvedWorkspaceReusePolicy.shouldRefreshWorkspaceConfigSnapshot,
+          storedFingerprintPresent: workspaceConfigFreshness.storedFingerprintPresent,
+          storedFingerprint: workspaceConfigFreshness.storedFingerprint,
+          inferredFingerprint: workspaceConfigFreshness.inferredFingerprint,
+          nextFingerprint: workspaceConfigFreshness.nextFingerprint,
+          previousWorkspaceId: workspaceReuseRequest.requestedExecutionWorkspaceId,
+          activeWorkspaceId: persistedExecutionWorkspace?.id ?? null,
+        },
+      };
 
-      const currentRun = run;
-      await appendRunEvent(currentRun, seq++, {
-        eventType: "lifecycle",
-        stream: "system",
-        level: "info",
-        message: "run started",
-      });
+      let seq = 1;
+      let handle: RunLogHandle | null = null;
+      let stdoutExcerpt = "";
+      let stderrExcerpt = "";
+      let outputSeq = Number(run.lastOutputSeq ?? 0);
+      let lastOutputFlushAt: Date | null = run.lastOutputAt ?? null;
+      let lastLogRuntimeStatusTouchMs = 0;
+      const outputProgressState: {
+        pending: {
+          at: Date;
+          seq: number;
+          stream: "stdout" | "stderr";
+          bytes: number;
+        } | null;
+      } = { pending: null };
+      let persistedLogBytes = Number(run.logBytes ?? 0);
+      const flushOutputProgress = async (opts?: { force?: boolean }) => {
+        const pendingOutputProgress = outputProgressState.pending;
+        if (!pendingOutputProgress) return;
+        const shouldFlush =
+          opts?.force === true ||
+          !lastOutputFlushAt ||
+          pendingOutputProgress.at.getTime() - lastOutputFlushAt.getTime() >= ACTIVE_RUN_OUTPUT_PROGRESS_FLUSH_INTERVAL_MS;
+        if (!shouldFlush) return;
+        await db
+          .update(heartbeatRuns)
+          .set({
+            lastOutputAt: pendingOutputProgress.at,
+            lastOutputSeq: pendingOutputProgress.seq,
+            lastOutputStream: pendingOutputProgress.stream,
+            lastOutputBytes: pendingOutputProgress.bytes,
+            updatedAt: new Date(),
+          })
+          .where(eq(heartbeatRuns.id, run.id));
+        lastOutputFlushAt = pendingOutputProgress.at;
+        outputProgressState.pending = null;
+      };
+      try {
+        const startedAt = run.startedAt ?? new Date();
+        const runningWithSession = await db
+          .update(heartbeatRuns)
+          .set({
+            startedAt,
+            sessionIdBefore: runtimeForAdapter.sessionDisplayId ?? runtimeForAdapter.sessionId,
+            contextSnapshot: context,
+            updatedAt: new Date(),
+          })
+          .where(eq(heartbeatRuns.id, run.id))
+          .returning()
+          .then((rows) => rows[0] ?? null);
+        if (runningWithSession) run = runningWithSession;
 
-      handle = await runLogStore.begin({
-        companyId: run.companyId,
-        agentId: run.agentId,
-        runId,
-      });
+        // Pause Durability: flip to "running" ONLY if the agent is still invokable.
+        // Atomic conditional UPDATE is the sole gate (no read-then-write); 0 rows => abort.
+        const runningAgent = await db
+          .update(agents)
+          .set({ status: "running", updatedAt: new Date() })
+          .where(and(eq(agents.id, agent.id), notInArray(agents.status, [...DIRECT_NON_INVOKABLE_STATUSES])))
+          .returning()
+          .then((rows) => rows[0] ?? null);
 
-      await db
-        .update(heartbeatRuns)
-        .set({
-          logStore: handle.store,
-          logRef: handle.logRef,
-          updatedAt: new Date(),
-        })
-        .where(eq(heartbeatRuns.id, runId));
-
-      const currentUserRedactionOptions = await getCurrentUserRedactionOptions();
-      const onLog = async (stream: "stdout" | "stderr", chunk: string) => {
-        const sanitizedChunk = compactRunLogChunk(
-          redactCurrentUserText(chunk, currentUserRedactionOptions),
-        );
-        if (stream === "stdout") stdoutExcerpt = appendExcerpt(stdoutExcerpt, sanitizedChunk);
-        if (stream === "stderr") stderrExcerpt = appendExcerpt(stderrExcerpt, sanitizedChunk);
-        const ts = new Date().toISOString();
-
-        outputSeq += 1;
-        const chunkSeq = outputSeq;
-        let appendedBytes = 0;
-        if (handle) {
-          appendedBytes = await runLogStore.append(handle, {
-            stream,
-            chunk: sanitizedChunk,
-            ts,
-            seq: chunkSeq,
+        if (!runningAgent) {
+          logger.warn(
+            { agentId: agent.id, runId: run.id, previousStatus: agent.status },
+            "execution-start aborted: agent not invokable",
+          );
+          const abortReason = "Cancelled: agent not invokable at execution-start";
+          await setRunStatus(run.id, "cancelled", {
+            finishedAt: new Date(),
+            error: abortReason,
+            errorCode: "agent_not_invokable",
+            ...(agent ? {
+              resultJson: mergeRunStopMetadataForAgent(agent, "cancelled", {
+                resultJson: parseObject(run.resultJson),
+                errorCode: "agent_not_invokable",
+                errorMessage: abortReason,
+              }),
+            } : {}),
           });
-          persistedLogBytes += appendedBytes;
-        }
-        outputProgressState.pending = {
-          at: new Date(ts),
-          seq: chunkSeq,
-          stream,
-          bytes: persistedLogBytes,
-        };
-        await flushOutputProgress();
-
-        // Streamed CLI output is real run activity: keep the in-memory
-        // runtime status ("Working... / X ago") fresh between structured
-        // events so sandbox runs with mid-run log streaming never show a
-        // minutes-stale timestamp. Throttled to avoid churning the live
-        // event stream on every 250ms tail chunk.
-        const logActivityAt = new Date(ts);
-        if (
-          isHeartbeatRunRuntimeStatusActive(run.status) &&
-          logActivityAt.getTime() - lastLogRuntimeStatusTouchMs >=
-            ACTIVE_RUN_LOG_RUNTIME_STATUS_REFRESH_INTERVAL_MS
-        ) {
-          lastLogRuntimeStatusTouchMs = logActivityAt.getTime();
-          const touchedStatus = touchHeartbeatRunRuntimeStatus({
-            companyId: run.companyId,
-            issueId,
-            agentId: run.agentId,
-            runId: run.id,
-            at: logActivityAt,
+          await setWakeupStatus(run.wakeupRequestId, "cancelled", {
+            finishedAt: new Date(),
+            error: abortReason,
           });
-          if (touchedStatus) publishHeartbeatRunRuntimeProgress(touchedStatus);
+          await releaseIssueExecutionAndPromote(run);
+          return;
         }
-
-        const payloadChunk =
-          sanitizedChunk.length > MAX_LIVE_LOG_CHUNK_BYTES
-            ? sanitizedChunk.slice(sanitizedChunk.length - MAX_LIVE_LOG_CHUNK_BYTES)
-            : sanitizedChunk;
 
         publishLiveEvent({
-          companyId: run.companyId,
-          type: "heartbeat.run.log",
+          companyId: runningAgent.companyId,
+          type: "agent.status",
           payload: {
-            runId: run.id,
-            agentId: run.agentId,
-            issueId,
-            ts,
-            seq: chunkSeq,
-            stream,
-            chunk: payloadChunk,
-            truncated: payloadChunk.length !== sanitizedChunk.length,
+            agentId: runningAgent.id,
+            status: runningAgent.status,
+            outcome: "running",
           },
         });
-      };
-      if (runScopedMentionedSkillKeys.length > 0) {
-        await onLog(
-          "stdout",
-          `[paperclip] Enabled run-scoped skills from issue mentions: ${runScopedMentionedSkillKeys.join(", ")}\n`,
-        );
-      }
-      for (const warning of runtimeWorkspaceWarnings) {
-        const logEntry = formatRuntimeWorkspaceWarningLog(warning);
-        await onLog(logEntry.stream, logEntry.chunk);
-      }
-      await assertGitSensitiveAdapterWorkspaceValid({
-        adapterType: agent.adapterType,
-        agentId: agent.id,
-        issue: issueRef
-          ? {
+
+        const currentRun = run;
+        await appendRunEvent(currentRun, seq++, {
+          eventType: "lifecycle",
+          stream: "system",
+          level: "info",
+          message: "run started",
+        });
+
+        handle = await runLogStore.begin({
+          companyId: run.companyId,
+          agentId: run.agentId,
+          runId,
+        });
+
+        await db
+          .update(heartbeatRuns)
+          .set({
+            logStore: handle.store,
+            logRef: handle.logRef,
+            updatedAt: new Date(),
+          })
+          .where(eq(heartbeatRuns.id, runId));
+
+        const currentUserRedactionOptions = await getCurrentUserRedactionOptions();
+        const onLog = async (stream: "stdout" | "stderr", chunk: string) => {
+          const sanitizedChunk = compactRunLogChunk(
+            redactCurrentUserText(chunk, currentUserRedactionOptions),
+          );
+          if (stream === "stdout") stdoutExcerpt = appendExcerpt(stdoutExcerpt, sanitizedChunk);
+          if (stream === "stderr") stderrExcerpt = appendExcerpt(stderrExcerpt, sanitizedChunk);
+          const ts = new Date().toISOString();
+
+          outputSeq += 1;
+          const chunkSeq = outputSeq;
+          let appendedBytes = 0;
+          if (handle) {
+            appendedBytes = await runLogStore.append(handle, {
+              stream,
+              chunk: sanitizedChunk,
+              ts,
+              seq: chunkSeq,
+            });
+            persistedLogBytes += appendedBytes;
+          }
+          outputProgressState.pending = {
+            at: new Date(ts),
+            seq: chunkSeq,
+            stream,
+            bytes: persistedLogBytes,
+          };
+          await flushOutputProgress();
+
+          // Streamed CLI output is real run activity: keep the in-memory
+          // runtime status ("Working... / X ago") fresh between structured
+          // events so sandbox runs with mid-run log streaming never show a
+          // minutes-stale timestamp. Throttled to avoid churning the live
+          // event stream on every 250ms tail chunk.
+          const logActivityAt = new Date(ts);
+          if (
+            isHeartbeatRunRuntimeStatusActive(run.status) &&
+            logActivityAt.getTime() - lastLogRuntimeStatusTouchMs >=
+            ACTIVE_RUN_LOG_RUNTIME_STATUS_REFRESH_INTERVAL_MS
+          ) {
+            lastLogRuntimeStatusTouchMs = logActivityAt.getTime();
+            const touchedStatus = touchHeartbeatRunRuntimeStatus({
+              companyId: run.companyId,
+              issueId,
+              agentId: run.agentId,
+              runId: run.id,
+              at: logActivityAt,
+            });
+            if (touchedStatus) publishHeartbeatRunRuntimeProgress(touchedStatus);
+          }
+
+          const payloadChunk =
+            sanitizedChunk.length > MAX_LIVE_LOG_CHUNK_BYTES
+              ? sanitizedChunk.slice(sanitizedChunk.length - MAX_LIVE_LOG_CHUNK_BYTES)
+              : sanitizedChunk;
+
+          publishLiveEvent({
+            companyId: run.companyId,
+            type: "heartbeat.run.log",
+            payload: {
+              runId: run.id,
+              agentId: run.agentId,
+              issueId,
+              ts,
+              seq: chunkSeq,
+              stream,
+              chunk: payloadChunk,
+              truncated: payloadChunk.length !== sanitizedChunk.length,
+            },
+          });
+        };
+        if (runScopedMentionedSkillKeys.length > 0) {
+          await onLog(
+            "stdout",
+            `[paperclip] Enabled run-scoped skills from issue mentions: ${runScopedMentionedSkillKeys.join(", ")}\n`,
+          );
+        }
+        for (const warning of runtimeWorkspaceWarnings) {
+          const logEntry = formatRuntimeWorkspaceWarningLog(warning);
+          await onLog(logEntry.stream, logEntry.chunk);
+        }
+        await assertGitSensitiveAdapterWorkspaceValid({
+          adapterType: agent.adapterType,
+          agentId: agent.id,
+          issue: issueRef
+            ? {
               id: issueRef.id,
               identifier: issueRef.identifier,
               projectId: issueRef.projectId,
               projectWorkspaceId: issueRef.projectWorkspaceId,
             }
-          : null,
-        resolvedWorkspace,
-        executionWorkspace,
-        persistedExecutionWorkspace,
-        executionTarget,
-        environmentDriver: selectedEnvironment.driver,
-        leaseMetadata: activeEnvironmentLease.lease.metadata,
-      });
-      await assertPushCapabilityCheckoutValid({
-        enabled: pushCapabilityPreflightRequired && executionTarget?.kind === "local",
-        issue: issueRef
-          ? {
+            : null,
+          resolvedWorkspace,
+          executionWorkspace,
+          persistedExecutionWorkspace,
+          executionTarget,
+          environmentDriver: selectedEnvironment.driver,
+          leaseMetadata: activeEnvironmentLease.lease.metadata,
+        });
+        await assertPushCapabilityCheckoutValid({
+          enabled: pushCapabilityPreflightRequired && executionTarget?.kind === "local",
+          issue: issueRef
+            ? {
               id: issueRef.id,
               identifier: issueRef.identifier,
             }
-          : null,
-        cwd: executionWorkspace.cwd,
-      });
-      const adapterEnv = Object.fromEntries(
-        Object.entries(parseObject(resolvedConfig.env)).filter(
-          (entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string",
-        ),
-      );
-      const runtimeServices = await ensureRuntimeServicesForRun({
-        db,
-        runId: run.id,
-        agent: {
-          id: agent.id,
-          name: agent.name,
-          companyId: agent.companyId,
-        },
-        issue: issueRef,
-        workspace: executionWorkspace,
-        executionWorkspaceId: persistedExecutionWorkspace?.id ?? issueRef?.executionWorkspaceId ?? null,
-        config: hostExecutionWorkspaceConfig,
-        adapterEnv,
-        onLog,
-      });
-      if (runtimeServices.length > 0) {
-        context.paperclipRuntimeServices = runtimeServices;
-        context.paperclipRuntimePrimaryUrl =
-          runtimeServices.find((service) => readNonEmptyString(service.url))?.url ?? null;
-        await db
-          .update(heartbeatRuns)
-          .set({
-            contextSnapshot: context,
-            updatedAt: new Date(),
-          })
-          .where(eq(heartbeatRuns.id, run.id));
-      }
-      if (issueId && (executionWorkspace.created || runtimeServices.some((service) => !service.reused))) {
-        try {
-          await issuesSvc.addComment(
-            issueId,
-            buildWorkspaceReadyComment({
-              workspace: executionWorkspace,
-              runtimeServices,
-            }),
-            { agentId: agent.id, runId: run.id },
-          );
-        } catch (err) {
-          await onLog(
-            "stderr",
-            `[paperclip] Failed to post workspace-ready comment: ${err instanceof Error ? err.message : String(err)}\n`,
-          );
+            : null,
+          cwd: executionWorkspace.cwd,
+        });
+        const adapterEnv = Object.fromEntries(
+          Object.entries(parseObject(resolvedConfig.env)).filter(
+            (entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string",
+          ),
+        );
+        const runtimeServices = await ensureRuntimeServicesForRun({
+          db,
+          runId: run.id,
+          agent: {
+            id: agent.id,
+            name: agent.name,
+            companyId: agent.companyId,
+          },
+          issue: issueRef,
+          workspace: executionWorkspace,
+          executionWorkspaceId: persistedExecutionWorkspace?.id ?? issueRef?.executionWorkspaceId ?? null,
+          config: hostExecutionWorkspaceConfig,
+          adapterEnv,
+          onLog,
+        });
+        if (runtimeServices.length > 0) {
+          context.paperclipRuntimeServices = runtimeServices;
+          context.paperclipRuntimePrimaryUrl =
+            runtimeServices.find((service) => readNonEmptyString(service.url))?.url ?? null;
+          await db
+            .update(heartbeatRuns)
+            .set({
+              contextSnapshot: context,
+              updatedAt: new Date(),
+            })
+            .where(eq(heartbeatRuns.id, run.id));
         }
-      }
-      const onAdapterMeta = async (meta: AdapterInvocationMeta) => {
-        if (meta.env && secretKeys.size > 0) {
-          for (const key of secretKeys) {
-            if (key in meta.env) meta.env[key] = "***REDACTED***";
+        if (issueId && (executionWorkspace.created || runtimeServices.some((service) => !service.reused))) {
+          try {
+            await issuesSvc.addComment(
+              issueId,
+              buildWorkspaceReadyComment({
+                workspace: executionWorkspace,
+                runtimeServices,
+              }),
+              { agentId: agent.id, runId: run.id },
+            );
+          } catch (err) {
+            await onLog(
+              "stderr",
+              `[paperclip] Failed to post workspace-ready comment: ${err instanceof Error ? err.message : String(err)}\n`,
+            );
           }
         }
-        const modelProfileMetadata = modelProfileRunMetadata(modelProfileApplication);
-        await appendRunEvent(currentRun, seq++, {
-          eventType: "adapter.invoke",
-          stream: "system",
-          level: "info",
-          message: "adapter invocation",
-          payload: {
-            ...(meta as unknown as Record<string, unknown>),
-            ...(modelProfileMetadata ? { modelProfile: modelProfileMetadata } : {}),
-          },
-        });
-      };
+        const onAdapterMeta = async (meta: AdapterInvocationMeta) => {
+          if (meta.env && secretKeys.size > 0) {
+            for (const key of secretKeys) {
+              if (key in meta.env) meta.env[key] = "***REDACTED***";
+            }
+          }
+          const modelProfileMetadata = modelProfileRunMetadata(modelProfileApplication);
+          await appendRunEvent(currentRun, seq++, {
+            eventType: "adapter.invoke",
+            stream: "system",
+            level: "info",
+            message: "adapter invocation",
+            payload: {
+              ...(meta as unknown as Record<string, unknown>),
+              ...(modelProfileMetadata ? { modelProfile: modelProfileMetadata } : {}),
+            },
+          });
+        };
 
-      const onAdapterEvent = async (event: AdapterRuntimeEvent) => {
-        const eventType = event.eventType.trim();
-        if (!eventType) return;
-        await appendRunEvent(currentRun, seq++, {
-          eventType: eventType.slice(0, 120),
-          stream: event.stream,
-          level: event.level,
-          color: event.color,
-          message: event.message,
-          payload: event.payload,
-        });
-      };
+        const onAdapterEvent = async (event: AdapterRuntimeEvent) => {
+          const eventType = event.eventType.trim();
+          if (!eventType) return;
+          await appendRunEvent(currentRun, seq++, {
+            eventType: eventType.slice(0, 120),
+            stream: event.stream,
+            level: event.level,
+            color: event.color,
+            message: event.message,
+            payload: event.payload,
+          });
+        };
 
-      const adapter = getServerAdapter(agent.adapterType);
-      const localAgentJwtScope =
-        issueRef?.workMode === "skill_test"
-          ? { kind: "skill_test" as const, issueId: issueRef.id }
-          : { kind: "standard" as const };
-      const authToken = adapter.supportsLocalAgentJwt
-        ? createLocalAgentJwt(
-          agent.id,
-          agent.companyId,
-          agent.adapterType,
-          run.id,
-          run.responsibleUserId,
-          localAgentJwtScope,
-        )
-        : null;
-      if (adapter.supportsLocalAgentJwt && !authToken) {
-        logger.warn(
-          {
-            companyId: agent.companyId,
-            agentId: agent.id,
-            runId: run.id,
-            adapterType: agent.adapterType,
-          },
-          "local agent jwt secret missing or invalid; running without injected PAPERCLIP_API_KEY",
-        );
-      }
-      let adapterFinalizeOutcome: "succeeded" | "failed" | null = null;
-      const inspectFinalizeWorkspaceBranch = async () => {
-        const workspaceRecord = persistedExecutionWorkspace?.id
-          ? await executionWorkspacesSvc.getById(persistedExecutionWorkspace.id)
-          : persistedExecutionWorkspace;
-        if (workspaceRecord?.strategyType !== "git_worktree") return null;
+        const adapter = getServerAdapter(agent.adapterType);
+        const localAgentJwtScope =
+          issueRef?.workMode === "skill_test"
+            ? { kind: "skill_test" as const, issueId: issueRef.id }
+            : { kind: "standard" as const };
+        const authToken = adapter.supportsLocalAgentJwt
+          ? createLocalAgentJwt(
+            agent.id,
+            agent.companyId,
+            agent.adapterType,
+            run.id,
+            run.responsibleUserId,
+            localAgentJwtScope,
+          )
+          : null;
+        if (adapter.supportsLocalAgentJwt && !authToken) {
+          logger.warn(
+            {
+              companyId: agent.companyId,
+              agentId: agent.id,
+              runId: run.id,
+              adapterType: agent.adapterType,
+            },
+            "local agent jwt secret missing or invalid; running without injected PAPERCLIP_API_KEY",
+          );
+        }
+        let adapterFinalizeOutcome: "succeeded" | "failed" | null = null;
+        const inspectFinalizeWorkspaceBranch = async () => {
+          const workspaceRecord = persistedExecutionWorkspace?.id
+            ? await executionWorkspacesSvc.getById(persistedExecutionWorkspace.id)
+            : persistedExecutionWorkspace;
+          if (workspaceRecord?.strategyType !== "git_worktree") return null;
 
-        const worktreePath =
-          readNonEmptyString(workspaceRecord.providerRef) ??
-          readNonEmptyString(workspaceRecord.cwd) ??
-          readNonEmptyString(executionWorkspace.worktreePath) ??
-          readNonEmptyString(executionWorkspace.cwd);
-        const expectedBranchName =
-          readNonEmptyString(workspaceRecord.branchName) ??
-          readNonEmptyString(executionWorkspace.branchName);
-        if (!worktreePath || !expectedBranchName) return null;
+          const worktreePath =
+            readNonEmptyString(workspaceRecord.providerRef) ??
+            readNonEmptyString(workspaceRecord.cwd) ??
+            readNonEmptyString(executionWorkspace.worktreePath) ??
+            readNonEmptyString(executionWorkspace.cwd);
+          const expectedBranchName =
+            readNonEmptyString(workspaceRecord.branchName) ??
+            readNonEmptyString(executionWorkspace.branchName);
+          if (!worktreePath || !expectedBranchName) return null;
 
-        const inspection = await inspectManagedGitWorktreeBranch({
-          worktreePath,
-          expectedBranchName,
-        });
-        return { workspaceRecord, inspection };
-      };
-      const recordWorkspaceFinalize = async (
-        status: "succeeded" | "failed",
-        metadata?: Record<string, unknown>,
-      ) => {
-        if (adapterFinalizeOutcome) return;
-        let finalizeBranchMetadata: Record<string, unknown> | null = null;
-        let finalizeBranchRepairMetadata: Record<string, unknown> | null = null;
-        if (status === "succeeded") {
-          const branchInspection = await inspectFinalizeWorkspaceBranch();
-          if (branchInspection) {
-            let inspection = branchInspection.inspection;
-            const initialManagedGitWorktreeBranch = formatManagedGitWorktreeBranchInspection(inspection);
-            if (!inspection.valid && inspection.reasonCode === "branch_mismatch" && inspection.repoRoot) {
-              let repairedExpectedBranchName = inspection.expectedBranchName;
-              try {
-                const coherence = await ensureGitWorktreeBranchCoherent({
-                  db,
-                  repoRoot: inspection.repoRoot,
-                  worktreePath: inspection.worktreePath,
-                  expectedBranchName: inspection.expectedBranchName,
-                  actualBranchName: inspection.actualBranchName,
-                  sourceIssue: issueRef
-                    ? {
+          const inspection = await inspectManagedGitWorktreeBranch({
+            worktreePath,
+            expectedBranchName,
+          });
+          return { workspaceRecord, inspection };
+        };
+        const recordWorkspaceFinalize = async (
+          status: "succeeded" | "failed",
+          metadata?: Record<string, unknown>,
+        ) => {
+          if (adapterFinalizeOutcome) return;
+          let finalizeBranchMetadata: Record<string, unknown> | null = null;
+          let finalizeBranchRepairMetadata: Record<string, unknown> | null = null;
+          if (status === "succeeded") {
+            const branchInspection = await inspectFinalizeWorkspaceBranch();
+            if (branchInspection) {
+              let inspection = branchInspection.inspection;
+              const initialManagedGitWorktreeBranch = formatManagedGitWorktreeBranchInspection(inspection);
+              if (!inspection.valid && inspection.reasonCode === "branch_mismatch" && inspection.repoRoot) {
+                let repairedExpectedBranchName = inspection.expectedBranchName;
+                try {
+                  const coherence = await ensureGitWorktreeBranchCoherent({
+                    db,
+                    repoRoot: inspection.repoRoot,
+                    worktreePath: inspection.worktreePath,
+                    expectedBranchName: inspection.expectedBranchName,
+                    actualBranchName: inspection.actualBranchName,
+                    sourceIssue: issueRef
+                      ? {
                         id: issueRef.id,
                         identifier: issueRef.identifier,
                         title: issueRef.title,
                         workMode: issueRef.workMode,
-                    }
-                    : null,
-                  executionWorkspaceId: branchInspection.workspaceRecord.id,
-                  heartbeatRunId: run.id,
-                  enableWorkspaceBranchReconcileForward:
-                    resolvedInstanceSettings.experimental.enableWorkspaceBranchReconcileForward,
-                  enableWorkspaceDirtyQuarantineRepair:
-                    resolvedInstanceSettings.experimental.enableWorkspaceDirtyQuarantineRepair,
-                  persistForwardReconcile: false,
-                  reconcileOperationPhase: "workspace_finalize",
-                  recorder: workspaceOperationRecorder,
-                });
-                if (coherence.branchName && coherence.branchName !== branchInspection.workspaceRecord.branchName) {
-                  repairedExpectedBranchName = coherence.branchName;
-                  executionWorkspace.branchName = coherence.branchName;
-                  executionWorkspace.warnings.push(...coherence.warnings);
+                      }
+                      : null,
+                    executionWorkspaceId: branchInspection.workspaceRecord.id,
+                    heartbeatRunId: run.id,
+                    enableWorkspaceBranchReconcileForward:
+                      resolvedInstanceSettings.experimental.enableWorkspaceBranchReconcileForward,
+                    enableWorkspaceDirtyQuarantineRepair:
+                      resolvedInstanceSettings.experimental.enableWorkspaceDirtyQuarantineRepair,
+                    persistForwardReconcile: false,
+                    reconcileOperationPhase: "workspace_finalize",
+                    recorder: workspaceOperationRecorder,
+                  });
+                  if (coherence.branchName && coherence.branchName !== branchInspection.workspaceRecord.branchName) {
+                    repairedExpectedBranchName = coherence.branchName;
+                    executionWorkspace.branchName = coherence.branchName;
+                    executionWorkspace.warnings.push(...coherence.warnings);
+                  }
+                } catch (repairErr) {
+                  const workspaceValidationFailure = isWorkspaceValidationFailure(repairErr) ? repairErr : null;
+                  finalizeBranchMetadata = {
+                    executionWorkspaceId: branchInspection.workspaceRecord.id,
+                    ...initialManagedGitWorktreeBranch,
+                  };
+                  finalizeBranchRepairMetadata = {
+                    attempted: true,
+                    succeeded: false,
+                    initial: initialManagedGitWorktreeBranch,
+                    reason: repairErr instanceof Error ? repairErr.message : String(repairErr),
+                  };
+                  await workspaceOperationRecorder.recordOperation({
+                    phase: "workspace_finalize",
+                    cwd: executionWorkspace.cwd,
+                    metadata: {
+                      adapterType: agent.adapterType,
+                      executionTargetKind: executionTarget?.kind ?? "local",
+                      ...metadata,
+                      managedGitWorktreeBranch: finalizeBranchMetadata,
+                      managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata,
+                      ...(workspaceValidationFailure?.resultJson
+                        ? { workspaceValidation: workspaceValidationFailure.resultJson.workspaceValidation ?? workspaceValidationFailure.resultJson }
+                        : {}),
+                    },
+                    run: async () => ({
+                      status: "failed",
+                      stderr: `Managed git worktree branch check failed: ${repairErr instanceof Error ? repairErr.message : String(repairErr)}\n`,
+                    }),
+                  });
+                  adapterFinalizeOutcome = "failed";
+                  throw repairErr;
                 }
-              } catch (repairErr) {
-                const workspaceValidationFailure = isWorkspaceValidationFailure(repairErr) ? repairErr : null;
-                finalizeBranchMetadata = {
-                  executionWorkspaceId: branchInspection.workspaceRecord.id,
-                  ...initialManagedGitWorktreeBranch,
-                };
+
+                const repairedInspection = await inspectManagedGitWorktreeBranch({
+                  worktreePath: inspection.worktreePath,
+                  expectedBranchName: repairedExpectedBranchName,
+                  repoRoot: inspection.repoRoot,
+                });
                 finalizeBranchRepairMetadata = {
                   attempted: true,
-                  succeeded: false,
+                  succeeded: repairedInspection.valid,
                   initial: initialManagedGitWorktreeBranch,
-                  reason: repairErr instanceof Error ? repairErr.message : String(repairErr),
+                  repaired: formatManagedGitWorktreeBranchInspection(repairedInspection),
                 };
+                inspection = repairedInspection;
+              }
+
+              const managedGitWorktreeBranch = formatManagedGitWorktreeBranchInspection(inspection);
+              finalizeBranchMetadata = {
+                executionWorkspaceId: branchInspection.workspaceRecord.id,
+                ...managedGitWorktreeBranch,
+              };
+              if (!inspection.valid) {
+                const workspaceValidationFingerprint = fingerprintFinalizeWorkspaceBranchValidation({
+                  issueId: issueRef?.id ?? null,
+                  executionWorkspaceId: branchInspection.workspaceRecord.id,
+                  inspection: managedGitWorktreeBranch,
+                });
                 await workspaceOperationRecorder.recordOperation({
                   phase: "workspace_finalize",
                   cwd: executionWorkspace.cwd,
@@ -13583,187 +13629,140 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
                     executionTargetKind: executionTarget?.kind ?? "local",
                     ...metadata,
                     managedGitWorktreeBranch: finalizeBranchMetadata,
-                    managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata,
-                    ...(workspaceValidationFailure?.resultJson
-                      ? { workspaceValidation: workspaceValidationFailure.resultJson.workspaceValidation ?? workspaceValidationFailure.resultJson }
-                      : {}),
+                    ...(finalizeBranchRepairMetadata ? { managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata } : {}),
                   },
                   run: async () => ({
                     status: "failed",
-                    stderr: `Managed git worktree branch check failed: ${repairErr instanceof Error ? repairErr.message : String(repairErr)}\n`,
+                    stderr: `Managed git worktree branch check failed: ${inspection.reason ?? "unknown branch mismatch"}\n`,
                   }),
                 });
                 adapterFinalizeOutcome = "failed";
-                throw repairErr;
-              }
-
-              const repairedInspection = await inspectManagedGitWorktreeBranch({
-                worktreePath: inspection.worktreePath,
-                expectedBranchName: repairedExpectedBranchName,
-                repoRoot: inspection.repoRoot,
-              });
-              finalizeBranchRepairMetadata = {
-                attempted: true,
-                succeeded: repairedInspection.valid,
-                initial: initialManagedGitWorktreeBranch,
-                repaired: formatManagedGitWorktreeBranchInspection(repairedInspection),
-              };
-              inspection = repairedInspection;
-            }
-
-            const managedGitWorktreeBranch = formatManagedGitWorktreeBranchInspection(inspection);
-            finalizeBranchMetadata = {
-              executionWorkspaceId: branchInspection.workspaceRecord.id,
-              ...managedGitWorktreeBranch,
-            };
-            if (!inspection.valid) {
-              const workspaceValidationFingerprint = fingerprintFinalizeWorkspaceBranchValidation({
-                issueId: issueRef?.id ?? null,
-                executionWorkspaceId: branchInspection.workspaceRecord.id,
-                inspection: managedGitWorktreeBranch,
-              });
-              await workspaceOperationRecorder.recordOperation({
-                phase: "workspace_finalize",
-                cwd: executionWorkspace.cwd,
-                metadata: {
-                  adapterType: agent.adapterType,
-                  executionTargetKind: executionTarget?.kind ?? "local",
-                  ...metadata,
-                  managedGitWorktreeBranch: finalizeBranchMetadata,
-                  ...(finalizeBranchRepairMetadata ? { managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata } : {}),
-                },
-                run: async () => ({
-                  status: "failed",
-                  stderr: `Managed git worktree branch check failed: ${inspection.reason ?? "unknown branch mismatch"}\n`,
-                }),
-              });
-              adapterFinalizeOutcome = "failed";
-              throw new WorkspaceValidationFailure(
-                `Execution workspace ${branchInspection.workspaceRecord.id} expected git worktree branch "${inspection.expectedBranchName}" at "${inspection.worktreePath}", but ${inspection.reason ?? "the checked-out branch could not be verified"}. Record a sanctioned execution-workspace branch transition or restore the workspace branch before completing the run.`,
-                {
-                  workspaceValidation: {
-                    reason: "git_worktree_branch_incoherence",
-                    fingerprint: workspaceValidationFingerprint,
-                    adapterType: agent.adapterType,
-                    issueId: issueRef?.id ?? null,
-                    issueIdentifier: issueRef?.identifier ?? null,
-                    persistedExecutionWorkspaceId: branchInspection.workspaceRecord.id,
-                    executionWorkspaceCwd: executionWorkspace.cwd,
-                    managedGitWorktreeBranch: finalizeBranchMetadata,
+                throw new WorkspaceValidationFailure(
+                  `Execution workspace ${branchInspection.workspaceRecord.id} expected git worktree branch "${inspection.expectedBranchName}" at "${inspection.worktreePath}", but ${inspection.reason ?? "the checked-out branch could not be verified"}. Record a sanctioned execution-workspace branch transition or restore the workspace branch before completing the run.`,
+                  {
+                    workspaceValidation: {
+                      reason: "git_worktree_branch_incoherence",
+                      fingerprint: workspaceValidationFingerprint,
+                      adapterType: agent.adapterType,
+                      issueId: issueRef?.id ?? null,
+                      issueIdentifier: issueRef?.identifier ?? null,
+                      persistedExecutionWorkspaceId: branchInspection.workspaceRecord.id,
+                      executionWorkspaceCwd: executionWorkspace.cwd,
+                      managedGitWorktreeBranch: finalizeBranchMetadata,
+                    },
                   },
-                },
-              );
+                );
+              }
             }
           }
-        }
-        await workspaceOperationRecorder.recordOperation({
-          phase: "workspace_finalize",
-          cwd: executionWorkspace.cwd,
-          metadata: {
-            adapterType: agent.adapterType,
-            executionTargetKind: executionTarget?.kind ?? "local",
-            ...metadata,
-            ...(finalizeBranchMetadata ? { managedGitWorktreeBranch: finalizeBranchMetadata } : {}),
-            ...(finalizeBranchRepairMetadata ? { managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata } : {}),
-          },
-          run: async () => ({ status }),
-        });
-        // Only mark the outcome after the row landed, so a transient write
-        // failure on the succeeded path can still be recovered by recording
-        // finalize=failed from the catch path below.
-        adapterFinalizeOutcome = status;
-      };
-
-      let adapterResult: Awaited<ReturnType<typeof adapter.execute>>;
-      try {
-        const adapterContext = { ...context };
-        const runtimeMcpServers = await buildPaperclipRuntimeMcpServers({
-          db,
-          agent,
-          runId: run.id,
-        });
-        const runtimeMcp = createAdapterRuntimeMcpAccess(runtimeMcpServers);
-        const managedMcpConfig = await createManagedMcpRunConfig({
-          db,
-          agent,
-          runId: run.id,
-          config: runtimeConfig,
-          projectId: issueRef?.projectId ?? null,
-          issueId: issueRef?.id ?? null,
-        });
-        if (managedMcpConfig) {
-          adapterContext.paperclipManagedMcp = managedMcpConfig;
-        }
-        adapterResult = await adapter.execute({
-          runId: run.id,
-          agent,
-          runtime: runtimeForAdapter,
-          config: runtimeConfig,
-          context: adapterContext,
-          runtimeCommandSpec: adapter.getRuntimeCommandSpec?.(runtimeConfig) ?? null,
-          executionTarget,
-          executionTransport: remoteExecution
-            ? { remoteExecution: remoteExecution as unknown as Record<string, unknown> }
-            : undefined,
-          runtimeMcp,
-          onLog,
-          onMeta: onAdapterMeta,
-          onEvent: onAdapterEvent,
-          onRuntimeProgress: async (progress) => {
-            await recordCurrentHeartbeatRunRuntimeProgress(run, progress, issueId);
-          },
-          onSpawn: async (meta) => {
-            await persistRunProcessMetadata(run.id, {
-              pid: meta.pid,
-              processGroupId:
-                "processGroupId" in meta && typeof meta.processGroupId === "number"
-                  ? meta.processGroupId
-                  : null,
-              startedAt: meta.startedAt,
-            });
-          },
-          authToken: authToken ?? undefined,
-        });
-        // Adapter returned cleanly, which means its workspace-restore finally
-        // block also ran without throwing. Record the workspace_finalize
-        // barrier so dependents that share this executionWorkspace can wake.
-        // If recording the barrier itself fails, propagate as a run failure
-        // rather than silently leaving dependents stranded behind a missing
-        // finalize row.
-        await recordWorkspaceFinalize("succeeded");
-      } catch (adapterErr) {
-        // Adapter (or its restore finally) threw — or the finalize record
-        // write itself threw. Either way the workspace may be in a partial
-        // state. Best-effort record finalize=failed so the dependent readiness
-        // check keeps the gate closed instead of waking on stale local state,
-        // and surface the original error to the caller.
-        try {
-          await recordWorkspaceFinalize("failed", {
-            errorMessage: adapterErr instanceof Error ? adapterErr.message : String(adapterErr),
+          await workspaceOperationRecorder.recordOperation({
+            phase: "workspace_finalize",
+            cwd: executionWorkspace.cwd,
+            metadata: {
+              adapterType: agent.adapterType,
+              executionTargetKind: executionTarget?.kind ?? "local",
+              ...metadata,
+              ...(finalizeBranchMetadata ? { managedGitWorktreeBranch: finalizeBranchMetadata } : {}),
+              ...(finalizeBranchRepairMetadata ? { managedGitWorktreeBranchRepair: finalizeBranchRepairMetadata } : {}),
+            },
+            run: async () => ({ status }),
           });
-        } catch (recordErr) {
-          logger.warn(
-            { err: recordErr, runId: run.id, executionWorkspaceId: persistedExecutionWorkspace?.id ?? null },
-            "failed to record workspace_finalize=failed operation; dependents may remain gated",
-          );
-        }
-        throw adapterErr;
-      } finally {
+          // Only mark the outcome after the row landed, so a transient write
+          // failure on the succeeded path can still be recovered by recording
+          // finalize=failed from the catch path below.
+          adapterFinalizeOutcome = status;
+        };
+
+        let adapterResult: Awaited<ReturnType<typeof adapter.execute>>;
         try {
-          await revokeHeartbeatRunGatewayTokens({
+          const adapterContext = { ...context };
+          const runtimeMcpServers = await buildPaperclipRuntimeMcpServers({
             db,
-            companyId: agent.companyId,
+            agent,
             runId: run.id,
           });
-        } catch (revokeErr) {
-          logger.warn(
-            { err: revokeErr, runId: run.id, companyId: agent.companyId },
-            "failed to revoke heartbeat-run MCP gateway tokens",
-          );
+          const runtimeMcp = createAdapterRuntimeMcpAccess(runtimeMcpServers);
+          const managedMcpConfig = await createManagedMcpRunConfig({
+            db,
+            agent,
+            runId: run.id,
+            config: runtimeConfig,
+            projectId: issueRef?.projectId ?? null,
+            issueId: issueRef?.id ?? null,
+          });
+          if (managedMcpConfig) {
+            adapterContext.paperclipManagedMcp = managedMcpConfig;
+          }
+          adapterResult = await adapter.execute({
+            runId: run.id,
+            agent,
+            runtime: runtimeForAdapter,
+            config: runtimeConfig,
+            context: adapterContext,
+            runtimeCommandSpec: adapter.getRuntimeCommandSpec?.(runtimeConfig) ?? null,
+            executionTarget,
+            executionTransport: remoteExecution
+              ? { remoteExecution: remoteExecution as unknown as Record<string, unknown> }
+              : undefined,
+            runtimeMcp,
+            onLog,
+            onMeta: onAdapterMeta,
+            onEvent: onAdapterEvent,
+            onRuntimeProgress: async (progress) => {
+              await recordCurrentHeartbeatRunRuntimeProgress(run, progress, issueId);
+            },
+            onSpawn: async (meta) => {
+              await persistRunProcessMetadata(run.id, {
+                pid: meta.pid,
+                processGroupId:
+                  "processGroupId" in meta && typeof meta.processGroupId === "number"
+                    ? meta.processGroupId
+                    : null,
+                startedAt: meta.startedAt,
+              });
+            },
+            authToken: authToken ?? undefined,
+          });
+          // Adapter returned cleanly, which means its workspace-restore finally
+          // block also ran without throwing. Record the workspace_finalize
+          // barrier so dependents that share this executionWorkspace can wake.
+          // If recording the barrier itself fails, propagate as a run failure
+          // rather than silently leaving dependents stranded behind a missing
+          // finalize row.
+          await recordWorkspaceFinalize("succeeded");
+        } catch (adapterErr) {
+          // Adapter (or its restore finally) threw — or the finalize record
+          // write itself threw. Either way the workspace may be in a partial
+          // state. Best-effort record finalize=failed so the dependent readiness
+          // check keeps the gate closed instead of waking on stale local state,
+          // and surface the original error to the caller.
+          try {
+            await recordWorkspaceFinalize("failed", {
+              errorMessage: adapterErr instanceof Error ? adapterErr.message : String(adapterErr),
+            });
+          } catch (recordErr) {
+            logger.warn(
+              { err: recordErr, runId: run.id, executionWorkspaceId: persistedExecutionWorkspace?.id ?? null },
+              "failed to record workspace_finalize=failed operation; dependents may remain gated",
+            );
+          }
+          throw adapterErr;
+        } finally {
+          try {
+            await revokeHeartbeatRunGatewayTokens({
+              db,
+              companyId: agent.companyId,
+              runId: run.id,
+            });
+          } catch (revokeErr) {
+            logger.warn(
+              { err: revokeErr, runId: run.id, companyId: agent.companyId },
+              "failed to revoke heartbeat-run MCP gateway tokens",
+            );
+          }
         }
-      }
-      const adapterManagedRuntimeServices = adapterResult.runtimeServices
-        ? await persistAdapterManagedRuntimeServices({
+        const adapterManagedRuntimeServices = adapterResult.runtimeServices
+          ? await persistAdapterManagedRuntimeServices({
             db,
             adapterType: agent.adapterType,
             runId: run.id,
@@ -13776,112 +13775,112 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             workspace: executionWorkspace,
             reports: adapterResult.runtimeServices,
           })
-        : [];
-      if (adapterManagedRuntimeServices.length > 0) {
-        const combinedRuntimeServices = [
-          ...runtimeServices,
-          ...adapterManagedRuntimeServices,
-        ];
-        context.paperclipRuntimeServices = combinedRuntimeServices;
-        context.paperclipRuntimePrimaryUrl =
-          combinedRuntimeServices.find((service) => readNonEmptyString(service.url))?.url ?? null;
-        await db
-          .update(heartbeatRuns)
-          .set({
-            contextSnapshot: context,
-            updatedAt: new Date(),
-          })
-          .where(eq(heartbeatRuns.id, run.id));
-        if (issueId) {
-          try {
-            await issuesSvc.addComment(
-              issueId,
-              buildWorkspaceReadyComment({
-                workspace: executionWorkspace,
-                runtimeServices: adapterManagedRuntimeServices,
-              }),
-              { agentId: agent.id, runId: run.id },
-            );
-          } catch (err) {
-            await onLog(
-              "stderr",
-              `[paperclip] Failed to post adapter-managed runtime comment: ${err instanceof Error ? err.message : String(err)}\n`,
-            );
+          : [];
+        if (adapterManagedRuntimeServices.length > 0) {
+          const combinedRuntimeServices = [
+            ...runtimeServices,
+            ...adapterManagedRuntimeServices,
+          ];
+          context.paperclipRuntimeServices = combinedRuntimeServices;
+          context.paperclipRuntimePrimaryUrl =
+            combinedRuntimeServices.find((service) => readNonEmptyString(service.url))?.url ?? null;
+          await db
+            .update(heartbeatRuns)
+            .set({
+              contextSnapshot: context,
+              updatedAt: new Date(),
+            })
+            .where(eq(heartbeatRuns.id, run.id));
+          if (issueId) {
+            try {
+              await issuesSvc.addComment(
+                issueId,
+                buildWorkspaceReadyComment({
+                  workspace: executionWorkspace,
+                  runtimeServices: adapterManagedRuntimeServices,
+                }),
+                { agentId: agent.id, runId: run.id },
+              );
+            } catch (err) {
+              await onLog(
+                "stderr",
+                `[paperclip] Failed to post adapter-managed runtime comment: ${err instanceof Error ? err.message : String(err)}\n`,
+              );
+            }
           }
         }
-      }
-      let outcome: RunSessionOutcome;
-      const latestRun = await getRun(run.id);
-      if (isHeartbeatRunTerminalStatus(latestRun?.status)) {
-        outcome = latestRun.status;
-      } else if (adapterResult.timedOut) {
-        outcome = "timed_out";
-      } else if ((adapterResult.exitCode ?? 0) === 0 && !adapterResult.errorMessage) {
-        outcome = "succeeded";
-      } else {
-        outcome = "failed";
-      }
+        let outcome: RunSessionOutcome;
+        const latestRun = await getRun(run.id);
+        if (isHeartbeatRunTerminalStatus(latestRun?.status)) {
+          outcome = latestRun.status;
+        } else if (adapterResult.timedOut) {
+          outcome = "timed_out";
+        } else if ((adapterResult.exitCode ?? 0) === 0 && !adapterResult.errorMessage) {
+          outcome = "succeeded";
+        } else {
+          outcome = "failed";
+        }
 
-      const nextSessionState = resolveNextSessionState({
-        adapterType: agent.adapterType,
-        codec: sessionCodec,
-        adapterResult,
-        outcome,
-        previousParams: previousSessionParams,
-        previousDisplayId: runtimeForAdapter.sessionDisplayId,
-        previousLegacySessionId: runtimeForAdapter.sessionId,
-      });
-      const rawUsage = normalizeUsageTotals(adapterResult.usage);
-      const sessionUsageResolution = await resolveNormalizedUsageForSession({
-        agentId: agent.id,
-        runId: run.id,
-        sessionId: nextSessionState.displayId ?? nextSessionState.legacySessionId,
-        rawUsage,
-        usageBasis: adapterResult.usageBasis ?? null,
-      });
-      const normalizedUsage = sessionUsageResolution.normalizedUsage;
-      const runErrorMessage =
-        outcome === "cancelled"
-          ? (latestRun?.error ?? adapterResult.errorMessage ?? "Cancelled")
-          : outcome === "succeeded"
-            ? null
-            : redactCurrentUserText(
+        const nextSessionState = resolveNextSessionState({
+          adapterType: agent.adapterType,
+          codec: sessionCodec,
+          adapterResult,
+          outcome,
+          previousParams: previousSessionParams,
+          previousDisplayId: runtimeForAdapter.sessionDisplayId,
+          previousLegacySessionId: runtimeForAdapter.sessionId,
+        });
+        const rawUsage = normalizeUsageTotals(adapterResult.usage);
+        const sessionUsageResolution = await resolveNormalizedUsageForSession({
+          agentId: agent.id,
+          runId: run.id,
+          sessionId: nextSessionState.displayId ?? nextSessionState.legacySessionId,
+          rawUsage,
+          usageBasis: adapterResult.usageBasis ?? null,
+        });
+        const normalizedUsage = sessionUsageResolution.normalizedUsage;
+        const runErrorMessage =
+          outcome === "cancelled"
+            ? (latestRun?.error ?? adapterResult.errorMessage ?? "Cancelled")
+            : outcome === "succeeded"
+              ? null
+              : redactCurrentUserText(
                 adapterResult.errorMessage ?? (outcome === "timed_out" ? "Timed out" : "Adapter failed"),
                 currentUserRedactionOptions,
               );
-      const recordedResponsibleUserDenialCode =
-        normalizeResponsibleUserDenialCode(latestRun?.errorCode);
-      const runErrorCode =
-        outcome === "timed_out"
-          ? "timeout"
-          : outcome === "cancelled"
-            ? (latestRun?.errorCode ?? "cancelled")
-            : outcome === "failed"
-              ? (adapterResult.errorCode ?? recordedResponsibleUserDenialCode ?? "adapter_failed")
-              : null;
+        const recordedResponsibleUserDenialCode =
+          normalizeResponsibleUserDenialCode(latestRun?.errorCode);
+        const runErrorCode =
+          outcome === "timed_out"
+            ? "timeout"
+            : outcome === "cancelled"
+              ? (latestRun?.errorCode ?? "cancelled")
+              : outcome === "failed"
+                ? (adapterResult.errorCode ?? recordedResponsibleUserDenialCode ?? "adapter_failed")
+                : null;
 
-      let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
-      if (handle) {
-        logSummary = await runLogStore.finalize(handle);
-      }
-      const finalLogBytes = logSummary?.bytes;
-      if (outputProgressState.pending && typeof finalLogBytes === "number") {
-        outputProgressState.pending.bytes = finalLogBytes;
-      }
-      await flushOutputProgress({ force: true });
+        let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
+        if (handle) {
+          logSummary = await runLogStore.finalize(handle);
+        }
+        const finalLogBytes = logSummary?.bytes;
+        if (outputProgressState.pending && typeof finalLogBytes === "number") {
+          outputProgressState.pending.bytes = finalLogBytes;
+        }
+        await flushOutputProgress({ force: true });
 
-      const status =
-        outcome === "succeeded"
-          ? "succeeded"
-          : outcome === "cancelled"
-            ? "cancelled"
-            : outcome === "timed_out"
-              ? "timed_out"
-              : "failed";
+        const status =
+          outcome === "succeeded"
+            ? "succeeded"
+            : outcome === "cancelled"
+              ? "cancelled"
+              : outcome === "timed_out"
+                ? "timed_out"
+                : "failed";
 
-      const usageJson =
-        normalizedUsage || adapterResult.costUsd != null
-          ? ({
+        const usageJson =
+          normalizedUsage || adapterResult.costUsd != null
+            ? ({
               ...(normalizedUsage ?? {}),
               ...(rawUsage ? {
                 rawInputTokens: rawUsage.inputTokens,
@@ -13914,505 +13913,505 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               }),
               billingType: normalizeLedgerBillingType(adapterResult.billingType),
             } as Record<string, unknown>)
-          : null;
+            : null;
 
-      const persistedResultJson = mergeHeartbeatRunResultJson(
-        mergeRunStopMetadataForAgent(agent, outcome, {
-          resultJson: mergeModelProfileRunMetadata(
-            mergeAdapterRecoveryMetadata({
-              resultJson: {
-                ...parseObject(adapterResult.resultJson),
-                configFreshness: configFreshnessResultMetadata,
-              },
-              errorFamily: adapterResult.errorFamily ?? null,
-              retryNotBefore: adapterResult.retryNotBefore ?? null,
-            }),
-            modelProfileApplication,
-          ),
-          errorCode: runErrorCode,
-          errorMessage: runErrorMessage,
-        }),
-        adapterResult.summary ?? null,
-      );
-
-      const persistedRunWrite = await setRunStatusIfRunning(run.id, status, {
-        finishedAt: new Date(),
-        error: runErrorMessage,
-        errorCode: runErrorCode,
-        exitCode: adapterResult.exitCode,
-        signal: adapterResult.signal,
-        usageJson,
-        resultJson: persistedResultJson,
-        sessionIdAfter: nextSessionState.displayId ?? nextSessionState.legacySessionId,
-        stdoutExcerpt,
-        stderrExcerpt,
-        logBytes: logSummary?.bytes,
-        logSha256: logSummary?.sha256,
-        logCompressed: logSummary?.compressed ?? false,
-      });
-      if (!persistedRunWrite.updated) {
-        logger.info(
-          {
-            runId: run.id,
-            attemptedStatus: status,
-            currentStatus: persistedRunWrite.run?.status ?? null,
-          },
-          "skipping late run finalization because the run already left running state",
+        const persistedResultJson = mergeHeartbeatRunResultJson(
+          mergeRunStopMetadataForAgent(agent, outcome, {
+            resultJson: mergeModelProfileRunMetadata(
+              mergeAdapterRecoveryMetadata({
+                resultJson: {
+                  ...parseObject(adapterResult.resultJson),
+                  configFreshness: configFreshnessResultMetadata,
+                },
+                errorFamily: adapterResult.errorFamily ?? null,
+                retryNotBefore: adapterResult.retryNotBefore ?? null,
+              }),
+              modelProfileApplication,
+            ),
+            errorCode: runErrorCode,
+            errorMessage: runErrorMessage,
+          }),
+          adapterResult.summary ?? null,
         );
-        return;
-      }
 
-      let persistedRun = persistedRunWrite.run;
-      if (persistedRun) {
-        persistedRun = await classifyAndPersistRunLiveness(persistedRun, persistedResultJson) ?? persistedRun;
-      }
-
-      await setWakeupStatus(run.wakeupRequestId, outcome === "succeeded" ? "completed" : status, {
-        finishedAt: new Date(),
-        error: runErrorMessage,
-      });
-
-      const finalizedRun = persistedRun ?? (await getRun(run.id));
-      if (finalizedRun) {
-        await appendRunEvent(finalizedRun, seq++, {
-          eventType: "lifecycle",
-          stream: "system",
-          level: outcome === "succeeded" ? "info" : "error",
-          message: `run ${outcome}`,
-          payload: {
-            status,
-            exitCode: adapterResult.exitCode,
-          },
+        const persistedRunWrite = await setRunStatusIfRunning(run.id, status, {
+          finishedAt: new Date(),
+          error: runErrorMessage,
+          errorCode: runErrorCode,
+          exitCode: adapterResult.exitCode,
+          signal: adapterResult.signal,
+          usageJson,
+          resultJson: persistedResultJson,
+          sessionIdAfter: nextSessionState.displayId ?? nextSessionState.legacySessionId,
+          stdoutExcerpt,
+          stderrExcerpt,
+          logBytes: logSummary?.bytes,
+          logSha256: logSummary?.sha256,
+          logCompressed: logSummary?.compressed ?? false,
         });
-        try {
-          await completeSkillTestRunForHeartbeatOutcome({
-            run: finalizedRun,
-            issueId,
-            issueWorkMode: issueRef?.workMode ?? null,
-            outcome,
-            error: runErrorMessage,
-          });
-        } catch (err) {
-          logger.warn(
-            { err, runId: finalizedRun.id, issueId },
-            "failed to complete skill test run after heartbeat finalization",
+        if (!persistedRunWrite.updated) {
+          logger.info(
+            {
+              runId: run.id,
+              attemptedStatus: status,
+              currentStatus: persistedRunWrite.run?.status ?? null,
+            },
+            "skipping late run finalization because the run already left running state",
           );
-          await onLog(
-            "stderr",
-            `[paperclip] Failed to complete skill test run: ${err instanceof Error ? err.message : String(err)}\n`,
-          );
+          return;
         }
-        const livenessRun = finalizedRun;
-        await refreshContinuationSummaryForRun(livenessRun, agent);
-        const skipRunIssueComment = parseObject(livenessRun.contextSnapshot).skipIssueComment === true;
-        if (issueId && outcome === "succeeded" && !skipRunIssueComment) {
+
+        let persistedRun = persistedRunWrite.run;
+        if (persistedRun) {
+          persistedRun = await classifyAndPersistRunLiveness(persistedRun, persistedResultJson) ?? persistedRun;
+        }
+
+        await setWakeupStatus(run.wakeupRequestId, outcome === "succeeded" ? "completed" : status, {
+          finishedAt: new Date(),
+          error: runErrorMessage,
+        });
+
+        const finalizedRun = persistedRun ?? (await getRun(run.id));
+        if (finalizedRun) {
+          await appendRunEvent(finalizedRun, seq++, {
+            eventType: "lifecycle",
+            stream: "system",
+            level: outcome === "succeeded" ? "info" : "error",
+            message: `run ${outcome}`,
+            payload: {
+              status,
+              exitCode: adapterResult.exitCode,
+            },
+          });
           try {
-            const existingRunComment = await findRunIssueComment(livenessRun.id, livenessRun.companyId, issueId);
-            if (!existingRunComment) {
-              const issueComment = buildHeartbeatRunIssueComment(persistedResultJson);
-              if (issueComment) {
-                await issuesSvc.addComment(issueId, issueComment, { agentId: agent.id, runId: livenessRun.id });
-              }
-            }
+            await completeSkillTestRunForHeartbeatOutcome({
+              run: finalizedRun,
+              issueId,
+              issueWorkMode: issueRef?.workMode ?? null,
+              outcome,
+              error: runErrorMessage,
+            });
           } catch (err) {
+            logger.warn(
+              { err, runId: finalizedRun.id, issueId },
+              "failed to complete skill test run after heartbeat finalization",
+            );
             await onLog(
               "stderr",
-              `[paperclip] Failed to post run summary comment: ${err instanceof Error ? err.message : String(err)}\n`,
+              `[paperclip] Failed to complete skill test run: ${err instanceof Error ? err.message : String(err)}\n`,
             );
           }
-        }
-        if (outcome === "failed" && isMaxTurnExhaustionRun(livenessRun)) {
-          const policy = parseMaxTurnContinuationPolicy(agent);
-          if (policy.enabled && policy.maxAttempts > 0) {
-            await scheduleBoundedRetryForRun(livenessRun, agent, {
-              retryReason: MAX_TURN_CONTINUATION_RETRY_REASON,
-              wakeReason: MAX_TURN_CONTINUATION_WAKE_REASON,
-              maxAttempts: policy.maxAttempts,
-              delayMs: policy.delayMs,
-            });
-          } else {
-            await appendRunEvent(livenessRun, await nextRunEventSeq(livenessRun.id), {
-              eventType: "lifecycle",
-              stream: "system",
-              level: "warn",
-              message: "Max-turn continuation suppressed because the policy is disabled",
-              payload: {
-                retryReason: MAX_TURN_CONTINUATION_RETRY_REASON,
-                policy,
-              },
-            });
-          }
-        } else if (outcome === "failed" && readTransientRecoveryContractFromRun(livenessRun)) {
-          await scheduleBoundedRetryForRun(livenessRun, agent);
-        }
-        const issueCommentPolicyResult = await finalizeIssueCommentPolicy(livenessRun, agent);
-        await releaseIssueExecutionAndPromote(livenessRun);
-        await handleRunLivenessContinuation(livenessRun);
-        await handleSuccessfulRunHandoff(
-          issueCommentPolicyResult.outcome === "retry_queued" || issueCommentPolicyResult.outcome === "retry_exhausted"
-            ? {
-              ...livenessRun,
-              issueCommentStatus: issueCommentPolicyResult.outcome,
+          const livenessRun = finalizedRun;
+          await refreshContinuationSummaryForRun(livenessRun, agent);
+          const skipRunIssueComment = parseObject(livenessRun.contextSnapshot).skipIssueComment === true;
+          if (issueId && outcome === "succeeded" && !skipRunIssueComment) {
+            try {
+              const existingRunComment = await findRunIssueComment(livenessRun.id, livenessRun.companyId, issueId);
+              if (!existingRunComment) {
+                const issueComment = buildHeartbeatRunIssueComment(persistedResultJson);
+                if (issueComment) {
+                  await issuesSvc.addComment(issueId, issueComment, { agentId: agent.id, runId: livenessRun.id });
+                }
+              }
+            } catch (err) {
+              await onLog(
+                "stderr",
+                `[paperclip] Failed to post run summary comment: ${err instanceof Error ? err.message : String(err)}\n`,
+              );
             }
-            : livenessRun,
-          agent,
-        );
-
-        // Dependency wake re-check: if this run's issue was marked done mid-run,
-        // the route-time `issue_blockers_resolved` wake may have been gated by
-        // workspace finalization or merged into this run. Reuse the level-triggered
-        // dependency backstop so finalize and periodic recovery share idempotency,
-        // readiness, active-path, and observability rules.
-        if (issueId && finalizedRun) {
-          try {
-            const blockerIssueStatus = await db
-              .select({ status: issues.status })
-              .from(issues)
-              .where(eq(issues.id, issueId))
-              .then((rows) => rows[0]?.status ?? null);
-            if (blockerIssueStatus === "done") {
-              await recovery.reconcileResolvedDependencyWakeBackstop({
-                runId: finalizedRun.id,
-                companyId: finalizedRun.companyId,
-                blockerIssueId: issueId,
-                source: "workspace.finalize",
+          }
+          if (outcome === "failed" && isMaxTurnExhaustionRun(livenessRun)) {
+            const policy = parseMaxTurnContinuationPolicy(agent);
+            if (policy.enabled && policy.maxAttempts > 0) {
+              await scheduleBoundedRetryForRun(livenessRun, agent, {
+                retryReason: MAX_TURN_CONTINUATION_RETRY_REASON,
+                wakeReason: MAX_TURN_CONTINUATION_WAKE_REASON,
+                maxAttempts: policy.maxAttempts,
+                delayMs: policy.delayMs,
+              });
+            } else {
+              await appendRunEvent(livenessRun, await nextRunEventSeq(livenessRun.id), {
+                eventType: "lifecycle",
+                stream: "system",
+                level: "warn",
+                message: "Max-turn continuation suppressed because the policy is disabled",
+                payload: {
+                  retryReason: MAX_TURN_CONTINUATION_RETRY_REASON,
+                  policy,
+                },
               });
             }
-          } catch (finalizeWakeErr) {
-            logger.warn(
-              { err: finalizeWakeErr, runId: run.id, issueId },
-              "failed to evaluate dependent wakes after workspace_finalize",
-            );
+          } else if (outcome === "failed" && readTransientRecoveryContractFromRun(livenessRun)) {
+            await scheduleBoundedRetryForRun(livenessRun, agent);
+          }
+          const issueCommentPolicyResult = await finalizeIssueCommentPolicy(livenessRun, agent);
+          await releaseIssueExecutionAndPromote(livenessRun);
+          await handleRunLivenessContinuation(livenessRun);
+          await handleSuccessfulRunHandoff(
+            issueCommentPolicyResult.outcome === "retry_queued" || issueCommentPolicyResult.outcome === "retry_exhausted"
+              ? {
+                ...livenessRun,
+                issueCommentStatus: issueCommentPolicyResult.outcome,
+              }
+              : livenessRun,
+            agent,
+          );
+
+          // Dependency wake re-check: if this run's issue was marked done mid-run,
+          // the route-time `issue_blockers_resolved` wake may have been gated by
+          // workspace finalization or merged into this run. Reuse the level-triggered
+          // dependency backstop so finalize and periodic recovery share idempotency,
+          // readiness, active-path, and observability rules.
+          if (issueId && finalizedRun) {
+            try {
+              const blockerIssueStatus = await db
+                .select({ status: issues.status })
+                .from(issues)
+                .where(eq(issues.id, issueId))
+                .then((rows) => rows[0]?.status ?? null);
+              if (blockerIssueStatus === "done") {
+                await recovery.reconcileResolvedDependencyWakeBackstop({
+                  runId: finalizedRun.id,
+                  companyId: finalizedRun.companyId,
+                  blockerIssueId: issueId,
+                  source: "workspace.finalize",
+                });
+              }
+            } catch (finalizeWakeErr) {
+              logger.warn(
+                { err: finalizeWakeErr, runId: run.id, issueId },
+                "failed to evaluate dependent wakes after workspace_finalize",
+              );
+            }
           }
         }
-      }
 
-      if (finalizedRun) {
-        await updateRuntimeState(agent, finalizedRun, adapterResult, {
-          legacySessionId: nextSessionState.legacySessionId,
-        }, normalizedUsage);
-        if (taskKey) {
-          if (adapterResult.clearSession || (!nextSessionState.params && !nextSessionState.displayId)) {
-            await clearTaskSessions(agent.companyId, agent.id, {
-              taskKey,
-              adapterType: agent.adapterType,
+        if (finalizedRun) {
+          await updateRuntimeState(agent, finalizedRun, adapterResult, {
+            legacySessionId: nextSessionState.legacySessionId,
+          }, normalizedUsage);
+          if (taskKey) {
+            if (adapterResult.clearSession || (!nextSessionState.params && !nextSessionState.displayId)) {
+              await clearTaskSessions(agent.companyId, agent.id, {
+                taskKey,
+                adapterType: agent.adapterType,
+              });
+            } else {
+              await upsertTaskSession({
+                companyId: agent.companyId,
+                agentId: agent.id,
+                adapterType: agent.adapterType,
+                taskKey,
+                sessionParamsJson: attachPaperclipSessionMetadataToSessionParams(
+                  nextSessionState.params,
+                  configuredModel,
+                  sessionConfigMetadata,
+                ),
+                sessionDisplayId: nextSessionState.displayId,
+                lastRunId: finalizedRun.id,
+                lastError: outcome === "succeeded" ? null : (adapterResult.errorMessage ?? "run_failed"),
+              });
+            }
+          }
+        }
+        await finalizeAgentStatus(
+          agent.id,
+          outcome,
+          outcome === "succeeded" ? null : (adapterResult.errorMessage ?? null),
+          {
+            keepIdleOnFailure:
+              outcome === "failed" &&
+              (finalizedRun ? readHeartbeatRunErrorFamily(finalizedRun) === "provider_quota" : runErrorCode === "provider_quota"),
+          },
+        );
+      } catch (err) {
+        const message = redactCurrentUserText(
+          err instanceof Error ? err.message : "Unknown adapter failure",
+          await getCurrentUserRedactionOptions(),
+        );
+        const workspaceValidationFailure = isWorkspaceValidationFailure(err) ? err : null;
+        const configurationIncompleteFailure = isConfigurationIncompleteFailure(err) ? err : null;
+        const recordedResponsibleUserDenialCode =
+          normalizeResponsibleUserDenialCode((await getRun(run.id).catch(() => null))?.errorCode);
+        const failureErrorCode =
+          workspaceValidationFailure?.code
+          ?? configurationIncompleteFailure?.code
+          ?? recordedResponsibleUserDenialCode
+          ?? "adapter_failed";
+        logger.error({ err, runId }, "heartbeat execution failed");
+
+        let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
+        if (handle) {
+          try {
+            logSummary = await runLogStore.finalize(handle);
+          } catch (finalizeErr) {
+            logger.warn({ err: finalizeErr, runId }, "failed to finalize run log after error");
+          }
+        }
+        const finalLogBytes = logSummary?.bytes;
+        if (outputProgressState.pending && typeof finalLogBytes === "number") {
+          outputProgressState.pending.bytes = finalLogBytes;
+        }
+        await flushOutputProgress({ force: true }).catch((flushErr) => {
+          logger.warn({ err: flushErr, runId }, "failed to flush run output progress after error");
+        });
+
+        const failedRunWrite = await setRunStatusIfRunning(run.id, "failed", {
+          error: message,
+          errorCode: failureErrorCode,
+          finishedAt: new Date(),
+          resultJson: mergeRunStopMetadataForAgent(agent, "failed", {
+            errorCode: failureErrorCode,
+            errorMessage: message,
+            resultJson: workspaceValidationFailure?.resultJson ?? configurationIncompleteFailure?.resultJson ?? null,
+          }),
+          stdoutExcerpt,
+          stderrExcerpt,
+          logBytes: logSummary?.bytes,
+          logSha256: logSummary?.sha256,
+          logCompressed: logSummary?.compressed ?? false,
+        });
+        if (!failedRunWrite.updated) {
+          logger.info(
+            {
+              runId: run.id,
+              attemptedStatus: "failed",
+              currentStatus: failedRunWrite.run?.status ?? null,
+            },
+            "skipping late adapter failure finalization because the run already left running state",
+          );
+          return;
+        }
+
+        const failedRun = failedRunWrite.run;
+        await setWakeupStatus(run.wakeupRequestId, "failed", {
+          finishedAt: new Date(),
+          error: message,
+        });
+
+        if (failedRun) {
+          await appendRunEvent(failedRun, seq++, {
+            eventType: "error",
+            stream: "system",
+            level: "error",
+            message,
+          });
+          const livenessRun = await classifyAndPersistRunLiveness(failedRun) ?? failedRun;
+          try {
+            await completeSkillTestRunForHeartbeatOutcome({
+              run: livenessRun,
+              issueId,
+              issueWorkMode: issueRef?.workMode ?? null,
+              outcome: "failed",
+              error: message,
             });
-          } else {
+          } catch (err) {
+            logger.warn(
+              { err, runId: livenessRun.id, issueId },
+              "failed to complete skill test run after heartbeat adapter failure",
+            );
+          }
+          await refreshContinuationSummaryForRun(livenessRun, agent);
+          if (!isWorkspaceValidationFailedRun(livenessRun) && !isConfigurationIncompleteFailedRun(livenessRun)) {
+            await finalizeIssueCommentPolicy(livenessRun, agent);
+          }
+          await scheduleInteractionContinuationInfrastructureRetryIfEligible(livenessRun, agent);
+          await releaseIssueExecutionAndPromote(livenessRun);
+
+          await updateRuntimeState(agent, livenessRun, {
+            exitCode: null,
+            signal: null,
+            timedOut: false,
+            errorMessage: message,
+          }, {
+            legacySessionId: runtimeForAdapter.sessionId,
+          });
+
+          if (taskKey && (previousSessionParams || previousSessionDisplayId || taskSession)) {
             await upsertTaskSession({
               companyId: agent.companyId,
               agentId: agent.id,
               adapterType: agent.adapterType,
               taskKey,
               sessionParamsJson: attachPaperclipSessionMetadataToSessionParams(
-                nextSessionState.params,
+                previousSessionParams,
                 configuredModel,
                 sessionConfigMetadata,
               ),
-              sessionDisplayId: nextSessionState.displayId,
-              lastRunId: finalizedRun.id,
-              lastError: outcome === "succeeded" ? null : (adapterResult.errorMessage ?? "run_failed"),
+              sessionDisplayId: previousSessionDisplayId,
+              lastRunId: failedRun.id,
+              lastError: message,
             });
           }
         }
+
+        await finalizeAgentStatus(agent.id, "failed", message);
       }
-      await finalizeAgentStatus(
-        agent.id,
-        outcome,
-        outcome === "succeeded" ? null : (adapterResult.errorMessage ?? null),
-        {
-          keepIdleOnFailure:
-            outcome === "failed" &&
-            (finalizedRun ? readHeartbeatRunErrorFamily(finalizedRun) === "provider_quota" : runErrorCode === "provider_quota"),
-        },
-      );
-    } catch (err) {
+    } catch (outerErr) {
+      // Setup code before adapter.execute threw (e.g. ensureRuntimeState, resolveWorkspaceForRun).
+      // The inner catch did not fire, so we must record the failure here.
       const message = redactCurrentUserText(
-        err instanceof Error ? err.message : "Unknown adapter failure",
+        outerErr instanceof Error ? outerErr.message : "Unknown setup failure",
         await getCurrentUserRedactionOptions(),
       );
-      const workspaceValidationFailure = isWorkspaceValidationFailure(err) ? err : null;
-      const configurationIncompleteFailure = isConfigurationIncompleteFailure(err) ? err : null;
+      // A missing secret/env binding is a known pre-dispatch configuration gap,
+      // not an opaque setup crash. Surface it with its own errorCode so the
+      // recovery path routes it to a human owner instead of looping retries.
+      const workspaceValidationSetupFailure = isWorkspaceValidationFailure(outerErr) ? outerErr : null;
+      const configurationIncompleteSetupFailure = isConfigurationIncompleteFailure(outerErr) ? outerErr : null;
       const recordedResponsibleUserDenialCode =
-        normalizeResponsibleUserDenialCode((await getRun(run.id).catch(() => null))?.errorCode);
-      const failureErrorCode =
-        workspaceValidationFailure?.code
-        ?? configurationIncompleteFailure?.code
-        ?? recordedResponsibleUserDenialCode
-        ?? "adapter_failed";
-      logger.error({ err, runId }, "heartbeat execution failed");
-
-      let logSummary: { bytes: number; sha256?: string; compressed: boolean } | null = null;
-      if (handle) {
-        try {
-          logSummary = await runLogStore.finalize(handle);
-        } catch (finalizeErr) {
-          logger.warn({ err: finalizeErr, runId }, "failed to finalize run log after error");
-        }
-      }
-      const finalLogBytes = logSummary?.bytes;
-      if (outputProgressState.pending && typeof finalLogBytes === "number") {
-        outputProgressState.pending.bytes = finalLogBytes;
-      }
-      await flushOutputProgress({ force: true }).catch((flushErr) => {
-        logger.warn({ err: flushErr, runId }, "failed to flush run output progress after error");
-      });
-
-      const failedRunWrite = await setRunStatusIfRunning(run.id, "failed", {
+        normalizeResponsibleUserDenialCode((await getRun(runId).catch(() => null))?.errorCode);
+      const setupFailureErrorCode =
+        workspaceValidationSetupFailure?.code ??
+        configurationIncompleteSetupFailure?.code ??
+        recordedResponsibleUserDenialCode ??
+        "setup_failed";
+      logger.error({ err: outerErr, runId }, "heartbeat execution setup failed");
+      const setupFailureAgent = await getAgent(run.agentId).catch(() => null);
+      const setupFailureWrite = await setRunStatusIfRunning(runId, "failed", {
         error: message,
-        errorCode: failureErrorCode,
+        errorCode: setupFailureErrorCode,
         finishedAt: new Date(),
-        resultJson: mergeRunStopMetadataForAgent(agent, "failed", {
-          errorCode: failureErrorCode,
-          errorMessage: message,
-          resultJson: workspaceValidationFailure?.resultJson ?? configurationIncompleteFailure?.resultJson ?? null,
-        }),
-        stdoutExcerpt,
-        stderrExcerpt,
-        logBytes: logSummary?.bytes,
-        logSha256: logSummary?.sha256,
-        logCompressed: logSummary?.compressed ?? false,
-      });
-      if (!failedRunWrite.updated) {
+        ...(setupFailureAgent ? {
+          resultJson: mergeRunStopMetadataForAgent(setupFailureAgent, "failed", {
+            errorCode: setupFailureErrorCode,
+            errorMessage: message,
+            resultJson:
+              workspaceValidationSetupFailure?.resultJson ?? configurationIncompleteSetupFailure?.resultJson ?? null,
+          }),
+        } : {}),
+      }).catch(() => ({ run: null, updated: false as const }));
+      if (!setupFailureWrite.updated) {
         logger.info(
           {
-            runId: run.id,
+            runId,
             attemptedStatus: "failed",
-            currentStatus: failedRunWrite.run?.status ?? null,
+            currentStatus: setupFailureWrite.run?.status ?? null,
           },
-          "skipping late adapter failure finalization because the run already left running state",
+          "skipping late setup failure finalization because the run already left running state",
         );
-        return;
+      } else {
+        await setWakeupStatus(run.wakeupRequestId, "failed", {
+          finishedAt: new Date(),
+          error: message,
+        }).catch(() => undefined);
       }
-
-      const failedRun = failedRunWrite.run;
-      await setWakeupStatus(run.wakeupRequestId, "failed", {
-        finishedAt: new Date(),
-        error: message,
-      });
-
-      if (failedRun) {
-        await appendRunEvent(failedRun, seq++, {
+      const failedRun = await getRun(runId).catch(() => null);
+      if (setupFailureWrite.updated && failedRun) {
+        // Emit a run-log event so the failure is visible in the run timeline,
+        // consistent with what the inner catch block does for adapter failures.
+        await appendRunEvent(failedRun, 1, {
           eventType: "error",
           stream: "system",
           level: "error",
           message,
-        });
-        const livenessRun = await classifyAndPersistRunLiveness(failedRun) ?? failedRun;
-        try {
+        }).catch(() => undefined);
+        const livenessRun = await classifyAndPersistRunLiveness(failedRun).catch(() => failedRun);
+        const setupFailureIssueId = readNonEmptyString(parseObject(livenessRun.contextSnapshot).issueId);
+        if (setupFailureIssueId) {
           await completeSkillTestRunForHeartbeatOutcome({
             run: livenessRun,
-            issueId,
-            issueWorkMode: issueRef?.workMode ?? null,
+            issueId: setupFailureIssueId,
             outcome: "failed",
             error: message,
+          }).catch((completionErr) => {
+            logger.warn(
+              { err: completionErr, runId: livenessRun.id, issueId: setupFailureIssueId },
+              "failed to complete skill test run after heartbeat setup failure",
+            );
           });
-        } catch (err) {
-          logger.warn(
-            { err, runId: livenessRun.id, issueId },
-            "failed to complete skill test run after heartbeat adapter failure",
+        }
+        const failedAgent = setupFailureAgent ?? await getAgent(run.agentId).catch(() => null);
+        if (failedAgent) {
+          await refreshContinuationSummaryForRun(livenessRun, failedAgent).catch(() => undefined);
+          if (!isWorkspaceValidationFailedRun(livenessRun) && !isConfigurationIncompleteFailedRun(livenessRun)) {
+            await finalizeIssueCommentPolicy(livenessRun, failedAgent).catch(() => undefined);
+          }
+          await scheduleInteractionContinuationInfrastructureRetryIfEligible(livenessRun, failedAgent).catch((retryError) => {
+            logger.warn(
+              { err: retryError, runId: livenessRun.id },
+              "failed to schedule interaction continuation retry after setup failure",
+            );
+          });
+        }
+        await releaseIssueExecutionAndPromote(livenessRun).catch((releaseError) => {
+          logger.error(
+            { err: releaseError, runId },
+            "failed to release issue execution after heartbeat setup failure",
           );
-        }
-        await refreshContinuationSummaryForRun(livenessRun, agent);
-        if (!isWorkspaceValidationFailedRun(livenessRun) && !isConfigurationIncompleteFailedRun(livenessRun)) {
-          await finalizeIssueCommentPolicy(livenessRun, agent);
-        }
-        await scheduleInteractionContinuationInfrastructureRetryIfEligible(livenessRun, agent);
-        await releaseIssueExecutionAndPromote(livenessRun);
-
-        await updateRuntimeState(agent, livenessRun, {
-          exitCode: null,
-          signal: null,
-          timedOut: false,
-          errorMessage: message,
-        }, {
-          legacySessionId: runtimeForAdapter.sessionId,
         });
-
-        if (taskKey && (previousSessionParams || previousSessionDisplayId || taskSession)) {
-          await upsertTaskSession({
-            companyId: agent.companyId,
-            agentId: agent.id,
-            adapterType: agent.adapterType,
-            taskKey,
-            sessionParamsJson: attachPaperclipSessionMetadataToSessionParams(
-              previousSessionParams,
-              configuredModel,
-              sessionConfigMetadata,
-            ),
-            sessionDisplayId: previousSessionDisplayId,
-            lastRunId: failedRun.id,
-            lastError: message,
+      }
+      // Ensure the agent is not left stuck in "running" if the setup-failure
+      // path owned the terminal transition. If another path already finalized
+      // the run, keep that terminal outcome authoritative.
+      if (setupFailureWrite.updated) {
+        await finalizeAgentStatus(run.agentId, "failed", message).catch(() => undefined);
+      }
+    } finally {
+      const latestRun = await getRun(run.id).catch(() => null);
+      await releaseEnvironmentLeasesForRun({
+        runId: run.id,
+        companyId: run.companyId,
+        agentId: run.agentId,
+        status: latestRun?.status,
+        failureReason: latestRun?.error ?? undefined,
+      });
+      await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
+      if (runScratch && latestRun && isHeartbeatRunTerminalStatus(latestRun.status)) {
+        const scratchForCleanup = runScratch;
+        let scratchCleanup: Awaited<ReturnType<typeof cleanupHeartbeatRunScratch>> | null = null;
+        try {
+          scratchCleanup = await cleanupHeartbeatRunScratch({
+            scratch: scratchForCleanup,
+            processGroupId: latestRun.processGroupId,
+            isProcessGroupAlive,
+          });
+        } catch (scratchCleanupError) {
+          logger.warn(
+            {
+              err: scratchCleanupError,
+              runId: run.id,
+              scratchDir: scratchForCleanup.dir,
+            },
+            "failed to clean heartbeat run scratch directory",
+          );
+          await appendRunEvent(latestRun, await nextRunEventSeq(latestRun.id), {
+            eventType: "error",
+            stream: "system",
+            level: "warn",
+            message: "run scratch cleanup failed",
+            payload: {
+              dir: scratchForCleanup.dir,
+              error: scratchCleanupError instanceof Error
+                ? scratchCleanupError.message
+                : String(scratchCleanupError),
+            },
+          }).catch(() => undefined);
+        }
+        if (scratchCleanup) {
+          await appendRunEvent(latestRun, await nextRunEventSeq(latestRun.id), {
+            eventType: "lifecycle",
+            stream: "system",
+            level: scratchCleanup.removed ? "info" : "warn",
+            message: scratchCleanup.removed
+              ? "run scratch cleaned"
+              : `run scratch cleanup skipped: ${scratchCleanup.reason}`,
+            payload: scratchCleanup,
+          }).catch((scratchCleanupEventError) => {
+            logger.warn(
+              {
+                err: scratchCleanupEventError,
+                runId: run.id,
+                scratchDir: scratchForCleanup.dir,
+              },
+              "failed to record heartbeat run scratch cleanup event",
+            );
           });
         }
       }
-
-      await finalizeAgentStatus(agent.id, "failed", message);
+      activeRunExecutions.delete(run.id);
+      await startNextQueuedRunForAgent(run.agentId);
     }
-    } catch (outerErr) {
-          // Setup code before adapter.execute threw (e.g. ensureRuntimeState, resolveWorkspaceForRun).
-          // The inner catch did not fire, so we must record the failure here.
-          const message = redactCurrentUserText(
-            outerErr instanceof Error ? outerErr.message : "Unknown setup failure",
-            await getCurrentUserRedactionOptions(),
-          );
-          // A missing secret/env binding is a known pre-dispatch configuration gap,
-          // not an opaque setup crash. Surface it with its own errorCode so the
-          // recovery path routes it to a human owner instead of looping retries.
-          const workspaceValidationSetupFailure = isWorkspaceValidationFailure(outerErr) ? outerErr : null;
-          const configurationIncompleteSetupFailure = isConfigurationIncompleteFailure(outerErr) ? outerErr : null;
-          const recordedResponsibleUserDenialCode =
-            normalizeResponsibleUserDenialCode((await getRun(runId).catch(() => null))?.errorCode);
-          const setupFailureErrorCode =
-            workspaceValidationSetupFailure?.code ??
-            configurationIncompleteSetupFailure?.code ??
-            recordedResponsibleUserDenialCode ??
-            "setup_failed";
-          logger.error({ err: outerErr, runId }, "heartbeat execution setup failed");
-          const setupFailureAgent = await getAgent(run.agentId).catch(() => null);
-          const setupFailureWrite = await setRunStatusIfRunning(runId, "failed", {
-            error: message,
-            errorCode: setupFailureErrorCode,
-            finishedAt: new Date(),
-            ...(setupFailureAgent ? {
-              resultJson: mergeRunStopMetadataForAgent(setupFailureAgent, "failed", {
-                errorCode: setupFailureErrorCode,
-                errorMessage: message,
-                resultJson:
-                  workspaceValidationSetupFailure?.resultJson ?? configurationIncompleteSetupFailure?.resultJson ?? null,
-              }),
-            } : {}),
-          }).catch(() => ({ run: null, updated: false as const }));
-          if (!setupFailureWrite.updated) {
-            logger.info(
-              {
-                runId,
-                attemptedStatus: "failed",
-                currentStatus: setupFailureWrite.run?.status ?? null,
-              },
-              "skipping late setup failure finalization because the run already left running state",
-            );
-          } else {
-            await setWakeupStatus(run.wakeupRequestId, "failed", {
-              finishedAt: new Date(),
-              error: message,
-            }).catch(() => undefined);
-          }
-          const failedRun = await getRun(runId).catch(() => null);
-          if (setupFailureWrite.updated && failedRun) {
-            // Emit a run-log event so the failure is visible in the run timeline,
-            // consistent with what the inner catch block does for adapter failures.
-            await appendRunEvent(failedRun, 1, {
-              eventType: "error",
-              stream: "system",
-              level: "error",
-              message,
-            }).catch(() => undefined);
-            const livenessRun = await classifyAndPersistRunLiveness(failedRun).catch(() => failedRun);
-            const setupFailureIssueId = readNonEmptyString(parseObject(livenessRun.contextSnapshot).issueId);
-            if (setupFailureIssueId) {
-              await completeSkillTestRunForHeartbeatOutcome({
-                run: livenessRun,
-                issueId: setupFailureIssueId,
-                outcome: "failed",
-                error: message,
-              }).catch((completionErr) => {
-                logger.warn(
-                  { err: completionErr, runId: livenessRun.id, issueId: setupFailureIssueId },
-                  "failed to complete skill test run after heartbeat setup failure",
-                );
-              });
-            }
-            const failedAgent = setupFailureAgent ?? await getAgent(run.agentId).catch(() => null);
-            if (failedAgent) {
-              await refreshContinuationSummaryForRun(livenessRun, failedAgent).catch(() => undefined);
-              if (!isWorkspaceValidationFailedRun(livenessRun) && !isConfigurationIncompleteFailedRun(livenessRun)) {
-                await finalizeIssueCommentPolicy(livenessRun, failedAgent).catch(() => undefined);
-              }
-              await scheduleInteractionContinuationInfrastructureRetryIfEligible(livenessRun, failedAgent).catch((retryError) => {
-                logger.warn(
-                  { err: retryError, runId: livenessRun.id },
-                  "failed to schedule interaction continuation retry after setup failure",
-                );
-              });
-            }
-            await releaseIssueExecutionAndPromote(livenessRun).catch((releaseError) => {
-              logger.error(
-                { err: releaseError, runId },
-                "failed to release issue execution after heartbeat setup failure",
-              );
-            });
-          }
-          // Ensure the agent is not left stuck in "running" if the setup-failure
-          // path owned the terminal transition. If another path already finalized
-          // the run, keep that terminal outcome authoritative.
-          if (setupFailureWrite.updated) {
-            await finalizeAgentStatus(run.agentId, "failed", message).catch(() => undefined);
-          }
-        } finally {
-          const latestRun = await getRun(run.id).catch(() => null);
-          await releaseEnvironmentLeasesForRun({
-            runId: run.id,
-            companyId: run.companyId,
-            agentId: run.agentId,
-            status: latestRun?.status,
-            failureReason: latestRun?.error ?? undefined,
-          });
-          await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
-          if (runScratch && latestRun && isHeartbeatRunTerminalStatus(latestRun.status)) {
-            const scratchForCleanup = runScratch;
-            let scratchCleanup: Awaited<ReturnType<typeof cleanupHeartbeatRunScratch>> | null = null;
-            try {
-              scratchCleanup = await cleanupHeartbeatRunScratch({
-                scratch: scratchForCleanup,
-                processGroupId: latestRun.processGroupId,
-                isProcessGroupAlive,
-              });
-            } catch (scratchCleanupError) {
-              logger.warn(
-                {
-                  err: scratchCleanupError,
-                  runId: run.id,
-                  scratchDir: scratchForCleanup.dir,
-                },
-                "failed to clean heartbeat run scratch directory",
-              );
-              await appendRunEvent(latestRun, await nextRunEventSeq(latestRun.id), {
-                eventType: "error",
-                stream: "system",
-                level: "warn",
-                message: "run scratch cleanup failed",
-                payload: {
-                  dir: scratchForCleanup.dir,
-                  error: scratchCleanupError instanceof Error
-                    ? scratchCleanupError.message
-                    : String(scratchCleanupError),
-                },
-              }).catch(() => undefined);
-            }
-            if (scratchCleanup) {
-              await appendRunEvent(latestRun, await nextRunEventSeq(latestRun.id), {
-                eventType: "lifecycle",
-                stream: "system",
-                level: scratchCleanup.removed ? "info" : "warn",
-                message: scratchCleanup.removed
-                  ? "run scratch cleaned"
-                  : `run scratch cleanup skipped: ${scratchCleanup.reason}`,
-                payload: scratchCleanup,
-              }).catch((scratchCleanupEventError) => {
-                logger.warn(
-                  {
-                    err: scratchCleanupEventError,
-                    runId: run.id,
-                    scratchDir: scratchForCleanup.dir,
-                  },
-                  "failed to record heartbeat run scratch cleanup event",
-                );
-              });
-            }
-          }
-          activeRunExecutions.delete(run.id);
-          await startNextQueuedRunForAgent(run.agentId);
-        }
   }
 
   function buildImmediateExecutionPathRecoveryComment(input: {
@@ -14530,10 +14529,10 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
             eq(issues.companyId, run.companyId),
             contextIssueId
               ? or(
-                  eq(issues.id, contextIssueId),
-                  eq(issues.executionRunId, run.id),
-                  eq(issues.checkoutRunId, run.id),
-                )
+                eq(issues.id, contextIssueId),
+                eq(issues.executionRunId, run.id),
+                eq(issues.checkoutRunId, run.id),
+              )
               : or(eq(issues.executionRunId, run.id), eq(issues.checkoutRunId, run.id)),
           ),
         )
@@ -15074,9 +15073,9 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           : configurationIncompleteFailure
             ? buildConfigurationIncompleteRecoveryComment({ latestRun: run })
             : buildImmediateExecutionPathRecoveryComment({
-                status: issue.status as "todo" | "in_progress",
-                latestRun: run,
-              });
+              status: issue.status as "todo" | "in_progress",
+              latestRun: run,
+            });
         return {
           kind: "blocked" as const,
           issue,
@@ -15199,7 +15198,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
               ? CONFIGURATION_INCOMPLETE_RECOVERY_CAUSE
               : promotionResult.recoveryCause === EXECUTION_REVIEW_PARTICIPANT_RECOVERY_CAUSE
                 ? EXECUTION_REVIEW_PARTICIPANT_RECOVERY_CAUSE
-              : undefined,
+                : undefined,
         recoveryOwnerAgentId: promotionResult.recoveryOwnerAgentId,
       });
       return;
@@ -15341,11 +15340,11 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
       if (hasResolvablePriorSessionWorkspace !== null) return hasResolvablePriorSessionWorkspace;
       hasResolvablePriorSessionWorkspace = issueId
         ? await hasResolvablePriorSessionWorkspaceForWake({
-            agent,
-            contextSnapshot: enrichedContextSnapshot,
-            taskKey: effectiveTaskKey,
-            explicitResumeSession,
-          })
+          agent,
+          contextSnapshot: enrichedContextSnapshot,
+          taskKey: effectiveTaskKey,
+          explicitResumeSession,
+        })
         : false;
       return hasResolvablePriorSessionWorkspace;
     };
@@ -15364,7 +15363,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         ? or(eq(issues.id, issueId), eq(issues.identifier, issueId.toUpperCase()))
         : eq(issues.identifier, issueId.toUpperCase());
       const resolvedIssue = await db
-      .select({ id: issues.id, projectId: issues.projectId, createdAt: issues.createdAt })
+        .select({ id: issues.id, projectId: issues.projectId, createdAt: issues.createdAt })
         .from(issues)
         .where(and(eq(issues.companyId, agent.companyId), idMatch))
         .then((rows) => rows[0] ?? null);
@@ -16597,13 +16596,13 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
     const errorCode = options.errorCode ?? "cancelled";
     const resultJson = agent
       ? {
-          ...mergeRunStopMetadataForAgent(agent, "cancelled", {
-            resultJson: parseObject(run.resultJson),
-            errorCode,
-            errorMessage: reason,
-          }),
-          ...(options.resultJson ?? {}),
-        }
+        ...mergeRunStopMetadataForAgent(agent, "cancelled", {
+          resultJson: parseObject(run.resultJson),
+          errorCode,
+          errorMessage: reason,
+        }),
+        ...(options.resultJson ?? {}),
+      }
       : options.resultJson;
 
     const running = runningProcesses.get(run.id);
@@ -16801,16 +16800,16 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         .select(
           summary
             ? {
-                ...heartbeatRunSummaryListColumns,
-                ...heartbeatRunListContextColumns,
-              }
+              ...heartbeatRunSummaryListColumns,
+              ...heartbeatRunListContextColumns,
+            }
             : safeForLegacyEncoding
-            ? {
+              ? {
                 ...heartbeatRunListColumns,
                 error: sql<string | null>`NULL`.as("error"),
                 ...heartbeatRunListContextColumns,
               }
-            : {
+              : {
                 ...heartbeatRunListColumns,
                 ...heartbeatRunListContextColumns,
                 ...heartbeatRunListResultColumns,
@@ -16868,14 +16867,14 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
           resultJson: safeForLegacyEncoding || summary
             ? null
             : summarizeHeartbeatRunListResultJson({
-                summary: resultSummary,
-                result: resultResult,
-                message: resultMessage,
-                error: resultError,
-                totalCostUsd: resultTotalCostUsd,
-                costUsd: resultCostUsd,
-                costUsdCamel: resultCostUsdCamel,
-              }),
+              summary: resultSummary,
+              result: resultResult,
+              message: resultMessage,
+              error: resultError,
+              totalCostUsd: resultTotalCostUsd,
+              costUsd: resultCostUsd,
+              costUsdCamel: resultCostUsdCamel,
+            }),
         };
       });
     },
