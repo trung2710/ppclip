@@ -1289,8 +1289,12 @@ async function getProtectedMemberReason(
 
   const actorRole = opts?.actorRole ?? await resolveActorHumanRole(req, access, companyId);
   if (!actorRole) return "Only active company members can remove users.";
-  if (humanRoleRank[targetRole] >= humanRoleRank[actorRole]) {
-    return "You can only remove users below your company role.";
+  
+  // Instance Admin (hoặc local-board) có toàn quyền quản lý mọi role của thành viên khác trong Company
+  if (!(req.actor.source === "local_implicit" || req.actor.isInstanceAdmin)) {
+    if (humanRoleRank[targetRole] >= humanRoleRank[actorRole]) {
+      return "You can only remove users below your company role.";
+    }
   }
 
   return null;
@@ -4130,7 +4134,7 @@ export function accessRoutes(
 
   router.get("/companies/:companyId/invites", async (req, res) => {
     const companyId = req.params.companyId as string;
-    await assertCompanyPermission(req, companyId, "users:invite");
+    assertCompanyAccess(req, companyId);
     const query = listCompanyInvitesQuerySchema.parse(req.query);
     const invitesForCompany = await loadCompanyInviteRecords(db, companyId, query);
     res.json(invitesForCompany);
@@ -4433,7 +4437,7 @@ export function accessRoutes(
 
   router.get("/companies/:companyId/members", async (req, res) => {
     const companyId = req.params.companyId as string;
-    await assertCompanyPermission(req, companyId, "users:manage_permissions");
+    assertCompanyAccess(req, companyId);
     const [members, currentAccess] = await Promise.all([
       loadCompanyMemberRecords(db, companyId),
       loadCompanyAccessSummary(req, access, companyId),
