@@ -462,7 +462,7 @@ export function accessService(db: Db) {
         throw conflict("Instance admins cannot be removed from company access");
       }
       const protectedArchives = toArchive.filter((row) => row.membershipRole === "owner" || row.membershipRole === "admin");
-      if (protectedArchives.length > 0) {
+      if (protectedArchives.length > 0 && !options.actorUserId) {
         throw conflict("Owners and admins cannot be removed from company access");
       }
       const activeOwnerArchives = toArchive.filter(
