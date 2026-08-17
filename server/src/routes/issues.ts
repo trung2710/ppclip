@@ -9326,6 +9326,7 @@ export function issueRoutes(
       if (!issue) return;
       if (await rejectAgentIssueThreadInteractionResolution(req, res, issue)) return;
       assertBoard(req);
+      await assertCanAssignTasks(req, issue.companyId);
 
       const actor = getActorInfo(req);
       const { interaction, createdIssues, continuationIssue } = await issueThreadInteractionService(db).acceptInteraction(issue, interactionId, req.body, {
@@ -9471,6 +9472,7 @@ export function issueRoutes(
       if (!issue) return;
       if (await rejectAgentIssueThreadInteractionResolution(req, res, issue)) return;
       assertBoard(req);
+      await assertCanAssignTasks(req, issue.companyId);
 
       const actor = getActorInfo(req);
       const interaction = await issueThreadInteractionService(db).rejectInteraction(issue, interactionId, req.body, {
@@ -9525,6 +9527,7 @@ export function issueRoutes(
       if (!issue) return;
       if (await rejectAgentIssueThreadInteractionResolution(req, res, issue)) return;
       assertBoard(req);
+      await assertCanAssignTasks(req, issue.companyId);
 
       const actor = getActorInfo(req);
       const interaction = await issueThreadInteractionService(db).answerQuestions(issue, interactionId, req.body, {
