@@ -27,7 +27,34 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP invoke failed with status ${res.status}`);
+      const errorText = await res.text().catch(() => "");
+      if (ctx.onLog && errorText) {
+        await ctx.onLog("stderr", errorText);
+      }
+      throw new Error(`HTTP invoke failed with status ${res.status}: ${errorText || res.statusText}`);
+    }
+
+    // Đọc luồng stream trả về từ n8n (Chunked Transfer hoặc SSE) để stream ra STDOUT của Paperclip
+    let responseText = "";
+    if (res.body && ctx.onLog) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: !done });
+          responseText += chunk;
+          await ctx.onLog("stdout", chunk);
+        }
+      }
+    } else {
+      responseText = await res.text();
+      if (ctx.onLog && responseText) {
+        await ctx.onLog("stdout", responseText);
+      }
     }
 
     return {
@@ -35,6 +62,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       signal: null,
       timedOut: false,
       summary: `HTTP ${method} ${url}`,
+      resultJson: {
+        output: responseText,
+      },
     };
   } catch (err) {
     if (timer && err instanceof Error && err.name === "AbortError") {
