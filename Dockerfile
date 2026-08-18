@@ -51,6 +51,9 @@ FROM base AS build
 WORKDIR /app
 COPY --from=deps /app /app
 COPY . .
+RUN pnpm -C n8n-runtime-adapter install --ignore-workspace --no-lockfile
+RUN pnpm -C n8n-runtime-adapter build
+RUN test -f n8n-runtime-adapter/dist/index.js || (echo "ERROR: n8n runtime adapter build output missing" && exit 1)
 RUN pnpm --filter @paperclipai/ui build
 RUN pnpm --filter @paperclipai/plugin-sdk build
 RUN pnpm --filter @paperclipai/server build
@@ -121,11 +124,11 @@ FROM build AS cloud-plugins
 ARG CLOUD_BUNDLED_PLUGINS="daytona"
 RUN set -eu; \
   for name in $CLOUD_BUNDLED_PLUGINS; do \
-    dir="packages/plugins/sandbox-providers/$name"; \
-    test -d "$dir" || { echo "ERROR: unknown sandbox provider '$name'" >&2; exit 1; }; \
-    pnpm -C "$dir" install --ignore-workspace --no-lockfile; \
-    pnpm -C "$dir" build; \
-    test -f "$dir/dist/manifest.js" || { echo "ERROR: $dir is missing dist/manifest.js after build" >&2; exit 1; }; \
+  dir="packages/plugins/sandbox-providers/$name"; \
+  test -d "$dir" || { echo "ERROR: unknown sandbox provider '$name'" >&2; exit 1; }; \
+  pnpm -C "$dir" install --ignore-workspace --no-lockfile; \
+  pnpm -C "$dir" build; \
+  test -f "$dir/dist/manifest.js" || { echo "ERROR: $dir is missing dist/manifest.js after build" >&2; exit 1; }; \
   done
 
 FROM production AS cloud
