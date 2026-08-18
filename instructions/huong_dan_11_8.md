@@ -363,6 +363,428 @@ Chuyển bridge thành Paperclip external adapter plugin:
 5. Trả usage/cost/model/result trong `AdapterExecutionResult` nếu có.
 6. Thêm UI parser để render event n8n thành timeline dễ đọc.
 
+#### 11.3.1. Hướng dẫn triển khai external adapter `n8n_runtime`
+
+Phần này ghi lại cách tạo và cài đặt external adapter đã triển khai thử nghiệm trong repo local.
+
+Adapter hiện được đặt tại:
+
+```txt
+C:\paperclip\n8n-runtime-adapter
+```
+
+Adapter type:
+
+```txt
+n8n_runtime
+```
+
+Ý nghĩa: thay vì Paperclip dùng HTTP adapter gọi một URL bridge như `http://localhost:3005/run`, Paperclip sẽ gọi trực tiếp `n8n_runtime.execute(ctx)`. Adapter này tự trigger webhook n8n, tự tìm execution, poll node output và đẩy log/event về Run tab của Paperclip.
+
+Luồng chạy:
+
+```txt
+Paperclip heartbeat/run
+-> n8n_runtime external adapter
+-> gọi webhook workflow B của n8n
+-> tìm executionId bằng workflowId + traceId
+-> poll /api/v1/executions/{executionId}?includeData=true
+-> emit ctx.onLog / ctx.onEvent
+-> trả AdapterExecutionResult cho Paperclip
+```
+
+External adapter bản đầu vẫn dùng polling, chưa cần sửa Docker image của n8n và chưa cần lifecycle hook.
+
+#### 11.3.2. Cấu trúc package adapter đã tạo
+
+```txt
+n8n-runtime-adapter/
+  package.json
+  tsconfig.json
+  README.md
+  scripts/
+    copy-ui-parser.mjs
+  src/
+    index.ts
+    metadata.ts
+    types.ts
+    ui-parser.cjs
+    server/
+      index.ts
+      execute.ts
+      parse.ts
+      test.ts
+```
+
+Vai trò chính:
+
+| File | Vai trò |
+|---|---|
+| `src/index.ts` | Entry point của package, export `createServerAdapter()` |
+| `src/metadata.ts` | Khai báo `type`, `label`, `models`, `agentConfigurationDoc` |
+| `src/server/index.ts` | Tạo `ServerAdapterModule`, khai báo `getConfigSchema()` |
+| `src/server/execute.ts` | Logic chính: gọi n8n, tìm execution, poll node, emit log/event |
+| `src/server/parse.ts` | Helper parse/summarize/redact node input-output |
+| `src/server/test.ts` | Logic cho nút Test environment |
+| `src/ui-parser.cjs` | Parser log JSONL để Run tab hiển thị dễ đọc hơn |
+| `scripts/copy-ui-parser.mjs` | Copy UI parser sang `dist` sau khi build |
+
+#### 11.3.3. Cài dependency và build adapter
+
+Không tự tạo `node_modules` thủ công.
+
+Nếu package chưa có dependency để build, chạy:
+
+```powershell
+cd C:\paperclip\n8n-runtime-adapter
+pnpm install
+```
+
+Sau đó build:
+
+```powershell
+cd C:\paperclip\n8n-runtime-adapter
+pnpm build
+```
+
+Kiểm tra type:
+
+```powershell
+cd C:\paperclip\n8n-runtime-adapter
+pnpm typecheck
+```
+
+Khi build thành công, Paperclip sẽ load code từ folder `dist`.
+
+Lưu ý:
+
+- `node_modules` chỉ phục vụ quá trình build.
+- `dist` mới là output chính để Paperclip dynamic import.
+- Sau khi sửa code adapter, luôn chạy lại `pnpm build`.
+
+#### 11.3.4. Cấu hình `N8N_API_KEY` cho Paperclip server
+
+Adapter cần gọi n8n Execution API:
+
+```txt
+GET /api/v1/executions
+GET /api/v1/executions/{executionId}?includeData=true
+```
+
+Vì vậy Paperclip server cần biết `N8N_API_KEY`.
+
+Khuyến nghị đặt bằng environment variable khi chạy Paperclip:
+
+```powershell
+cd C:\paperclip
+$env:N8N_API_KEY="your-n8n-api-key"
+pnpm dev
+```
+
+Trong bản local này đã bổ sung logic để `pnpm dev` nạp thêm file:
+
+```txt
+C:\paperclip\.env
+```
+
+theo nguyên tắc không ghi đè biến đã set sẵn trong terminal. Vì vậy có thể đặt:
+
+```txt
+N8N_API_KEY=your-n8n-api-key
+```
+
+trong `C:\paperclip\.env`, sau đó restart Paperclip server.
+
+Không nên hardcode API key trong `adapterConfig`, vì config có thể bị hiển thị hoặc log ra ở nhiều nơi.
+
+Nếu dùng thêm env fallback:
+
+```powershell
+$env:N8N_BASE_URL="https://inexpert-aleida-rostrally.ngrok-free.dev"
+$env:N8N_WORKFLOW_ID="<workflow-b-id>"
+$env:N8N_API_KEY="your-n8n-api-key"
+```
+
+Nhưng với bản test hiện tại, nên khai báo `baseUrl` và `workflowId` trong `adapterConfig`, chỉ để `N8N_API_KEY` trong env.
+
+#### 11.3.5. Cài external adapter vào Paperclip
+
+Trước khi cài, cần đảm bảo Paperclip server đang chạy và API reachable:
+
+```powershell
+curl http://localhost:3100/api/health
+```
+
+Cài adapter:
+
+```powershell
+cd C:\paperclip
+pnpm paperclipai adapter install --payload-json '{"packageName":"C:\paperclip\n8n-runtime-adapter","isLocalPath":true}'
+```
+
+Giải thích từng phần:
+
+| Thành phần | Ý nghĩa |
+|---|---|
+| `pnpm` | Chạy command trong repo Paperclip |
+| `paperclipai` | CLI quản trị của Paperclip |
+| `adapter` | Nhóm lệnh liên quan external adapter |
+| `install` | Đăng ký/cài adapter vào Paperclip |
+| `--payload-json` | Truyền payload dạng JSON |
+| `{"packageName":"C:\paperclip\n8n-runtime-adapter","isLocalPath":true}` | Cài adapter từ thư mục local |
+
+Lệnh trên chỉ cần chạy một lần khi cài lần đầu.
+
+Nếu lệnh báo:
+
+```txt
+Could not reach the Paperclip API
+```
+
+thì nguyên nhân thường là Paperclip server chưa chạy ở `http://localhost:3100` hoặc đang chạy ở port khác.
+
+Nếu lệnh báo:
+
+```txt
+API error 500: npm install failed: spawn npm ENOENT
+```
+
+thì thường là do payload thiếu `isLocalPath: true`. Khi đó Paperclip hiểu `packageName` là tên npm package và cố chạy `npm install`. Với adapter local, phải truyền path qua `packageName` và bật `isLocalPath`:
+
+```powershell
+pnpm paperclipai adapter install --payload-json '{"packageName":"C:\paperclip\n8n-runtime-adapter","isLocalPath":true}'
+```
+
+#### 11.3.6. Kiểm tra adapter đã cài chưa
+
+Xem danh sách adapter:
+
+```powershell
+cd C:\paperclip
+pnpm paperclipai adapter list
+```
+
+Xem chi tiết adapter `n8n_runtime`:
+
+```powershell
+cd C:\paperclip
+pnpm paperclipai adapter get n8n_runtime
+```
+
+Hai lệnh này không phải cài thêm. Chúng chỉ dùng để kiểm tra.
+
+Ý nghĩa:
+
+```txt
+install = đăng ký adapter lần đầu
+list    = xem adapter có trong danh sách chưa
+get     = xem chi tiết adapter
+reload  = nạp lại adapter sau khi sửa code
+```
+
+#### 11.3.7. Reload adapter sau khi sửa code
+
+Khi sửa code trong `C:\paperclip\n8n-runtime-adapter`, không cần install lại.
+
+Chạy:
+
+```powershell
+cd C:\paperclip\n8n-runtime-adapter
+pnpm build
+
+cd C:\paperclip
+pnpm paperclipai adapter reload n8n_runtime
+```
+
+Nếu reload lỗi, có thể restart Paperclip server rồi kiểm tra lại:
+
+```powershell
+cd C:\paperclip
+pnpm paperclipai adapter get n8n_runtime
+```
+
+#### 11.3.8. Cấu hình agent dùng adapter mới
+
+Agent hiện tại đang dùng HTTP adapter kiểu:
+
+```json
+{
+  "adapterType": "http",
+  "adapterConfig": {
+    "url": "http://localhost:3005/run",
+    "method": "POST"
+  }
+}
+```
+
+Khi chuyển sang external adapter:
+
+```json
+{
+  "adapterType": "n8n_runtime",
+  "adapterConfig": {
+    "webhookUrl": "https://inexpert-aleida-rostrally.ngrok-free.dev/webhook/<webhook-b>",
+    "workflowId": "<workflow-b-id>",
+    "baseUrl": "https://inexpert-aleida-rostrally.ngrok-free.dev",
+    "method": "POST",
+    "pollIntervalMs": 1000,
+    "executionTimeoutMs": 300000,
+    "matchTraceId": true,
+    "logDetail": "compact"
+  }
+}
+```
+
+Adapter cũng hỗ trợ alias `url` để dễ migrate từ HTTP adapter cũ:
+
+```json
+{
+  "adapterType": "n8n_runtime",
+  "adapterConfig": {
+    "url": "https://inexpert-aleida-rostrally.ngrok-free.dev/webhook/<webhook-b>",
+    "workflowId": "<workflow-b-id>",
+    "baseUrl": "https://inexpert-aleida-rostrally.ngrok-free.dev",
+    "method": "POST"
+  }
+}
+```
+
+Tuy nhiên nên dùng `webhookUrl` cho rõ nghĩa.
+
+Các field quan trọng:
+
+| Field | Bắt buộc | Ý nghĩa |
+|---|---:|---|
+| `webhookUrl` | Có | Webhook workflow B của n8n |
+| `baseUrl` | Có | Origin n8n để gọi Execution API |
+| `workflowId` | Có | ID workflow B để tìm execution |
+| `method` | Không | Mặc định `POST` |
+| `pollIntervalMs` | Không | Chu kỳ poll, mặc định 1000ms |
+| `executionTimeoutMs` | Không | Timeout execution, mặc định 300000ms |
+| `matchTraceId` | Không | Nên bật để tránh match nhầm execution |
+| `logDetail` | Không | `compact` hoặc `verbose` |
+
+#### 11.3.9. Endpoint cập nhật agent
+
+Nếu update bằng API/Postman:
+
+```http
+PATCH http://localhost:3100/api/companies/{companyId}/agents/{agentId}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Body mẫu:
+
+```json
+{
+  "adapterType": "n8n_runtime",
+  "adapterConfig": {
+    "webhookUrl": "https://inexpert-aleida-rostrally.ngrok-free.dev/webhook/<webhook-b>",
+    "workflowId": "<workflow-b-id>",
+    "baseUrl": "https://inexpert-aleida-rostrally.ngrok-free.dev",
+    "method": "POST",
+    "pollIntervalMs": 1000,
+    "executionTimeoutMs": 300000,
+    "matchTraceId": true,
+    "logDetail": "compact"
+  }
+}
+```
+
+#### 11.3.10. Kiểm tra end-to-end sau khi cài
+
+Checklist:
+
+```txt
+1. n8n Docker đang chạy.
+2. n8n đã bật lưu execution data.
+3. n8n API key gọi được Execution API.
+4. Paperclip server đang chạy với N8N_API_KEY.
+5. Adapter n8n_runtime đã install thành công.
+6. Agent đã đổi adapterType sang n8n_runtime.
+7. Agent config có webhookUrl, baseUrl, workflowId.
+8. Tạo task mới để Paperclip wake agent.
+9. Workflow B bên n8n được trigger.
+10. Run tab Paperclip hiện log:
+    - bridge.started
+    - n8n.triggered
+    - n8n.execution.found
+    - n8n.node.finished
+    - n8n.execution.finished
+11. Issue status/comment được workflow B cập nhật đúng.
+```
+
+#### 11.3.11. Lưu ý với Docker và ngrok
+
+Trường hợp hiện tại:
+
+```txt
+n8n chạy Docker
+Paperclip chạy Windows host
+```
+
+Khi n8n container gọi Paperclip Windows:
+
+```txt
+http://host.docker.internal:3100
+```
+
+Khi Paperclip Windows gọi n8n:
+
+```txt
+https://inexpert-aleida-rostrally.ngrok-free.dev
+```
+
+hoặc nếu gọi trực tiếp được:
+
+```txt
+http://localhost:5678
+```
+
+Điểm dễ nhầm:
+
+- `host.docker.internal` dùng từ container Docker gọi ra host.
+- Paperclip đang chạy trên Windows host thì không nhất thiết dùng `host.docker.internal` để gọi n8n.
+- `baseUrl` phải là URL mà Paperclip server gọi được.
+- `webhookUrl` phải là URL webhook workflow B mà Paperclip gọi được.
+
+#### 11.3.12. Kết quả đã kiểm tra ở bản local
+
+Các lệnh đã chạy thành công trong package adapter:
+
+```powershell
+cd C:\paperclip\n8n-runtime-adapter
+pnpm build
+pnpm typecheck
+```
+
+Kết quả:
+
+```txt
+build pass
+typecheck pass
+```
+
+Đã test import adapter từ output `dist`:
+
+```json
+{
+  "type": "n8n_runtime",
+  "hasExecute": "function",
+  "hasTest": "function",
+  "hasSchema": "function"
+}
+```
+
+Lệnh install đã được thử, endpoint đúng là:
+
+```txt
+POST http://localhost:3100/api/adapters/install
+```
+
+Nhưng tại thời điểm thử, Paperclip server chưa chạy nên CLI báo không reach được API. Đây không phải lỗi code adapter.
+
 ### Phase 4 - Hook/telemetry nâng cao
 
 Chỉ làm khi polling không đáp ứng độ chính xác:
