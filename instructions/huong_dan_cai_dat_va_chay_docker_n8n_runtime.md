@@ -229,3 +229,80 @@ docker rm -f paperclip-n8n-test
 
 Sau đó chạy lại container bằng lệnh ở mục 3. Volume `paperclip_data` vẫn được giữ nguyên.
 
+## 11. Xử Lý Lỗi `EAI_AGAIN registry.npmjs.org`
+
+Nếu log hiển thị:
+
+```text
+EAI_AGAIN registry.npmjs.org
+```
+
+đây là lỗi DNS/network của server, không phải lỗi Paperclip hay PostgreSQL.
+
+Container không phân giải được `registry.npmjs.org`, nên Corepack không thể tải package manager `pnpm`.
+
+Trong trường hợp này, không dùng:
+
+```sh
+pnpm paperclipai ...
+```
+
+Thay vào đó, gọi trực tiếp CLI đã có sẵn trong image.
+
+### 11.1. Onboard Và Tạo Admin Không Dùng `pnpm`
+
+Mở shell trong container:
+
+```powershell
+docker exec -it paperclip-n8n-test sh
+```
+
+Trong container:
+
+```sh
+cd /app
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts onboard
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts auth bootstrap-ceo
+```
+
+Nếu Paperclip đã onboard trước đó thì chỉ cần chạy:
+
+```sh
+cd /app
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts auth bootstrap-ceo
+```
+
+Sau khi lệnh tạo admin in ra one-time invite URL, mở URL đó trên trình duyệt để hoàn tất thiết lập.
+
+### 11.2. Cài Và Kiểm Tra External Adapter Không Dùng `pnpm`
+
+Kiểm tra adapter:
+
+```sh
+test -f /app/n8n-runtime-adapter/dist/index.js && echo "Adapter OK"
+```
+
+Cài adapter:
+
+```sh
+cd /app
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts adapter install --payload-json '{"packageName":"/app/n8n-runtime-adapter","isLocalPath":true}'
+```
+
+Kiểm tra danh sách adapter:
+
+```sh
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts adapter list
+```
+
+Kiểm tra chi tiết `n8n_runtime`:
+
+```sh
+node cli/node_modules/tsx/dist/cli.mjs cli/src/index.ts adapter get n8n_runtime
+```
+
+Kết quả cần trỏ tới:
+
+```text
+/app/n8n-runtime-adapter
+```
