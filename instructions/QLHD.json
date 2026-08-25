@@ -1,0 +1,2547 @@
+{
+  "name": "QLHD",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ec583085-52e4-4dd8-a7a7-a0e0fab45c86",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2432,
+        416
+      ],
+      "id": "70cb0327-f139-4260-bc19-af4084b0232d",
+      "name": "HR VSS",
+      "webhookId": "ec583085-52e4-4dd8-a7a7-a0e0fab45c86"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "77f7d792-7698-4f99-9960-a097259a9e58",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1712,
+        -768
+      ],
+      "id": "930d8013-39ed-490b-b308-bd685b96a586",
+      "name": "Contract",
+      "webhookId": "77f7d792-7698-4f99-9960-a097259a9e58"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adad8a21-9476-4a07-b989-7163f5cfb6ba",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1696,
+        -336
+      ],
+      "id": "67af2667-c7ba-4ac9-9253-ce600b4b4365",
+      "name": "Head Contract",
+      "webhookId": "adad8a21-9476-4a07-b989-7163f5cfb6ba"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Head Contract').item.json.body.taskId }}/attachments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -608,
+        -192
+      ],
+      "id": "d7c2c05a-8e72-4d33-be9f-cf71448e1b68",
+      "name": "lấy thông tin file đính kèm",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100{{ $json.downloadPath }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "staff_data"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -384,
+        -160
+      ],
+      "id": "c6b85487-65e7-4a80-b91e-4708af5c2056",
+      "name": "Tải file csv về",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "staff_data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        -160
+      ],
+      "id": "3739e0df-a1d2-430d-b699-86ed29c3c8a3",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2176,
+        416
+      ],
+      "id": "0184131a-dd17-4471-bb8f-36b5a6666bd0",
+      "name": "Kiểm tra tên task"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5b8b7221-0c8f-4056-8160-736afc38a072",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1968,
+        416
+      ],
+      "id": "54a14d95-18e1-43de-8241-911c24f9f096",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a22d5757-e029-4478-808c-e3134b575c3f",
+              "leftValue": "={{ $json.isComplete }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        -160
+      ],
+      "id": "772c4221-d7d6-451b-8de6-1a7373779340",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.parentId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"⚠️ Chiến dịch chưa thể thực thi do còn {{ $('Kiểm tra xem file đã đầy đủ nhận xét chưa').item.json.incompleteCount }} nhân viên chưa cập nhật kết quả thử việc: {{ $('Kiểm tra xem file đã đầy đủ nhận xét chưa').item.json.incompleteList }}. Yêu cầu HR VSS cập nhật lại file CSV dữ liệu.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        944,
+        -144
+      ],
+      "id": "3ac0ab82-d256-4c0f-8451-cce4e5f5f35f",
+      "name": "Thông báo yêu cầu cập nhật dữ liệu",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  const body = item.json.body || {};\n  const context = body.context || {};\n  const issue = context.paperclipIssue || {};\n  \n  // Lấy lý do đánh thức (wakeReason hoặc wakeSource) từ Paperclip\n  const wakeReason = body.wakeReason || context.wakeReason || \"\";\n  const wakeSource = body.wakeSource || context.wakeSource || \"\";\n  \n  // Trạng thái hiện tại của task\n  const status = issue.status || \"\";\n\n  // 1. Chạy lần đầu tiên khi mới giao việc\n  const isInitialRun = (wakeReason === \"issue_assigned\" || status === \"todo\");\n\n  // 2. Chạy lại khi HR VSS hoặc các sub-task con đã hoàn thành xong (Blocker resolved)\n  const isBlockerResolved = (wakeReason === \"issue_blockers_resolved\" || wakeSource === \"automation\");\n\n  return {\n    json: {\n      taskId: body.taskId || context.issueId || \"\",\n      wakeReason,\n      wakeSource,\n      status,\n      isInitialRun,\n      isBlockerResolved,\n      // Thêm flag kiểm tra đúng định dạng tiêu đề để tránh chạy nhầm task khác\n      isCorrectTitle: (issue.title || \"\").toLowerCase().includes(\"thử việc\") || (issue.title || \"\").toLowerCase().includes(\"hđlđ\")\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        -368
+      ],
+      "id": "63eac255-c22a-48d2-9492-ec70754fee73",
+      "name": "Kiểm tra loại task"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3756c0fc-ef63-418f-9f2d-927487997fd0",
+              "leftValue": "={{ $json.isInitialRun }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "59bd2f0a-e8c0-463c-8e5e-0b060c194d74",
+              "leftValue": "={{ $json.isBlockerResolved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2480,
+        -368
+      ],
+      "id": "139d9d83-35f9-4806-9b51-f86b006559f9",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Báo cáo tổng hợp kết quả cho việc {{ $('Head Contract').item.json.body.context.paperclipIssue.title }}\",\n  \"description\": \"\",\n  \"priority\": \"medium\",\n  \"parentId\": \"{{ $('Head Contract').item.json.body.taskId }}\",\n  \"assigneeAgentId\": \"b52dacc9-6ef6-41d5-b5fe-dde7af339ea6\",\n  \"status\" : \"blocked\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        592,
+        -336
+      ],
+      "id": "cd25e945-2e9f-4c82-9e99-7f4e37c213fd",
+      "name": "Tạo task tổng hợp kết quả",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Head Contract').item.json.body.taskId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"Đã tạo task tạo báo cáo\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        896,
+        -336
+      ],
+      "id": "f772e5bc-7c7a-47f4-a05c-9505c791f848",
+      "name": "Cmt tạo task báo cáo",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Head Contract').first().json.body.taskId }}\n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Head Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  (() => {\n    let subTaskId = null;\n\n    try {\n      subTaskId = $('Tạo task cho HR VSS cập nhật dữ liệu').first()?.json?.id;\n    } catch (e) {}\n\n    if (!subTaskId) {\n      try {\n        subTaskId = $('Tạo task tổng hợp kết quả').first()?.json?.id;\n      } catch (e) {}\n    }\n\n    return {\n      status: \"blocked\",\n      blockedByIssueIds: subTaskId ? [subTaskId] : [],\n      comment: \"Task cha chuyển sang trạng thái chờ do đang bị chặn bởi sub-task.\"\n    };\n  })()\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1360,
+        -224
+      ],
+      "id": "9f4de61f-c12f-47ce-b197-acacbe851837",
+      "name": "cập nhật status của task cha và biến blocked",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "ở service của HR VSS  sau khi nhận được thông báo ở đâu đó, trong hệ thống"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2032,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "6c160561-c923-42ed-8ae0-4994484ff5b5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Yêu cầu HR VSS cập nhật kết quả thử việc còn thiếu - T08/2026\",\n  \"description\": \"Hệ thống phát hiện danh sách còn thiếu thông tin đánh giá của {{ $json.summary.missingFeedbackDetails.incompleteCount }} nhân viên sau:\\n\\n{{ $json.summary.missingFeedbackDetails.incompleteList }}\\n\\n👉 Vui lòng tải file đính kèm ở Task Cha, cập nhật kết quả và tải lại lên trước khi bấm hoàn thành task này.\",\n  \"status\": \"todo\",\n  \"priority\": \"critical\",\n  \"parentId\": \"{{ $('Head Contract').first().json.body.taskId }}\",\n  \"assigneeUserId\": \"Ajp3zX6CAgpKSBKxXOf20o45yP9dSKvy\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        704,
+        -128
+      ],
+      "id": "c5dad8ed-5fdf-4a80-b0b8-4eb90e7f5021",
+      "name": "Tạo task cho HR VSS cập nhật dữ liệu",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Lọc ra những nhân viên chưa cập nhật kết quả\nconst incomplete = items.filter(item => {\n  const kq = item.json.ket_qua_thu_viec;\n  return !kq || kq === 'Chua cap nhat' || kq === '';\n});\n\n// Trả về kết quả tổng hợp (chỉ ra 1 item duy nhất)\nreturn {\n  json: {\n    isComplete: incomplete.length === 0,\n    incompleteCount: incomplete.length,\n    // Tạo danh sách tên/mã những người chưa cập nhật để báo cáo\n    incompleteList: incomplete.map(item => `${item.json.ma_nhan_vien} (${item.json.ho_va_ten})`).join(', '),\n    // Lưu lại danh sách dữ liệu gốc để dùng tiếp ở nhánh hoàn thành\n    allData: items.map(item => item.json)\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        -160
+      ],
+      "id": "13b9b1f8-ccb7-4e55-9b60-f1d58e93fc14",
+      "name": "Kiểm tra xem file đã đầy đủ nhận xét chưa"
+    },
+    {
+      "parameters": {
+        "content": "Task ở đây sẽ được tạo và block lại, đến khi bên HR VSS kích hoạt hoặc sửa xong click, gì đó để cập nhật file để cập nhật file"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "9a8d4cca-357b-427b-801f-1ff854876dba",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy dữ liệu 10 nhân viên từ node Extract from File\nconst staffList = $('Extract from File').all().map(item => item.json);\n\n// 2. Lấy kết quả kiểm tra thiếu nhận xét từ node trước\nconst checkResult = $('Kiểm tra xem file đã đầy đủ nhận xét chưa').first().json;\n\n// 3. Giả lập tạo nội dung thông báo gửi cho HR VSS\nconst totalStaff = staffList.length;\nconst notificationMessage = `[THÔNG BÁO TỰ ĐỘNG - HR VSS]\nHệ thống phát hiện danh sách gồm ${totalStaff} nhân sự hết hạn thử việc nhưng còn thiếu dữ liệu nhận xét/đánh giá.\nVui lòng kiểm tra và cập nhật bổ sung vào file trước khi trình ký hợp đồng chính thức.`;\n\n// 4. Trả về kết quả JSON để n8n đưa sang các node sau\nreturn [\n  {\n    json: {\n      status: \"notification_sent\",\n      timestamp: new Date().toISOString(),\n      recipient: \"HR VSS\",\n      channel: \"Mock Notification (Zalo/Telegram/Email)\",\n      message: notificationMessage,\n      summary: {\n        totalRecords: totalStaff,\n        missingFeedbackDetails: checkResult\n      },\n      previewData: staffList.slice(0, 3) // Trích 3 dòng mẫu xem trước\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -144
+      ],
+      "id": "1a7cc448-1cfe-4792-8bad-515379c7fd0a",
+      "name": "Giả lập gửi thông báo cập nhật dữ liệu cho HR VSS"
+    },
+    {
+      "parameters": {
+        "content": "Bình thường sẽ vào api của HR VSS để tạo báo cáo tổng hợp "
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2032,
+        -816
+      ],
+      "typeVersion": 1,
+      "id": "d80721b8-4bfe-4707-887e-d6661fcf84a8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.parentId }}/attachments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1376,
+        -768
+      ],
+      "id": "f1803736-8499-4bfa-8156-b3de9a2cd0c6",
+      "name": "Lấy thông tin file",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100{{ $json.downloadPath }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "contract_data"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1168,
+        -768
+      ],
+      "id": "de8dec96-2448-49ca-a61a-2e47b8bc536a",
+      "name": "Download File",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "contract_data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        -768
+      ],
+      "id": "87996ecc-f190-4101-a21a-5b1757b4b965",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.context.issueId }}/documents/bao_cao_tong_hop-",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"title\": \"Báo cáo tổng hợp thử việc T08-2026 \",\n    \"format\": \"markdown\",\n    \"body\": $json.reportMarkdown,\n    \"baseRevisionId\": null\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        32,
+        -1344
+      ],
+      "id": "1b6a14a8-a256-4276-9466-818cd5ef731a",
+      "name": "Tạo báo cáo trong task",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy data từ Webhook gốc\nlet webhookData = {};\ntry {\n  webhookData = $('Contract').first().json.body || {};\n} catch(e) {}\n\nconst context = webhookData.context || {};\n\n// Lấy lý do đánh thức (wakeReason)\nconst wakeReason = webhookData.wakeReason || context.wakeReason || \"\";\nconst wakeSource = webhookData.wakeSource || context.wakeSource || \"\";\n\n// Lấy status từ API lấy thông tin task (nếu có)\nlet status = \"\";\ntry {\n  status = $('Lấy thông tin task').first().json.status || \"\";\n} catch(e) {}\n\n// Logic rẽ nhánh\nconst isInitialRun = (wakeReason === \"issue_assigned\" || wakeReason === \"issue_created\" || status === \"todo\");\nconst isBlockerResolved = (wakeReason === \"issue_blockers_resolved\" || wakeSource === \"automation\");\n\n// Trả về đúng 1 item duy nhất để If3 xử lý\nreturn [{\n  json: {\n    taskId: webhookData.taskId || context.issueId || \"\",\n    wakeReason: wakeReason,\n    wakeSource: wakeSource,\n    status: status,\n    isInitialRun: isInitialRun,\n    isBlockerResolved: isBlockerResolved\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -768
+      ],
+      "id": "3da7f158-c0a0-4b0a-b716-5d5a72ed5247",
+      "name": "Phân loại chạy lần đầu vs thức dậy"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2754b988-b1f9-46b0-a781-cf566d05c3c5",
+              "leftValue": "={{ $json.isInitialRun }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -512,
+        -768
+      ],
+      "id": "b3b8df30-7a5d-4913-b806-145512b5f3db",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    status: \"blocked\",\n    blockedByIssueIds: [\n      $json.id\n    ].filter(Boolean),\n    comment: \"Task cha chuyển sang trạng thái chờ do đang bị chặn bởi sub-task.\"\n  })\n}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        512,
+        -1344
+      ],
+      "id": "5f521639-7148-46b6-8cce-cac7c40d4292",
+      "name": "Blocked task cha",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"title\": \"Ký duyệt Báo cáo kết quả thử việc T08/2026\",\n    \"description\": $('Tạo báo cáo trong task').first().json.body,\n    \"status\": \"todo\",\n    \"priority\": \"critical\",\n    \"parentId\": $('Contract').first().json.body.issueId,\n    \"assigneeUserId\": \"Ajp3zX6CAgpKSBKxXOf20o45yP9dSKvy\"\n  })\n}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        240,
+        -1344
+      ],
+      "id": "426387dd-b54b-49ee-9fa1-4398d18dbd75",
+      "name": "Tạo task trình manager",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1552,
+        -768
+      ],
+      "id": "21af73e0-3b40-4f23-8354-9b7ac5a34974",
+      "name": "lấy thông tin task",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1bde2c87-07d1-455d-bd4e-abe26b51e8aa",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "done",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2704,
+        -768
+      ],
+      "id": "991bf966-eefa-4da0-9d29-9e1fea6c8710",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy thông tin ngữ cảnh từ node Contract ban đầu\nconst contractContext = $('Contract').first().json;\nconst issueId = contractContext.query?.issueId || contractContext.body?.issueId || 'N/A';\nconst runId = contractContext.query?.paperclipRunId || contractContext.body?.paperclipRunId || 'N/A';\n\n// Lấy lý do từ chối (nếu có ở node trước, hoặc để mặc định)\nconst rejectReason = contractContext.body?.reason || \"Báo cáo chưa đạt yêu cầu hoặc thiếu thông tin đánh giá chi tiết.\";\n\n// Danh sách các đơn vị tiếp nhận thông báo từ chối\nconst targetDepartments = [\n  { name: 'Phòng Nhân sự (HR VSS)', status: 'sent', channel: 'Internal Notification' },\n  { name: 'Phòng Kế toán (Accounting)', status: 'sent', channel: 'Internal Notification' },\n  { name: 'Bộ phận Quản lý trực tiếp', status: 'sent', channel: 'Internal Notification' }\n];\n\nconst notificationContent = `[CẢNH BÁO: TỪ CHỐI PHÊ DUYỆT GIA HẠN HỢP ĐỒNG]\n- Mã Task/Issue: ${issueId}\n- Mã Run: ${runId}\n- Trạng thái: Manager ĐÃ TỪ CHỐI phê duyệt báo cáo gia hạn hợp đồng.\n- Lý do từ chối: ${rejectReason}\n- Yêu cầu hành động: Đề nghị các bộ phận liên quan rà soát lại hồ sơ và cập nhật thông tin bổ sung trước khi trình duyệt lại.`;\n\nreturn [\n  {\n    json: {\n      status: \"rejected\",\n      event: \"contract_renewal_rejected\",\n      timestamp: new Date().toISOString(),\n      message: notificationContent,\n      rejectionDetails: {\n        taskHandled: issueId,\n        rejectedBy: \"Manager\",\n        reason: rejectReason\n      },\n      recipients: targetDepartments,\n      summary: {\n        totalUnitsNotified: targetDepartments.length\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -800
+      ],
+      "id": "72a54ea2-afcf-4011-9f68-b51cc1674ac7",
+      "name": "Giả lập gửi thông báo cho các đơn vị"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet markdownTable = `# BÁO CÁO TỔNG HỢP KẾT QUẢ THỬ VIỆC - THÁNG 08/2026\\n\\n`;\nmarkdownTable += `Kính gửi: **Ban Giám Đốc / Manager**,\\n\\n`;\nmarkdownTable += `Dưới đây là danh sách tổng hợp kết quả đánh giá thử việc của nhân sự hết hạn trong tháng. Kính trình Manager xem xét và ký duyệt phương án xử lý:\\n\\n`;\nmarkdownTable += `| Mã NV | Họ và tên | Phòng ban | Chức danh | Kết quả thử việc | Nhận xét đánh giá |\\n`;\nmarkdownTable += `| :--- | :--- | :--- | :--- | :--- | :--- |\\n`;\n\nfor (const item of items) {\n  const data = item.json;\n  const statusEmoji = data.ket_qua_thu_viec === 'Dat' ? '✅ Đạt' : '❌ Không đạt';\n  markdownTable += `| ${data.ma_nhan_vien} | ${data.ho_va_ten} | ${data.phong_ban} | ${data.chuc_danh} | **${statusEmoji}** | ${data.nhan_xet_danh_gia || ''} |\\n`;\n}\n\nmarkdownTable += `\\n\\n*Trình ký bởi: Contract Agent (Hệ thống tự động)*`;\n\nreturn {\n  json: {\n    reportMarkdown: markdownTable,\n    companyId: items[0]?.json?.companyId || \"cbe22c30-6a5b-40b8-b67a-85946c874e29\"\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -1344
+      ],
+      "id": "7a01cf6c-df34-4cf4-bd36-23262fa1d0b1",
+      "name": "Code tạo báo cáo"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues?parentId={{ $('Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        32,
+        -624
+      ],
+      "id": "22e3214e-ce8b-410d-89e7-29075bb3a2cc",
+      "name": "Lấy ra task manager vừa chốt để xem quyết định",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        944,
+        -1120
+      ],
+      "id": "b074a64e-5ad1-4847-96a6-340067ea6d1c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ba364d0d-5d24-4d05-bc34-6386be8d3bb5",
+              "leftValue": "={{ $json.ket_qua_thu_viec }}",
+              "rightValue": "Dat",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        -1072
+      ],
+      "id": "975be707-7401-4058-82a7-859b36a48e2d",
+      "name": "Dat/Khong Dat"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Ký hợp đồng chính thức - {{ $json.ho_va_ten }}\",\n  \"description\": \"Nhân viên {{ $json.ho_va_ten }} (Mã NV: {{ $json.ma_nhan_vien }}) đã ĐẠT kết quả thử việc. Vui lòng tiến hành soạn thảo và ký kết Hợp đồng lao động chính thức.\",\n  \"status\": \"todo\",\n  \"priority\": \"critical\",\n  \"parentId\": \"{{ $('Contract').first().json.body.context.issueId }}\",\n  \"assigneeUserId\": \"Ajp3zX6CAgpKSBKxXOf20o45yP9dSKvy\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1744,
+        -1008
+      ],
+      "id": "5fa40856-4c6c-424e-9e1b-3fafb8695749",
+      "name": "Kí hợp đồng chính thức",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Thanh lý hợp đồng - {{ $json.ho_va_ten }}\",\n  \"description\": \"Nhân viên {{ $json.ho_va_ten }} (Mã NV: {{ $json.ma_nhan_vien }}) KHÔNG ĐẠT thử việc. Vui lòng tiến hành thủ tục thanh lý hợp đồng và bàn giao công việc.\",\n  \"status\": \"todo\",\n  \"priority\": \"critical\",\n  \"parentId\": \"{{ $('Contract').first().json.body.context.issueId }}\",\n  \"assigneeUserId\": \"Ajp3zX6CAgpKSBKxXOf20o45yP9dSKvy\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1776,
+        -1344
+      ],
+      "id": "c7458bf7-a69c-4caf-97c8-e0445bea37f3",
+      "name": "Thanh lý",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n$input.item.json.myNewField = 1;\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2448,
+        -784
+      ],
+      "id": "718fc8ae-e700-447d-a697-036dc03eac56",
+      "name": "Code tạo mẫu hợp đồng"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\n$input.item.json.myNewField = 1;\n\nreturn $input.item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        -784
+      ],
+      "id": "e908c1b7-ccca-4e40-94d4-3ce84eb449e7",
+      "name": "Code tạo mẫu thanh lý"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    status: \"blocked\",\n    blockedByIssueIds: $input.all().map(item => item.json.id).filter(Boolean),\n    comment: \"Đã phân bổ các Task Ký mới và Thanh lý cho từng nhân sự. Task Cha chuyển về trạng thái chờ (Blocked) cho đến khi toàn bộ Hợp Đồng xử lý xong.\"\n  })\n}}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2016,
+        -1136
+      ],
+      "id": "435ae5a9-6a87-4dbd-b774-47616fadee29",
+      "name": "Block Task Cha chờ Hợp Đồng",
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dòng code này sẽ lấy lại toàn bộ 10 nhân viên từ node đọc file CSV lúc nãy\n// để thay thế cho cái đống Task đang bị ghi đè.\nreturn $('Extract from File1').all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -1136
+      ],
+      "id": "82d20aeb-6898-4dfb-949a-ce7bbe0062eb",
+      "name": "Lấy lại danh sách NV để xử lí"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "13193266-0d5c-4e74-846e-da58d4da4e71",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1344,
+        608
+      ],
+      "id": "14427cba-6921-442d-9d6d-7b8ae6c90462",
+      "name": "Scheduler",
+      "webhookId": "13193266-0d5c-4e74-846e-da58d4da4e71"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node này chặn 10 luồng nhân viên lại, chỉ cho phép 1 luồng đi tiếp\n// để tránh việc gọi API Paperclip 10 lần vô ích.\nreturn [$input.all()[0]];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        -624
+      ],
+      "id": "861f8c78-54c7-4957-b771-ac3db275c31d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "31b0c0f8-c2b3-46fc-94cd-b6b3de0e02c5",
+                    "leftValue": "={{ $input.all().length }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  },
+                  {
+                    "id": "e88d1d8c-bd5e-4509-92db-a4ebcda6c2c7",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sếp đã duyệt"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "d0e1bb1b-3b0f-48d1-ba76-a05e2d84c688",
+                    "leftValue": "={{ $input.all().length }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  },
+                  {
+                    "id": "a988d407-28d1-419b-ab00-8cb49a4de54a",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "done",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals",
+                      "name": "filter.operator.notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sếp từ chối"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "7587a281-4fc2-459b-a0fa-86316ae7560c",
+                    "leftValue": "={{ $input.all().length }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "10 NV đã hoàn thành (Chốt Sổ)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4d01d9bb-f64a-4468-ad14-aae5a52c93a0",
+      "name": "Switch Phân Luồng",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        304,
+        -656
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"done\",\n  \"comment\": \"🎉 CHÚC MỪNG: Toàn bộ quá trình đánh giá, ký mới và thanh lý hợp đồng lao động tháng 08/2026 đã hoàn tất thành công. Chiến dịch chính thức khép lại.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        832,
+        -608
+      ],
+      "id": "de472c32-e387-41cb-b909-c7c5e7815324",
+      "name": "Update Status Task Cha : Done",
+      "executeOnce": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\",\n  \"comment\": \"❌ CHIẾN DỊCH BỊ TỪ CHỐI: Manager không phê duyệt Báo cáo kết quả thử việc tháng này. Toàn bộ tiến trình tạo Hợp đồng mới và Thanh lý đã bị dừng lại. Yêu cầu các bộ phận liên quan kiểm tra lại dữ liệu và trình lại sau.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1184,
+        -784
+      ],
+      "id": "f15b5b89-1c70-40ef-8ff0-0140cd1a9de8",
+      "name": "UpDate Status Task Cha là Không Kí",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "8huqGfX0gEFYD7BT",
+          "name": "Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Tạo task thành công, chờ nghiệm thu\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1680,
+        -16
+      ],
+      "id": "dfcdd95a-d704-4693-ab66-0ff49ab07736",
+      "name": "Respond to Webhook Head Contract"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Contract đã tạo task và chờ quyết định của manager\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        768,
+        -1328
+      ],
+      "id": "0f35925c-58ab-4eb0-889d-2b67af0fa2af",
+      "name": "Respond to Webhook Contract 1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Contract Webhook\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2544,
+        -880
+      ],
+      "id": "a2035e8e-176f-4d99-8409-a5a80f8dfc04",
+      "name": "Respond to Webhook Contract 2"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues?parentId={{ $('Head Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "id": "feefba6d-a17e-4838-bb7b-2ae2f45f5f62",
+      "name": "Lấy danh sách Sub-tasks của Nhạc Trưởng",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1472,
+        -336
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lọc ra các item hợp lệ (có chứa id task)\nconst childTasks = $input.all().map(item => item.json).filter(t => t && t.id);\n\n// Phase 1: Không có task con nào (hoặc danh sách rỗng) -> Khởi tạo\nif (childTasks.length === 0) {\n  return [{ json: { route: \"Phase 1: Initial Run\" } }];\n}\n\n// Phase 3: Đã có task Báo Cáo (Contract) và nó đã DONE -> Xong toàn bộ\nconst contractTask = childTasks.find(t => t.title && t.title.toLowerCase().includes(\"báo cáo\"));\nif (contractTask && contractTask.status === \"done\") {\n  return [{ json: { route: \"Phase 3: Chiến dịch hoàn tất\" } }];\n}\n\n// Phase 2: Có task HR VSS và nó đã DONE -> HR vừa làm xong\nconst hrTask = childTasks.find(t => t.title && t.title.toLowerCase().includes(\"cập nhật\"));\nif (hrTask && hrTask.status === \"done\") {\n  return [{ json: { route: \"Phase 2: HR đã cập nhật xong\" } }];\n}\n\n// Mặc định\nreturn [{ json: { route: \"Đang chờ...\" } }];\n"
+      },
+      "id": "27d00e61-375f-4658-8c7e-86af58a75b9b",
+      "name": "Code Xác Định Giai Đoạn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "1",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "Phase 1: Initial Run",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Vòng 1 (Khởi tạo)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "2",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "Phase 2: HR đã cập nhật xong",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Vòng 2 (Tạo Báo Cáo Contract)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "3",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "Phase 3: Chiến dịch hoàn tất",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Vòng 3 (Đóng Task Nhạc Trưởng)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "29e17d14-cefe-41f5-98cb-18d7f596bf2b",
+      "name": "Router Head Contract",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -992,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Head Contract').first().json.body.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Head Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\",\n  \"comment\": \"🎉 CHIẾN DỊCH KẾT THÚC TỐT ĐẸP: Nhóm Agent cấp dưới đã hoàn tất xuất sắc toàn bộ quy trình từ thu thập dữ liệu, báo cáo, đến ký mới và thanh lý hợp đồng. Cảm ơn sự phối hợp của các bộ phận!\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -560,
+        176
+      ],
+      "id": "8c402975-4095-4cf8-8747-23e08632b480",
+      "name": "Update Status Head Contract Done",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('Head Contract').first().json.body.context.issueId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('Head Contract').first().json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"done\",\n  \"comment\": \"🎉 CHIẾN DỊCH KẾT THÚC TỐT ĐẸP: Nhóm Agent cấp dưới đã hoàn tất xuất sắc toàn bộ quy trình từ thu thập dữ liệu, báo cáo, đến ký mới và thanh lý hợp đồng. Cảm ơn sự phối hợp của các bộ phận!\"\n}",
+        "options": {}
+      },
+      "id": "4130b1d5-aa82-4275-8d3b-59447e5af174",
+      "name": "Update Head Contract (Chốt Chiến Dịch)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2672,
+        -160
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "F6bkxLhVzMZpHklJ",
+          "name": "Ke Toan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Hoàn tất task xử lí danh sách nhân viên thử việc\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -208,
+        176
+      ],
+      "id": "15ed287e-a6db-48d6-89ae-91191a3107ec",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a4e5bc5c-6e8d-4837-8272-2111023157ef",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2448,
+        640
+      ],
+      "id": "f43eb5e1-b68b-486d-98fc-1f6d1ef7c3b6",
+      "name": "Manager",
+      "webhookId": "a4e5bc5c-6e8d-4837-8272-2111023157ef"
+    },
+    {
+      "parameters": {
+        "content": "Hiện tại là đang giả lập các thao tác của người dùng thật như nhân viên , manager thì sẽ ko theo dõi được log của các nhân vật này, nếu muốn thì tạo các workflow để xử lí các thao tác của manager, nhân viên thì mới trace được log xử lí của nó."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2704,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "d894e94c-0945-4146-8043-780adfcbaae0",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "66bb2fc0-0086-4da9-9837-5a0dc1fc17d0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2448,
+        848
+      ],
+      "id": "b8153059-108b-4abb-9c0b-783142a67270",
+      "name": "Nhân Viên",
+      "webhookId": "66bb2fc0-0086-4da9-9837-5a0dc1fc17d0"
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues?status=todo,blocked",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "id": "dde8b8da-ba20-47d0-a9f2-8d0e218df93f",
+      "name": "Lấy các Task chưa done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1040,
+        608
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allIssues = $input.all().map(item => item.json);\n\n// Lọc ra các task TO (không có parentId) \n// VÀ có tên bắt đầu bằng chữ 'xét duyệt thử việc'\nconst rootTasks = allIssues.filter(t => \n  !t.parentId && \n  t.title.toLowerCase().startsWith('xét duyệt thử việc')\n);\n\n// Format lại danh sách trả về cho n8n\nreturn rootTasks.map(t => ({ json: t }));"
+      },
+      "id": "bec496c7-4b0c-4bf3-bb8e-789664b44422",
+      "name": "Lọc lấy Task TO (Xét duyệt thử việc)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const childTasks = $input.all().map(item => item.json);\n\n// Lọc ra các task con đang bị kẹt (trạng thái là todo hoặc blocked)\nconst stuckChildren = childTasks.filter(t => t.status === 'todo' || t.status === 'blocked');\n\n// Trả về danh sách các task con bị kẹt này để luồng đi tiếp\nreturn stuckChildren.map(t => ({ json: t }));"
+      },
+      "id": "420ee77c-2d6c-42dd-b18a-eef8c980602e",
+      "name": "Lọc các Task con bị kẹt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues?parentId={{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "id": "9475ca8c-1fb2-408b-a599-9ba6fba701a7",
+      "name": "Lấy các Task con",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -528,
+        624
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "1",
+                    "leftValue": "={{ $json.title.toLowerCase() }}",
+                    "rightValue": "hr vss",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kẹt ở HR VSS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "2",
+                    "leftValue": "={{ $json.title.toLowerCase() }}",
+                    "rightValue": "báo cáo tổng hợp",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kẹt ở Báo Cáo (Cần đào sâu)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "887f235c-0570-4497-853d-c3049d60581a",
+      "name": "Phân loại Task Cấp 1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        16,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues?parentId={{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "id": "a4857666-3263-4137-b9fe-2c0e73b28ea2",
+      "name": "Lấy Task Cháu (Bên trong Báo Cáo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        784
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.id }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"⚠️ [SLA Cảnh Báo] Nhắc HR VSS: Nhiệm vụ cập nhật dữ liệu của bạn đang quá hạn. Yêu cầu bộ phận HR xử lý gấp để không ảnh hưởng tiến độ chung!\"\n}",
+        "options": {}
+      },
+      "id": "6a272979-c5b2-4c14-9057-3b910309815f",
+      "name": "Bắn Comment nhắc nhở HR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        480
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R3aHNEmPb3P1PEl1",
+          "name": "Head Contract"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const grandChildren = $input.all().map(item => item.json);\n\n// Lọc ra các task cháu đang bị kẹt (todo hoặc blocked)\nconst stuckGrandChildren = grandChildren.filter(t => t.status === 'todo' || t.status === 'blocked');\n\nreturn stuckGrandChildren.map(t => ({ json: t }));"
+      },
+      "id": "16d6e9af-bcbf-4172-bda7-932c34509541",
+      "name": "Lọc Task Cháu bị kẹt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "1",
+                    "leftValue": "={{ $json.title.toLowerCase() }}",
+                    "rightValue": "ký duyệt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kẹt ở Sếp (Manager)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "2",
+                    "leftValue": "={{ $json.title.toLowerCase() }}",
+                    "rightValue": "hợp đồng",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kẹt ở Nhân Viên"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eecfcb4f-e379-4262-b1fc-35b71ea5cc95",
+      "name": "Phân loại Task của manager hay Nhân viên",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        832,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.id }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"⚠️ [SLA Cảnh Báo] Nhắc Nhân Viên: Văn bản Hợp đồng/Thanh lý của bạn đang chờ bạn xác nhận. Vui lòng kiểm tra và hoàn thành sớm!\"\n}",
+        "options": {}
+      },
+      "id": "a453bd03-769c-4137-ad75-d94036a37f63",
+      "name": "Bắn Comment nhắc nhở Nhân Viên",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        880
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.id }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"⚠️ [SLA Cảnh Báo] Nhắc Manager: Báo cáo đánh giá thử việc đã trình lên nhưng chưa được ký duyệt. Kính mong Manager sớm xem xét để luồng tạo hợp đồng được tiếp tục!\"\n}",
+        "options": {}
+      },
+      "id": "46f2c9ef-a48c-41c7-86c6-e4eca916de98",
+      "name": "Bắn Comment nhắc nhở Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1088,
+        752
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Đã hoàn thành phiên tuần tra SLA và gửi nhắc nhở thành công!\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1552,
+        752
+      ],
+      "id": "d3a2af16-6dd7-49e4-876e-2739dd4d16bb",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dòng code này sẽ lấy lại toàn bộ 10 nhân viên từ node đọc file CSV lúc nãy\n// để thay thế cho cái đống Task đang bị ghi đè.\nreturn $('Extract from File1').all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        -1152
+      ],
+      "id": "223990db-b2c5-4a03-9d69-5d9c24466ce1",
+      "name": "Lấy danh sách NV để làm báo cáo"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Head Contract": {
+      "main": [
+        [
+          {
+            "node": "Lấy danh sách Sub-tasks của Nhạc Trưởng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lấy thông tin file đính kèm": {
+      "main": [
+        [
+          {
+            "node": "Tải file csv về",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tải file csv về": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra xem file đã đầy đủ nhận xét chưa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR VSS": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra tên task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra tên task": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Tạo task tổng hợp kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Giả lập gửi thông báo cập nhật dữ liệu cho HR VSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra loại task": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Tạo task tổng hợp kết quả": {
+      "main": [
+        [
+          {
+            "node": "Cmt tạo task báo cáo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cmt tạo task báo cáo": {
+      "main": [
+        [
+          {
+            "node": "cập nhật status của task cha và biến blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cập nhật status của task cha và biến blocked": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Head Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thông báo yêu cầu cập nhật dữ liệu": {
+      "main": [
+        [
+          {
+            "node": "cập nhật status của task cha và biến blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo task cho HR VSS cập nhật dữ liệu": {
+      "main": [
+        [
+          {
+            "node": "Thông báo yêu cầu cập nhật dữ liệu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra xem file đã đầy đủ nhận xét chưa": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Giả lập gửi thông báo cập nhật dữ liệu cho HR VSS": {
+      "main": [
+        [
+          {
+            "node": "Tạo task cho HR VSS cập nhật dữ liệu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract": {
+      "main": [
+        [
+          {
+            "node": "lấy thông tin task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy thông tin file": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Phân loại chạy lần đầu vs thức dậy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phân loại chạy lần đầu vs thức dậy": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Lấy danh sách NV để làm báo cáo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo báo cáo trong task": {
+      "main": [
+        [
+          {
+            "node": "Tạo task trình manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blocked task cha": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Contract 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo task trình manager": {
+      "main": [
+        [
+          {
+            "node": "Blocked task cha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lấy thông tin task": {
+      "main": [
+        [
+          {
+            "node": "Lấy thông tin file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "Code tạo báo cáo": {
+      "main": [
+        [
+          {
+            "node": "Tạo báo cáo trong task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy ra task manager vừa chốt để xem quyết định": {
+      "main": [
+        [
+          {
+            "node": "Switch Phân Luồng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Block Task Cha chờ Hợp Đồng",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dat/Khong Dat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dat/Khong Dat": {
+      "main": [
+        [
+          {
+            "node": "Kí hợp đồng chính thức",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Thanh lý",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kí hợp đồng chính thức": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code tạo mẫu hợp đồng": {
+      "main": [
+        []
+      ]
+    },
+    "Code tạo mẫu thanh lý": {
+      "main": [
+        []
+      ]
+    },
+    "Thanh lý": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy lại danh sách NV để xử lí": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block Task Cha chờ Hợp Đồng": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Contract 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Lấy ra task manager vừa chốt để xem quyết định",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Phân Luồng": {
+      "main": [
+        [
+          {
+            "node": "Lấy lại danh sách NV để xử lí",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Giả lập gửi thông báo cho các đơn vị",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Status Task Cha : Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Task Cha : Done": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Contract 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Giả lập gửi thông báo cho các đơn vị": {
+      "main": [
+        [
+          {
+            "node": "UpDate Status Task Cha là Không Kí",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpDate Status Task Cha là Không Kí": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Contract 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy danh sách Sub-tasks của Nhạc Trưởng": {
+      "main": [
+        [
+          {
+            "node": "Code Xác Định Giai Đoạn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Xác Định Giai Đoạn": {
+      "main": [
+        [
+          {
+            "node": "Router Head Contract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Head Contract": {
+      "main": [
+        [
+          {
+            "node": "lấy thông tin file đính kèm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tạo task tổng hợp kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Status Head Contract Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status Head Contract Done": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scheduler": {
+      "main": [
+        [
+          {
+            "node": "Lấy các Task chưa done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy các Task chưa done": {
+      "main": [
+        [
+          {
+            "node": "Lọc lấy Task TO (Xét duyệt thử việc)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lọc lấy Task TO (Xét duyệt thử việc)": {
+      "main": [
+        [
+          {
+            "node": "Lấy các Task con",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy các Task con": {
+      "main": [
+        [
+          {
+            "node": "Lọc các Task con bị kẹt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phân loại Task Cấp 1": {
+      "main": [
+        [
+          {
+            "node": "Bắn Comment nhắc nhở HR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lấy Task Cháu (Bên trong Báo Cáo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lọc các Task con bị kẹt": {
+      "main": [
+        [
+          {
+            "node": "Phân loại Task Cấp 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lọc Task Cháu bị kẹt": {
+      "main": [
+        [
+          {
+            "node": "Phân loại Task của manager hay Nhân viên",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy Task Cháu (Bên trong Báo Cáo)": {
+      "main": [
+        [
+          {
+            "node": "Lọc Task Cháu bị kẹt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phân loại Task của manager hay Nhân viên": {
+      "main": [
+        [
+          {
+            "node": "Bắn Comment nhắc nhở Manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bắn Comment nhắc nhở Nhân Viên",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bắn Comment nhắc nhở Nhân Viên": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bắn Comment nhắc nhở Manager": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bắn Comment nhắc nhở HR": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy danh sách NV để làm báo cáo": {
+      "main": [
+        [
+          {
+            "node": "Code tạo báo cáo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "acdcd3f0-5230-4a4f-8cdb-1904ef1325f9",
+  "meta": {
+    "instanceId": "b66cb53272a507f3e66162641126412800886265ea84284e19ed491bef2394d1"
+  },
+  "nodeGroups": [],
+  "id": "Bxg3Dt9PT6aB8WRd",
+  "tags": []
+}

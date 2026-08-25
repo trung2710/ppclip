@@ -1,0 +1,761 @@
+{
+  "name": "Sub-task",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "6c1a98ff-d356-44b3-8b08-04bb15adf919",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        -160
+      ],
+      "id": "cf52d507-8647-4c20-b33f-0d42a6d7d550",
+      "name": "CEO",
+      "webhookId": "6c1a98ff-d356-44b3-8b08-04bb15adf919"
+    },
+    {
+      "parameters": {
+        "jsCode": "const hrKeywords = [\n  'tuyển dụng', 'nhân sự', 'ứng viên', 'phỏng vấn', 'lương', \n  'thử việc', 'hợp đồng', 'kpi', 'đào tạo', 'nghỉ phép', 'chấm công'\n];\n\nconst accountingKeywords = [\n  'kế toán', 'báo cáo', 'doanh thu', 'chi phí', 'hóa đơn', \n  'thuế', 'sổ sách', 'ngân sách', 'dòng tiền', 'thanh toán', 'công nợ'\n];\n\nfor (const item of $input.all()) {\n  // Lấy chính xác title từ node \"Tạo task phân tích câu hỏi\"\n  const rawTitle = $('CEO').first().json.body.context.paperclipWake.issue.title || '';\n  const title = String(rawTitle).toLowerCase();\n\n  const hrScore = hrKeywords.reduce((count, kw) => count + (title.includes(kw) ? 1 : 0), 0);\n  const accScore = accountingKeywords.reduce((count, kw) => count + (title.includes(kw) ? 1 : 0), 0);\n\n  if (hrScore > accScore) {\n    item.json.department = 'HR';\n  } else if (accScore > hrScore) {\n    item.json.department = 'Kế toán';\n  } else {\n    item.json.department = 'Khác';\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -160
+      ],
+      "id": "b4781152-5c22-476d-81e1-833dc309200b",
+      "name": "Phân tích câu hỏi"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "343a8e56-fd16-4dca-9480-0a2f22779e32",
+              "leftValue": "={{ $json.department }}",
+              "rightValue": "HR",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -64,
+        -160
+      ],
+      "id": "5a187002-94f3-4674-abb9-cbe39fa7e5f8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $('CEO').item.json.body.context.paperclipWake.issue.title }}-SubAgent Kế Toán\",\n  \"description\": \"\",\n  \"status\": \"todo\",\n  \"priority\": \"medium\",\n  \"parentId\": \"{{ $('CEO').item.json.body.taskId }}\",\n  \"assigneeAgentId\": \"2afdb9a4-cb2d-470f-9b18-42db49dc5f6c\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        -80
+      ],
+      "id": "0990bb56-3bd7-431a-8193-90929713ac70",
+      "name": "Tạo task cho Kế Toán",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $('Tạo task phân tích query').item.json.title }}\",\n  \"description\": \"\",\n  \"status\": \"blocked\",\n  \"priority\": \"medium\",\n  \"parentId\": \"{{ $('CEO').item.json.body.taskId }}\",\n  \"assigneeAgentId\": \"5d3921ff-e7d5-461f-b01f-a58f6976b63d\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        176,
+        -256
+      ],
+      "id": "0d7d518c-3afc-48c9-92bf-cc39402924b1",
+      "name": "Tạo task cho HR",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "67c0cce0-3fdd-4848-892d-33d078f6add3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        96
+      ],
+      "id": "702cb7dc-fb7c-4bef-8300-64b642efcaab",
+      "name": "HR",
+      "webhookId": "67c0cce0-3fdd-4848-892d-33d078f6add3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('CEO').item.json.body.taskId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"body\": \"Đã giao việc thành công cho Agent {{ $('Phân tích câu hỏi').item.json.department }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        432,
+        -160
+      ],
+      "id": "f88030ec-515b-40d3-8245-8981034bb4d7",
+      "name": "Giao việc thành công",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cfe582c2-d35e-4d44-bc79-bab73c5fe7be",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        288
+      ],
+      "id": "a5c1b0fa-1fd5-4b28-ac66-6bd70a204cae",
+      "name": "KT",
+      "webhookId": "cfe582c2-d35e-4d44-bc79-bab73c5fe7be"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"CEO đã tạo task cha và giao sub-task cho agent con\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        688,
+        -160
+      ],
+      "id": "f7152805-f538-4062-be89-edb585484ab4",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const reportMarkdown = `# Báo cáo phân tích đơn hàng\\\\n\\\\n## 1. Tổng quan chung (Executive Summary)\\\\n\\\\n| Chỉ số | Giá trị |\\\\n|--------|---------|\\\\n| **Tổng số đơn hàng** | 20 |\\\\n| **Tỉ lệ hoàn thành** | 70% (14/20) |\\\\n| **Doanh thu thực tế (đơn *đơn giá)** | 63 871 000 VNĐ |\\\\n| **Giá trị pending** | 5 078 000 VNĐ |\\\\n| **Giá trị cancelled** | 6 000 000 VNĐ |\\\\n\\\\n## 2. Phân tích theo Khu vực\\\\n\\\\n### 2.1 Doanh thu theo khu vực\\\\n| Khu vực | Doanh thu (VNĐ) |\\\\n|---------|-----------------|\\\\n| HCM | 34 200 000 |\\\\n| DN | 23 029 000 |\\\\n| HN | 3 092 000 |\\\\n| CT | 3 550 000 |\\\\n**Khu vực có doanh thu cao nhất**: **HCM**.\\\\n\\\\n### 2.2 Số lượng đơn hàng theo khu vực\\\\n| Khu vực | Số đơn |\\\\n|---------|--------|\\\\n| HN | 6 |\\\\n| HCM | 5 |\\\\n| DN | 5 |\\\\n| CT | 4 |\\\\n**Khu vực có số lượng đơn nhiều nhất**: **HN**.\\\\n\\\\n## 3. Phân tích theo Kênh bán\\\\n\\\\n### 3.1 Xếp hạng theo số lượng đơn\\\\n| Kênh | Số đơn |\\\\n|------|--------|\\\\n| Shopee | 6 |\\\\n| Lazada | 5 |\\\\n| Web | 5 |\\\\n| Tiki | 4 |\\\\n\\\\n### 3.2 Xếp hạng theo doanh thu (đơn *đơn giá)\\\\n| Kênh | Doanh thu (VNĐ) |\\\\n|------|-----------------|\\\\n| Lazada | 38 700 000 |\\\\n| Shopee | 18 187 000 |\\\\n| Tiki | 5 045 000 |\\\\n| Web | 1 939 000 |\\\\n**Kênh bán hiệu quả nhất (đến mức doanh thu)**: **Lazada**.\\\\n\\\\n## 4. Phân tích sản phẩm\\\\n\\\\n### 4.1 Sản phẩm bán chạy nhất (tổng số lượng)\\\\n| Sản phẩm | Số lượng bán ra |\\\\n|----------|-----------------|\\\\n| USB | **10** |\\\\n| Tai nghe | 6 |\\\\n| Chuot | 5 |\\\\n| Ao thun | 5 |\\\\n\\\\n### 4.2 Sản phẩm mang lại doanh thu cao nhất\\\\n| Sản phẩm | Doanh thu (VNĐ) |\\\\n|----------|-----------------|\\\\n| Laptop | **36 000 000** |\\\\n| Dien thoai | 12 500 000 |\\\\n| Webcam | 2 340 000 |\\\\n| Chuot | 2 130 000 |\\\\n| Tai nghe | 2 840 000 |\\\\n\\\\n## 5. Kết luận & Đề xuất\\\\n- **Kênh bán**: Lazada đem lại doanh thu cao nhất nhưng số lượng đơn ít hơn Shopee; nên tăng quảng cáo và ưu đãi cho các sản phẩm cao cấp trên Lazada. \\\\n\n`;\n\nreturn [\n  {\n    json: {\n      reportMarkdown: reportMarkdown // Hoặc tên biến chứa chuỗi báo cáo ở phía trên của bạn\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        96
+      ],
+      "id": "92a8f8f2-ba21-496d-afa4-e802d9741669",
+      "name": "Fake answer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const reportMarkdown = `# Báo cáo phân tích đơn hàng\\\\n\\\\n## 1. Tổng quan chung (Executive Summary)\\\\n\\\\n| Chỉ số | Giá trị |\\\\n|--------|---------|\\\\n| **Tổng số đơn hàng** | 20 |\\\\n| **Tỉ lệ hoàn thành** | 70% (14/20) |\\\\n| **Doanh thu thực tế (đơn *đơn giá)** | 63 871 000 VNĐ |\\\\n| **Giá trị pending** | 5 078 000 VNĐ |\\\\n| **Giá trị cancelled** | 6 000 000 VNĐ |\\\\n\\\\n## 2. Phân tích theo Khu vực\\\\n\\\\n### 2.1 Doanh thu theo khu vực\\\\n| Khu vực | Doanh thu (VNĐ) |\\\\n|---------|-----------------|\\\\n| HCM | 34 200 000 |\\\\n| DN | 23 029 000 |\\\\n| HN | 3 092 000 |\\\\n| CT | 3 550 000 |\\\\n**Khu vực có doanh thu cao nhất**: **HCM**.\\\\n\\\\n### 2.2 Số lượng đơn hàng theo khu vực\\\\n| Khu vực | Số đơn |\\\\n|---------|--------|\\\\n| HN | 6 |\\\\n| HCM | 5 |\\\\n| DN | 5 |\\\\n| CT | 4 |\\\\n**Khu vực có số lượng đơn nhiều nhất**: **HN**.\\\\n\\\\n## 3. Phân tích theo Kênh bán\\\\n\\\\n### 3.1 Xếp hạng theo số lượng đơn\\\\n| Kênh | Số đơn |\\\\n|------|--------|\\\\n| Shopee | 6 |\\\\n| Lazada | 5 |\\\\n| Web | 5 |\\\\n| Tiki | 4 |\\\\n\\\\n### 3.2 Xếp hạng theo doanh thu (đơn *đơn giá)\\\\n| Kênh | Doanh thu (VNĐ) |\\\\n|------|-----------------|\\\\n| Lazada | 38 700 000 |\\\\n| Shopee | 18 187 000 |\\\\n| Tiki | 5 045 000 |\\\\n| Web | 1 939 000 |\\\\n**Kênh bán hiệu quả nhất (đến mức doanh thu)**: **Lazada**.\\\\n\\\\n## 4. Phân tích sản phẩm\\\\n\\\\n### 4.1 Sản phẩm bán chạy nhất (tổng số lượng)\\\\n| Sản phẩm | Số lượng bán ra |\\\\n|----------|-----------------|\\\\n| USB | **10** |\\\\n| Tai nghe | 6 |\\\\n| Chuot | 5 |\\\\n| Ao thun | 5 |\\\\n\\\\n### 4.2 Sản phẩm mang lại doanh thu cao nhất\\\\n| Sản phẩm | Doanh thu (VNĐ) |\\\\n|----------|-----------------|\\\\n| Laptop | **36 000 000** |\\\\n| Dien thoai | 12 500 000 |\\\\n| Webcam | 2 340 000 |\\\\n| Chuot | 2 130 000 |\\\\n| Tai nghe | 2 840 000 |\\\\n\\\\n## 5. Kết luận & Đề xuất\\\\n- **Kênh bán**: Lazada đem lại doanh thu cao nhất nhưng số lượng đơn ít hơn Shopee; nên tăng quảng cáo và ưu đãi cho các sản phẩm cao cấp trên Lazada. \\\\n\n`;\n\nreturn [\n  {\n    json: {\n      reportMarkdown: reportMarkdown // Hoặc tên biến chứa chuỗi báo cáo ở phía trên của bạn\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        288
+      ],
+      "id": "33ab7786-ee40-42a7-9940-c93c942c34b0",
+      "name": "Fake Answer"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('HR').item.json.query.issueId }}/documents/report-{{ $('HR').item.json.body.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('HR').item.json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"title\": \"Báo cáo kết quả\",\n    \"format\": \"markdown\",\n    \"body\": $json.reportMarkdown,\n    \"baseRevisionId\": null\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -912,
+        96
+      ],
+      "id": "10d7cda9-f6a3-4fbe-8093-266856cab939",
+      "name": "Tạo file báo cáo HR",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "4FZEQIaESUbV73jo",
+          "name": "HR"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('HR').item.json.body.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('HR').item.json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -704,
+        96
+      ],
+      "id": "fac927cf-4de1-401e-a95b-1786bd6fe03d",
+      "name": "Update Status",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "4FZEQIaESUbV73jo",
+          "name": "HR"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"done\",\n  \"message\": \"Nhiệm vụ đã hoàn tất thành công\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -496,
+        96
+      ],
+      "id": "758f03e5-e9f9-4520-9ba6-ebc050b49d48",
+      "name": "Respond to Webhook HR"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('KT').item.json.query.issueId }}/documents/report-{{ $('KT').item.json.body.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('KT').item.json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"title\": \"Báo cáo kết quả\",\n    \"format\": \"markdown\",\n    \"body\": $json.reportMarkdown,\n    \"baseRevisionId\": null\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -992,
+        288
+      ],
+      "id": "243732cf-5416-4d6e-9912-9241bcfa7610",
+      "name": "Tạo file báo cáo KT",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "F6bkxLhVzMZpHklJ",
+          "name": "Ke Toan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('KT').item.json.body.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-paperclip-run-id",
+              "value": "={{ $('KT').item.json.body.runId }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -784,
+        288
+      ],
+      "id": "8e78fd5f-b024-418d-925a-1931b8578e78",
+      "name": "Update Status1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "F6bkxLhVzMZpHklJ",
+          "name": "Ke Toan"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"done\",\n  \"message\": \"Nhiệm vụ đã hoàn tất thành công\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -576,
+        288
+      ],
+      "id": "ccf50fc9-cc27-4ff1-934d-b09968e63103",
+      "name": "Respond to Webhook KT"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "604fe045-9cf7-416e-bcca-2db48d9659d6",
+              "leftValue": "={{ $json.body.context.wakeReason }}",
+              "rightValue": "issue_children_completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -976,
+        -160
+      ],
+      "id": "dae047e1-7467-4727-8b36-54ba6c1d3b33",
+      "name": "Kiểm tra xem có phải yêu cầu nghiệm thu không"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $('CEO').item.json.body.taskId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"done\",\n  \"comment\": \"Tự động nghiệm thu và hoàn tất task cha sau khi tất cả sub-task hoàn thành.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -528,
+        -400
+      ],
+      "id": "c63885ee-ee3f-4b74-95fc-fe234e056305",
+      "name": "Update status parent task",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -320,
+        -400
+      ],
+      "id": "3d736e75-416c-4d89-9196-2942f429566f",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "f30e3e6d-5fde-470f-a533-914e1c1ecc4a",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1392,
+        -544
+      ],
+      "id": "127dbcde-6ae3-4303-9807-10680b75ff0a",
+      "name": "Nhận câu hỏi",
+      "webhookId": "f30e3e6d-5fde-470f-a533-914e1c1ecc4a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3100/api/companies/cbe22c30-6a5b-40b8-b67a-85946c874e29/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $json.query.Content }} 1\",\n  \"description\": \"Nhiệm vụ của bạn làtìm kiếm thông tin và trả lời câu hỏi của khách hàng một cách chuẩn xác nhất\",\n  \"assigneeAgentId\": \"{{ $json.query.AgentId }}\",\n  \"status\" : \"in_progress\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1184,
+        -544
+      ],
+      "id": "24e7a8b6-20dc-4753-96f7-cfcb6f14995d",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:3100/api/issues/{{ $json.body.taskId }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"body\": \"Đã nhận task\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -592,
+        -160
+      ],
+      "id": "9138be03-563c-4dc0-8b3d-a294f24f6b80",
+      "name": "Cmt phân tích query",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "1bOOnJRjAiTERupM",
+          "name": "Bearer CEO Docker account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CEO": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra xem có phải yêu cầu nghiệm thu không",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phân tích câu hỏi": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Tạo task cho HR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tạo task cho Kế Toán",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo task cho Kế Toán": {
+      "main": [
+        [
+          {
+            "node": "Giao việc thành công",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo task cho HR": {
+      "main": [
+        [
+          {
+            "node": "Giao việc thành công",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Giao việc thành công": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR": {
+      "main": [
+        [
+          {
+            "node": "Fake answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KT": {
+      "main": [
+        [
+          {
+            "node": "Fake Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fake answer": {
+      "main": [
+        [
+          {
+            "node": "Tạo file báo cáo HR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fake Answer": {
+      "main": [
+        [
+          {
+            "node": "Tạo file báo cáo KT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo file báo cáo HR": {
+      "main": [
+        [
+          {
+            "node": "Update Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook HR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo file báo cáo KT": {
+      "main": [
+        [
+          {
+            "node": "Update Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook KT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra xem có phải yêu cầu nghiệm thu không": {
+      "main": [
+        [
+          {
+            "node": "Update status parent task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cmt phân tích query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update status parent task": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nhận câu hỏi": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cmt phân tích query": {
+      "main": [
+        [
+          {
+            "node": "Phân tích câu hỏi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "99c47763-d77e-4f30-ba9d-ea96072a4de1",
+  "meta": {
+    "instanceId": "b66cb53272a507f3e66162641126412800886265ea84284e19ed491bef2394d1"
+  },
+  "nodeGroups": [],
+  "id": "KduVYj8RkVbTSfCy",
+  "tags": []
+}
