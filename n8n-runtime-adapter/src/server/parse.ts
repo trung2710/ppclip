@@ -55,6 +55,8 @@ export function summarizeNodeRun(params: {
     tokenUsage: tokenUsage && typeof tokenUsage === "object" ? tokenUsage : undefined,
     ...concise,
     message: formatNodeMessage(nodeName, nodeRun, concise),
+    rawError: nodeRun.error,
+    rawData: nodeRun.data,
   };
 
   if (logDetail === "verbose") {

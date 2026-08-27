@@ -358,7 +358,20 @@ async function listExecutions(config: N8nRuntimeConfig): Promise<JsonRecord[]> {
   const dataRunning = Array.isArray(jsonRunning.data) ? jsonRunning.data : [];
   const dataDefault = Array.isArray(jsonDefault.data) ? jsonDefault.data : [];
 
-  return [...dataRunning, ...dataDefault].map(parseObject);
+  const seenIds = new Set<string>();
+  const executions: JsonRecord[] = [];
+
+  for (const raw of [...dataRunning, ...dataDefault]) {
+    const item = parseObject(raw);
+    const id = item.id != null ? String(item.id) : "";
+    if (id) {
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+    }
+    executions.push(item);
+  }
+
+  return executions;
 }
 
 async function getExecution(config: N8nRuntimeConfig, executionId: string, includeData: boolean): Promise<JsonRecord> {
@@ -380,6 +393,87 @@ async function getExecution(config: N8nRuntimeConfig, executionId: string, inclu
   return await response.json() as JsonRecord;
 }
 
+function formatLogEvent(event: JsonRecord): string {
+  const ts = asString(event.ts);
+  const timePart = ts ? ts.substring(11, 23) : new Date().toISOString().substring(11, 23);
+  const type = asString(event.type);
+  const message = asString(event.message);
+
+  let statusStr = "INFO";
+  if (event.status) {
+    const status = String(event.status).toLowerCase();
+    if (status === "success") {
+      statusStr = "SUCCESS";
+    } else if (status === "error" || status === "failed") {
+      statusStr = "ERROR";
+    } else {
+      statusStr = status.toUpperCase();
+    }
+  } else if (type === "n8n.execution.finished") {
+    statusStr = "FINISHED";
+  } else if (type === "n8n.execution.timeout") {
+    statusStr = "TIMEOUT";
+  }
+
+  let output = `[${timePart}] [${statusStr}] `;
+
+  if (type === "n8n.node.finished") {
+    const nodeName = asString(event.nodeName);
+    const duration = event.durationMs != null ? ` in ${event.durationMs}ms` : "";
+    output += `Node '${nodeName}' finished${duration}`;
+  } else {
+    output += message || type;
+  }
+
+  const details: string[] = [];
+
+  if (type === "n8n.node.finished") {
+    if (event.outputPreview) {
+      details.push(`  ├─ Preview: ${event.outputPreview}`);
+    }
+    if (event.previousNode) {
+      details.push(`  ├─ Previous Node: ${event.previousNode}`);
+    }
+    if (event.tokenUsage && typeof event.tokenUsage === "object") {
+      const tokens = event.tokenUsage as JsonRecord;
+      details.push(`  ├─ Tokens: Prompt: ${tokens.promptTokens ?? "?"} | Completion: ${tokens.completionTokens ?? "?"} | Total: ${tokens.totalTokens ?? "?"}`);
+    }
+    if (event.rawError) {
+      const errStr = JSON.stringify(event.rawError, null, 2)
+        .split("\n")
+        .map(line => `  │ ${line}`)
+        .join("\n");
+      details.push(`  ├─ Error Details:\n${errStr}`);
+    }
+    if (event.rawData) {
+      const dataStr = JSON.stringify(event.rawData, null, 2)
+        .split("\n")
+        .map(line => `  │ ${line}`)
+        .join("\n");
+      details.push(`  ├─ Output Data:\n${dataStr}`);
+    }
+
+    if (details.length > 0) {
+      const lastIdx = details.length - 1;
+      details[lastIdx] = details[lastIdx].replace("  ├─", "  └─");
+    }
+  } else if (type === "bridge.started") {
+    details.push(`  ├─ Trace ID: ${event.traceId}`);
+    details.push(`  └─ Run ID: ${event.paperclipRunId}`);
+  } else if (type === "n8n.execution.found") {
+    details.push(`  └─ Execution ID: ${event.executionId}`);
+  } else if (type === "n8n.execution.finished") {
+    details.push(`  ├─ Status: ${event.status}`);
+    details.push(`  └─ Execution ID: ${event.executionId}`);
+  }
+
+  if (details.length > 0) {
+    output += "\n" + details.join("\n");
+  }
+
+  return output + "\n\n";
+}
+
 async function emit(ctx: AdapterExecutionContext, type: string, payload: JsonRecord): Promise<void> {
   const event = removeUndefined({
     ts: new Date().toISOString(),
@@ -387,7 +481,7 @@ async function emit(ctx: AdapterExecutionContext, type: string, payload: JsonRec
     ...payload,
   });
 
-  await ctx.onLog("stdout", `${JSON.stringify(event)}\n`);
+  await ctx.onLog("stdout", formatLogEvent(event));
 
   const runtimeEvent: AdapterRuntimeEvent = {
     eventType: type,
