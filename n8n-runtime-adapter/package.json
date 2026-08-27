@@ -20,6 +20,10 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@paperclipai/adapter-utils": "workspace:*"
   }
 }

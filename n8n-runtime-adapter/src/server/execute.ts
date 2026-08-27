@@ -4,6 +4,12 @@ import type {
   AdapterRuntimeEvent,
 } from "../types.js";
 import {
+  normalizePaperclipWakePayload,
+  renderPaperclipWakePrompt,
+  selectPaperclipTaskMarkdown,
+  joinPromptSections,
+} from "@paperclipai/adapter-utils/server-utils";
+import {
   asBoolean,
   asNumber,
   asString,
@@ -32,10 +38,12 @@ interface N8nRuntimeConfig {
   logDetail: string;
   headers: Record<string, string>;
   payloadTemplate: JsonRecord;
+  includeFullContext: boolean;
+  includeFullPrompt: boolean;
 }
 
 type WebhookTriggerResult =
-  | { ok: true }
+  | { ok: true; body: string }
   | { ok: false; error: Error };
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
@@ -59,7 +67,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   let webhookTriggerError: Error | null = null;
   const webhookTrigger: Promise<WebhookTriggerResult> = triggerN8nWebhook({ ctx, config, traceId, issueId }).then(
-    (): WebhookTriggerResult => ({ ok: true }),
+    (body): WebhookTriggerResult => ({ ok: true, body }),
     (error: unknown): WebhookTriggerResult => {
       const normalized = normalizeError(error);
       webhookTriggerError = normalized;
@@ -101,6 +109,18 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       level: result.exitCode === 0 ? "warn" : "error",
       message: triggerResult.error.message,
     });
+  } else if (triggerResult.body) {
+    await emit(ctx, "n8n.webhook.response_success", {
+      traceId,
+      executionId,
+      message: "Received final webhook response",
+      body: triggerResult.body,
+    });
+
+    // Nếu extractWorkflowResult ở pollExecution không tìm được gì, ta gán tạm webhook body làm result
+    if (result.resultJson && !result.resultJson.result) {
+      result.resultJson.result = triggerResult.body;
+    }
   }
 
   return result;
@@ -126,6 +146,8 @@ function readConfig(rawConfig: Record<string, unknown>): N8nRuntimeConfig {
     logDetail: asString(rawConfig.logDetail, "compact"),
     headers,
     payloadTemplate: parseObject(rawConfig.payloadTemplate),
+    includeFullContext: asBoolean(rawConfig.includeFullContext, true),
+    includeFullPrompt: asBoolean(rawConfig.includeFullPrompt, true),
   };
 }
 
@@ -134,7 +156,7 @@ async function triggerN8nWebhook(params: {
   config: N8nRuntimeConfig;
   traceId: string;
   issueId: string | undefined;
-}): Promise<void> {
+}): Promise<string> {
   const { ctx, config, traceId, issueId } = params;
   const url = new URL(config.webhookUrl);
   const content = getTaskContent(ctx);
@@ -146,6 +168,10 @@ async function triggerN8nWebhook(params: {
   url.searchParams.set("agentId", ctx.agent.id);
   url.searchParams.set("companyId", ctx.agent.companyId);
 
+  const paperclipContext = config.includeFullContext
+    ? buildN8nContextPayload(ctx, { includeFullPrompt: config.includeFullPrompt })
+    : undefined;
+
   const body = {
     ...config.payloadTemplate,
     agentId: ctx.agent.id,
@@ -155,6 +181,7 @@ async function triggerN8nWebhook(params: {
     taskId: issueId,
     traceId,
     context: ctx.context,
+    ...(paperclipContext ? { paperclip: paperclipContext } : {}),
     bridge: {
       kind: "paperclip-n8n-runtime-adapter",
       startedAt: new Date().toISOString(),
@@ -171,10 +198,12 @@ async function triggerN8nWebhook(params: {
     body: config.method === "GET" ? undefined : JSON.stringify(body),
   });
 
+  const text = await response.text().catch(() => "");
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
     throw new Error(`n8n webhook failed: ${response.status} ${response.statusText} ${text.slice(0, 500)}`);
   }
+
+  return text;
 }
 
 async function findExecutionId(params: {
@@ -465,10 +494,18 @@ function formatLogEvent(event: JsonRecord): string {
   } else if (type === "n8n.execution.finished") {
     details.push(`  ├─ Status: ${event.status}`);
     details.push(`  └─ Execution ID: ${event.executionId}`);
+  } else if (type === "n8n.webhook.response_success") {
+    details.push(`  └─ Body: ${event.body}`);
   }
 
   if (details.length > 0) {
     output += "\n" + details.join("\n");
+  }
+
+  if (type === "n8n.node.finished") {
+    output += "\n\n" + "─".repeat(80);
+  } else if (type === "n8n.execution.finished" || type === "n8n.execution.timeout" || type === "n8n.webhook.response_success") {
+    output += "\n\n" + "=".repeat(80);
   }
 
   return output + "\n\n";
@@ -537,4 +574,38 @@ function delay(ms: number): Promise<void> {
 function normalizeError(error: unknown): Error {
   if (error instanceof Error) return error;
   return new Error(String(error));
+}
+
+function buildN8nContextPayload(ctx: AdapterExecutionContext, opts: { includeFullPrompt: boolean }) {
+  const wake = normalizePaperclipWakePayload(ctx.context.paperclipWake);
+
+  let fullPrompt: string | null = null;
+  if (opts.includeFullPrompt) {
+    const taskMarkdown = selectPaperclipTaskMarkdown(ctx.context);
+    const wakePromptText = wake ? renderPaperclipWakePrompt(wake) : null;
+    fullPrompt = joinPromptSections([wakePromptText, taskMarkdown]);
+  }
+
+  return {
+    wakeReason: wake?.reason ?? null,
+    issueTitle: wake?.issue?.title ?? null,
+    issueStatus: wake?.issue?.status ?? null,
+    issueDescription: wake?.issue?.description ?? null,
+    issueIdentifier: wake?.issue?.identifier ?? null,
+    latestComments: wake?.comments.map((c: any) => ({
+      id: c.id,
+      body: c.body,
+      authorType: c.authorType,
+      createdAt: c.createdAt
+    })) ?? [],
+    continuationSummary: wake?.continuationSummary?.body ?? null,
+    recovery: wake?.recovery ? {
+      cause: wake.recovery.cause,
+      failureSummary: wake.recovery.failureSummary,
+      attempt: wake.recovery.attemptCount,
+      maxAttempts: wake.recovery.maxAttempts,
+    } : null,
+    fallbackFetchNeeded: wake?.fallbackFetchNeeded ?? false,
+    fullPrompt,
+  };
 }
