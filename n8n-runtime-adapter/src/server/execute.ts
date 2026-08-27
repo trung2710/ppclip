@@ -34,6 +34,10 @@ interface N8nRuntimeConfig {
   payloadTemplate: JsonRecord;
 }
 
+type WebhookTriggerResult =
+  | { ok: true }
+  | { ok: false; error: Error };
+
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const config = readConfig(ctx.config);
   if (!config.webhookUrl) throw new Error("n8n_runtime adapter missing webhookUrl");
@@ -53,11 +57,19 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     message: "n8n runtime adapter received Paperclip run",
   });
 
-  await triggerN8nWebhook({ ctx, config, traceId, issueId });
+  let webhookTriggerError: Error | null = null;
+  const webhookTrigger: Promise<WebhookTriggerResult> = triggerN8nWebhook({ ctx, config, traceId, issueId }).then(
+    (): WebhookTriggerResult => ({ ok: true }),
+    (error: unknown): WebhookTriggerResult => {
+      const normalized = normalizeError(error);
+      webhookTriggerError = normalized;
+      return { ok: false, error: normalized };
+    },
+  );
 
   await emit(ctx, "n8n.triggered", {
     traceId,
-    message: "n8n webhook triggered",
+    message: "n8n webhook request started",
   });
 
   const executionId = await findExecutionId({
@@ -65,6 +77,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     config,
     traceId,
     startedAtMs,
+    getWebhookTriggerError: () => webhookTriggerError,
   });
 
   await emit(ctx, "n8n.execution.found", {
@@ -79,6 +92,16 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     executionId,
     traceId,
   });
+
+  const triggerResult = await webhookTrigger;
+  if (!triggerResult.ok) {
+    await emit(ctx, "n8n.webhook.response_failed", {
+      traceId,
+      executionId,
+      level: result.exitCode === 0 ? "warn" : "error",
+      message: triggerResult.error.message,
+    });
+  }
 
   return result;
 }
@@ -159,13 +182,19 @@ async function findExecutionId(params: {
   config: N8nRuntimeConfig;
   traceId: string;
   startedAtMs: number;
+  getWebhookTriggerError?: () => Error | null;
 }): Promise<string> {
-  const { ctx, config, traceId, startedAtMs } = params;
+  const { ctx, config, traceId, startedAtMs, getWebhookTriggerError } = params;
   const deadline = Date.now() + config.findExecutionTimeoutMs;
-  const seenCandidates = new Set<string>();
-  let fallbackExecutionId: string | null = null;
+  let lastLoggedId: string | null = null;
+
+  // Cho n8n kip tao execution trong DB
+  await delay(400);
 
   while (Date.now() < deadline) {
+    const triggerError = getWebhookTriggerError?.();
+    if (triggerError) throw triggerError;
+
     const executions = await listExecutions(config);
     const recent = executions
       .filter((execution) => {
@@ -178,33 +207,36 @@ async function findExecutionId(params: {
         return bStarted - aStarted;
       });
 
-    if (recent[0]?.id) fallbackExecutionId = String(recent[0].id);
-
     for (const execution of recent) {
       const id = String(execution.id);
-      if (seenCandidates.has(id)) continue;
-      seenCandidates.add(id);
 
-      await emit(ctx, "n8n.execution.candidate", {
-        executionId: id,
-        startedAt: execution.startedAt,
-        message: "checking n8n execution candidate",
-      });
+      if (id !== lastLoggedId) {
+        lastLoggedId = id;
+        await emit(ctx, "n8n.execution.candidate", {
+          executionId: id,
+          startedAt: execution.startedAt,
+          message: "checking n8n execution candidate",
+        });
+      }
 
       const detail = await getExecution(config, id, true);
       if (deepContains(detail, traceId)) return id;
     }
 
-    if (!config.matchTraceId && fallbackExecutionId) return fallbackExecutionId;
+    if (!config.matchTraceId && recent[0]?.id) {
+      return String(recent[0].id);
+    }
+
     await delay(config.pollIntervalMs);
   }
 
-  if (fallbackExecutionId) {
+  const executions = await listExecutions(config);
+  if (executions[0]?.id) {
     await emit(ctx, "n8n.execution.fallback", {
-      executionId: fallbackExecutionId,
-      message: "traceId was not matched, using newest execution by time",
+      executionId: String(executions[0].id),
+      message: "traceId not matched, using newest execution",
     });
-    return fallbackExecutionId;
+    return String(executions[0].id);
   }
 
   throw new Error("Could not find matching n8n execution");
@@ -299,25 +331,34 @@ async function pollExecution(params: {
 }
 
 async function listExecutions(config: N8nRuntimeConfig): Promise<JsonRecord[]> {
-  const url = new URL(`${config.baseUrl}/api/v1/executions`);
-  url.searchParams.set("workflowId", config.workflowId);
-  url.searchParams.set("limit", "10");
-  url.searchParams.set("includeData", "false");
+  const urlRunning = new URL(`${config.baseUrl}/api/v1/executions`);
+  urlRunning.searchParams.set("workflowId", config.workflowId);
+  urlRunning.searchParams.set("limit", "10");
+  urlRunning.searchParams.set("includeData", "false");
+  urlRunning.searchParams.set("status", "running");
 
-  const response = await fetch(url, {
-    headers: {
-      "X-N8N-API-KEY": config.n8nApiKey,
-      Accept: "application/json",
-    },
-  });
+  const urlDefault = new URL(`${config.baseUrl}/api/v1/executions`);
+  urlDefault.searchParams.set("workflowId", config.workflowId);
+  urlDefault.searchParams.set("limit", "10");
+  urlDefault.searchParams.set("includeData", "false");
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`n8n list executions failed: ${response.status} ${text.slice(0, 500)}`);
+  const [resRunning, resDefault] = await Promise.all([
+    fetch(urlRunning, { headers: { "X-N8N-API-KEY": config.n8nApiKey, Accept: "application/json" } }),
+    fetch(urlDefault, { headers: { "X-N8N-API-KEY": config.n8nApiKey, Accept: "application/json" } })
+  ]);
+
+  if (!resDefault.ok) {
+    const text = await resDefault.text().catch(() => "");
+    throw new Error(`n8n list executions failed: ${resDefault.status} ${text.slice(0, 500)}`);
   }
 
-  const json = await response.json() as JsonRecord;
-  return Array.isArray(json.data) ? json.data.map(parseObject) : [];
+  const jsonRunning = resRunning.ok ? (await resRunning.json() as JsonRecord) : { data: [] };
+  const jsonDefault = await resDefault.json() as JsonRecord;
+
+  const dataRunning = Array.isArray(jsonRunning.data) ? jsonRunning.data : [];
+  const dataDefault = Array.isArray(jsonDefault.data) ? jsonDefault.data : [];
+
+  return [...dataRunning, ...dataDefault].map(parseObject);
 }
 
 async function getExecution(config: N8nRuntimeConfig, executionId: string, includeData: boolean): Promise<JsonRecord> {
@@ -397,4 +438,9 @@ function stripTrailingSpaces(value: string): string {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  return new Error(String(error));
 }
