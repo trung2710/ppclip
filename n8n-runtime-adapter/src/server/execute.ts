@@ -271,6 +271,16 @@ async function findExecutionId(params: {
   throw new Error("Could not find matching n8n execution");
 }
 
+interface NodeUsageRecord {
+  nodeName: string;
+  runIndex: number;
+  model?: string;
+  provider?: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 async function pollExecution(params: {
   ctx: AdapterExecutionContext;
   config: N8nRuntimeConfig;
@@ -281,11 +291,20 @@ async function pollExecution(params: {
   const deadline = Date.now() + config.executionTimeoutMs;
   const emitted = new Set<string>();
 
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  const nodeUsageList: NodeUsageRecord[] = [];
+  let primaryModel: string | undefined;
+  let primaryProvider: string | undefined;
+
   while (Date.now() < deadline) {
     const execution = await getExecution(config, executionId, true);
     const data = parseObject(execution.data);
     const resultData = parseObject(data.resultData);
     const runData = parseObject(resultData.runData ?? data.runData);
+
+    const workflowData = parseObject(execution.workflowData ?? data.workflowData);
+    const workflowNodes = Array.isArray(workflowData.nodes) ? (workflowData.nodes as JsonRecord[]) : undefined;
 
     for (const [nodeName, nodeRuns] of Object.entries(runData)) {
       if (!Array.isArray(nodeRuns)) continue;
@@ -296,7 +315,7 @@ async function pollExecution(params: {
         if (emitted.has(key)) continue;
         emitted.add(key);
 
-        await emit(ctx, "n8n.node.finished", summarizeNodeRun({
+        const nodeEvent = summarizeNodeRun({
           executionId,
           traceId,
           nodeName,
@@ -304,12 +323,51 @@ async function pollExecution(params: {
           index,
           logDetail: config.logDetail,
           includeInputSummary: config.includeInputSummary,
-        }));
+          workflowNodes,
+        });
+
+        if (nodeEvent.tokenUsage && typeof nodeEvent.tokenUsage === "object") {
+          const usage = nodeEvent.tokenUsage as { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+          const p = Number(usage.promptTokens) || 0;
+          const c = Number(usage.completionTokens) || 0;
+          const t = Number(usage.totalTokens) || (p + c);
+
+          if (p > 0 || c > 0 || t > 0) {
+            totalPromptTokens += p;
+            totalCompletionTokens += c;
+            const model = typeof nodeEvent.model === "string" ? nodeEvent.model : undefined;
+            const provider = typeof nodeEvent.provider === "string" ? nodeEvent.provider : undefined;
+
+            if (model && !primaryModel) primaryModel = model;
+            if (provider && !primaryProvider) primaryProvider = provider;
+
+            nodeUsageList.push({
+              nodeName,
+              runIndex: index,
+              model,
+              provider,
+              promptTokens: p,
+              completionTokens: c,
+              totalTokens: t,
+            });
+          }
+        }
+
+        await emit(ctx, "n8n.node.finished", nodeEvent);
       }
     }
 
     if (isTerminalExecution(execution)) {
       const status = asString(execution.status, execution.finished ? "success" : "unknown");
+      const totalTokens = totalPromptTokens + totalCompletionTokens;
+      const modelsUsed = Array.from(
+        new Set(
+          nodeUsageList
+            .map((n) => (n.model ? (n.provider ? `${n.model} (${n.provider})` : n.model) : (n.provider ?? "")))
+            .filter(Boolean),
+        ),
+      );
+
       await emit(ctx, "n8n.execution.finished", {
         executionId,
         traceId,
@@ -317,16 +375,37 @@ async function pollExecution(params: {
         finished: execution.finished,
         startedAt: execution.startedAt,
         stoppedAt: execution.stoppedAt,
+        totalPromptTokens: totalPromptTokens || undefined,
+        totalCompletionTokens: totalCompletionTokens || undefined,
+        totalTokens: totalTokens || undefined,
+        modelsUsed: modelsUsed.length > 0 ? modelsUsed.join(", ") : undefined,
         message: "n8n workflow finished",
       });
 
       const failed = ["error", "failed", "canceled", "cancelled"].includes(status.toLowerCase());
+      const usageResult =
+        totalPromptTokens > 0 || totalCompletionTokens > 0
+          ? {
+              inputTokens: totalPromptTokens,
+              outputTokens: totalCompletionTokens,
+              cachedInputTokens: 0,
+            }
+          : undefined;
+
+      const agentConfig = parseObject(ctx.agent.adapterConfig);
+      const fallbackModel = typeof agentConfig.model === "string" ? agentConfig.model : undefined;
+      const fallbackProvider = typeof agentConfig.provider === "string" ? agentConfig.provider : undefined;
+
       return {
         exitCode: failed ? 1 : 0,
         signal: null,
         timedOut: false,
         errorMessage: failed ? `n8n workflow ended with status ${status}` : null,
         summary: failed ? "n8n workflow failed" : "n8n workflow completed successfully",
+        usage: usageResult,
+        usageBasis: "per_run",
+        model: primaryModel || fallbackModel || undefined,
+        provider: primaryProvider || fallbackProvider || undefined,
         resultJson: removeUndefined({
           executionId,
           traceId,
@@ -334,6 +413,8 @@ async function pollExecution(params: {
           finished: execution.finished,
           startedAt: execution.startedAt,
           stoppedAt: execution.stoppedAt,
+          tokenBreakdown: nodeUsageList.length > 0 ? nodeUsageList : undefined,
+          totalTokens: totalTokens > 0 ? totalTokens : undefined,
         }),
       };
     }
@@ -341,12 +422,25 @@ async function pollExecution(params: {
     await delay(config.pollIntervalMs);
   }
 
+  const totalTokens = totalPromptTokens + totalCompletionTokens;
   await emit(ctx, "n8n.execution.timeout", {
     executionId,
     traceId,
     level: "warn",
+    totalPromptTokens: totalPromptTokens || undefined,
+    totalCompletionTokens: totalCompletionTokens || undefined,
+    totalTokens: totalTokens || undefined,
     message: "n8n execution timed out",
   });
+
+  const usageResult =
+    totalPromptTokens > 0 || totalCompletionTokens > 0
+      ? {
+          inputTokens: totalPromptTokens,
+          outputTokens: totalCompletionTokens,
+          cachedInputTokens: 0,
+        }
+      : undefined;
 
   return {
     exitCode: null,
@@ -355,7 +449,16 @@ async function pollExecution(params: {
     errorCode: "timeout",
     errorMessage: `n8n execution ${executionId} timed out after ${config.executionTimeoutMs}ms`,
     summary: "n8n workflow timed out",
-    resultJson: { executionId, traceId },
+    usage: usageResult,
+    usageBasis: "per_run",
+    model: primaryModel || undefined,
+    provider: primaryProvider || undefined,
+    resultJson: removeUndefined({
+      executionId,
+      traceId,
+      tokenBreakdown: nodeUsageList.length > 0 ? nodeUsageList : undefined,
+      totalTokens: totalTokens > 0 ? totalTokens : undefined,
+    }),
   };
 }
 
@@ -463,6 +566,13 @@ function formatLogEvent(event: JsonRecord): string {
     if (event.previousNode) {
       details.push(`  ├─ Previous Node: ${event.previousNode}`);
     }
+    if (event.model || event.provider) {
+      const modelStr = [
+        event.model ? `Model: ${event.model}` : null,
+        event.provider ? `Provider: ${event.provider}` : null,
+      ].filter(Boolean).join(" | ");
+      details.push(`  ├─ ${modelStr}`);
+    }
     if (event.tokenUsage && typeof event.tokenUsage === "object") {
       const tokens = event.tokenUsage as JsonRecord;
       details.push(`  ├─ Tokens: Prompt: ${tokens.promptTokens ?? "?"} | Completion: ${tokens.completionTokens ?? "?"} | Total: ${tokens.totalTokens ?? "?"}`);
@@ -493,7 +603,17 @@ function formatLogEvent(event: JsonRecord): string {
     details.push(`  └─ Execution ID: ${event.executionId}`);
   } else if (type === "n8n.execution.finished") {
     details.push(`  ├─ Status: ${event.status}`);
-    details.push(`  └─ Execution ID: ${event.executionId}`);
+    details.push(`  ├─ Execution ID: ${event.executionId}`);
+    if (event.totalTokens != null) {
+      details.push(`  ├─ Total Token Usage: Prompt: ${event.totalPromptTokens ?? 0} | Completion: ${event.totalCompletionTokens ?? 0} | Total: ${event.totalTokens}`);
+    }
+    if (event.modelsUsed) {
+      details.push(`  ├─ Models Used: ${event.modelsUsed}`);
+    }
+    if (details.length > 0) {
+      const lastIdx = details.length - 1;
+      details[lastIdx] = details[lastIdx].replace("  ├─", "  └─");
+    }
   } else if (type === "n8n.webhook.response_success") {
     details.push(`  └─ Body: ${event.body}`);
   }

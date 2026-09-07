@@ -28,6 +28,84 @@ export function removeUndefined<T extends JsonRecord>(value: T): JsonRecord {
   return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
 }
 
+export interface NormalizedTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export function extractTokenUsage(nodeRun: JsonRecord): NormalizedTokenUsage | undefined {
+  const tokenUsage = findFirstKey(nodeRun, "tokenUsage") as JsonRecord | undefined;
+  if (!tokenUsage || typeof tokenUsage !== "object") return undefined;
+
+  const promptTokens = asNumber(
+    tokenUsage.promptTokens ?? tokenUsage.prompt_tokens ?? tokenUsage.inputTokens ?? tokenUsage.input_tokens,
+    0
+  );
+  const completionTokens = asNumber(
+    tokenUsage.completionTokens ?? tokenUsage.completion_tokens ?? tokenUsage.outputTokens ?? tokenUsage.output_tokens,
+    0
+  );
+  const totalTokens = asNumber(
+    tokenUsage.totalTokens ?? tokenUsage.total_tokens,
+    promptTokens + completionTokens
+  );
+
+  if (promptTokens === 0 && completionTokens === 0 && totalTokens === 0) return undefined;
+  return { promptTokens, completionTokens, totalTokens };
+}
+
+export function extractModelAndProvider(
+  nodeName: string,
+  nodeRun: JsonRecord,
+  workflowNodes?: JsonRecord[]
+): { model?: string; provider?: string } {
+  let model: string | undefined;
+  let provider: string | undefined;
+
+  // 1. Try finding node definition in workflowNodes
+  if (Array.isArray(workflowNodes)) {
+    const matchedNode = workflowNodes.find((n) => n && typeof n === "object" && n.name === nodeName);
+    if (matchedNode) {
+      const params = parseObject(matchedNode.parameters);
+      if (params.model) model = String(params.model);
+      else if (params.modelName) model = String(params.modelName);
+      else if (params.modelId) model = String(params.modelId);
+
+      const type = String(matchedNode.type ?? "").toLowerCase();
+      if (type.includes("groq")) provider = "groq";
+      else if (type.includes("openai")) provider = "openai";
+      else if (type.includes("anthropic") || type.includes("claude")) provider = "anthropic";
+      else if (type.includes("gemini") || type.includes("google")) provider = "google";
+      else if (type.includes("ollama")) provider = "ollama";
+      else if (type.includes("mistral")) provider = "mistral";
+      else if (type.includes("deepseek")) provider = "deepseek";
+    }
+  }
+
+  // 2. Try extracting model from nodeRun data/inputs
+  if (!model) {
+    const foundModel = findFirstKey(nodeRun, "model") ?? findFirstKey(nodeRun, "modelName") ?? findFirstKey(nodeRun, "modelId");
+    if (typeof foundModel === "string" && foundModel.trim()) {
+      model = foundModel.trim();
+    }
+  }
+
+  // 3. Fallback provider detection from nodeName
+  if (!provider) {
+    const lowerName = nodeName.toLowerCase();
+    if (lowerName.includes("groq")) provider = "groq";
+    else if (lowerName.includes("openai") || lowerName.includes("gpt")) provider = "openai";
+    else if (lowerName.includes("claude") || lowerName.includes("anthropic")) provider = "anthropic";
+    else if (lowerName.includes("gemini") || lowerName.includes("google")) provider = "google";
+    else if (lowerName.includes("ollama")) provider = "ollama";
+    else if (lowerName.includes("mistral")) provider = "mistral";
+    else if (lowerName.includes("deepseek")) provider = "deepseek";
+  }
+
+  return { model, provider };
+}
+
 export function summarizeNodeRun(params: {
   executionId: string;
   traceId: string;
@@ -36,14 +114,18 @@ export function summarizeNodeRun(params: {
   index: number;
   logDetail: string;
   includeInputSummary: boolean;
+  workflowNodes?: JsonRecord[];
 }): JsonRecord {
-  const { executionId, traceId, nodeName, nodeRun, index, logDetail, includeInputSummary } = params;
-  const tokenUsage = findFirstKey(nodeRun, "tokenUsage");
+  const { executionId, traceId, nodeName, nodeRun, index, logDetail, includeInputSummary, workflowNodes } = params;
+  const tokenUsage = extractTokenUsage(nodeRun);
+  const { model, provider } = extractModelAndProvider(nodeName, nodeRun, workflowNodes);
   const concise = summarizeNodeOutput(nodeName, nodeRun, logDetail);
   const event = {
     executionId,
     traceId,
     nodeName,
+    model,
+    provider,
     runIndex: index,
     executionIndex: nodeRun.executionIndex,
     status: asString(nodeRun.executionStatus, nodeRun.error ? "error" : "success"),
@@ -52,7 +134,7 @@ export function summarizeNodeRun(params: {
     previousNode: Array.isArray((nodeRun.source as JsonRecord[] | undefined))
       ? parseObject((nodeRun.source as JsonRecord[])[0]).previousNode
       : undefined,
-    tokenUsage: tokenUsage && typeof tokenUsage === "object" ? tokenUsage : undefined,
+    tokenUsage,
     ...concise,
     message: formatNodeMessage(nodeName, nodeRun, concise),
     rawError: nodeRun.error,

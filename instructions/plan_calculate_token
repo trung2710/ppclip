@@ -1,0 +1,112 @@
+# Kế Hoạch Triển Khai: Phân Tích Log n8n để Bóc Tách Model, Provider và Tích Lũy Token Usage
+
+## 1. Mục tiêu
+Nâng cấp `n8n-runtime-adapter` để:
+1. **Trích xuất thông tin Model & Provider** từ workflow nodes (từ input options, node parameters trong `workflowData`, hoặc node type).
+2. **Tích lũy (Aggregate) toàn bộ `tokenUsage`** (Prompt/Input tokens, Completion/Output tokens) từ tất cả các lần gọi LLM (các node và các turn) trong một workflow run.
+3. **Trả về chuẩn `AdapterExecutionResult.usage`** để Paperclip Server tự động ghi nhận vào `agent_runtime_state`, tạo `cost_events` và hiển thị chi phí / lượng token trên Dashboard.
+4. **Bổ sung `tokenBreakdown`** vào `resultJson` và log event để người dùng theo dõi chi tiết lượng token theo từng node / turn.
+
+---
+
+## 2. Phân tích nguồn dữ liệu trong n8n
+
+Dựa trên cấu trúc n8n API (`/api/v1/executions/{id}?includeData=true`) và ảnh chụp thực tế:
+
+| Thông tin | Nguồn dữ liệu trong n8n API | Cơ chế Fallback |
+| :--- | :--- | :--- |
+| **Token Usage** | `nodeRun.data` -> `tokenUsage` (`promptTokens`, `completionTokens`, `totalTokens`) | `findFirstKey(nodeRun, "tokenUsage")` |
+| **Model Name** | 1. `nodeRun.inputOverride` / `nodeRun.data.input` (`options.model`)<br>2. `execution.workflowData.nodes[nodeName].parameters.model` (hoặc `modelName`) | Fallback về cấu hình Agent trong Paperclip (`ctx.config.model` hoặc `ctx.agent.model`) |
+| **Provider** | 1. Node `type` (ví dụ: `@n8n/n8n-nodes-langchain.lmChatGroq` $\rightarrow$ `groq`, `lmChatOpenAi` $\rightarrow$ `openai`, `lmChatAnthropic` $\rightarrow$ `anthropic`, `lmChatGoogleGemini` $\rightarrow$ `google`, `lmChatOllama` $\rightarrow$ `ollama`)<br>2. Tiền tố node name (ví dụ: "Groq Chat Model" $\rightarrow$ `groq`) | Fallback về `"n8n"` hoặc Provider từ config của Agent |
+
+---
+
+## 3. Các thay đổi đề xuất
+
+### Component: `n8n-runtime-adapter`
+
+#### [MODIFY] [parse.ts](file:///c:/paperclip/n8n-runtime-adapter/src/server/parse.ts)
+1. **Thêm hàm nhận diện Model & Provider**:
+   - `extractModelInfo(nodeName: string, nodeRun: JsonRecord, workflowNodes?: JsonRecord[])`:
+     - Bóc tách tên model từ `nodeRun.inputOverride`, `nodeRun.data`, hoặc node config trong `workflowData`.
+     - Nhận diện Provider từ node `type` hoặc `nodeName`.
+2. **Cập nhật `summarizeNodeRun`**:
+   - Gắn thêm `model` và `provider` vào event metadata của từng node để log stdout hiển thị rõ:
+     ```text
+     ├─ Model: openai/gpt-oss-120b (Provider: groq)
+     ├─ Tokens: Prompt: 1980 | Completion: 379 | Total: 2359
+     ```
+
+#### [MODIFY] [execute.ts](file:///c:/paperclip/n8n-runtime-adapter/src/server/execute.ts)
+1. **Xây dựng `TokenAccumulator` trong `pollExecution`**:
+   - Khởi tạo bộ đếm:
+     ```typescript
+     let totalPromptTokens = 0;
+     let totalCompletionTokens = 0;
+     const nodeUsageList: Array<{
+       nodeName: string;
+       runIndex: number;
+       model?: string;
+       provider?: string;
+       promptTokens: number;
+       completionTokens: number;
+       totalTokens: number;
+     }> = [];
+     ```
+   - Khi quét qua mỗi `nodeRun` mới hoàn thành:
+     - Lấy `tokenUsage` (nếu có):
+       ```typescript
+       if (tokenUsage) {
+         totalPromptTokens += promptTokens;
+         totalCompletionTokens += completionTokens;
+         nodeUsageList.push({ nodeName, runIndex, model, provider, promptTokens, completionTokens, totalTokens });
+       }
+       ```
+2. **Gắn vào kết quả trả về `AdapterExecutionResult`**:
+   - Khi workflow kết thúc (thành công hoặc thất bại):
+     ```typescript
+     return {
+       exitCode: failed ? 1 : 0,
+       summary: ...,
+       usage: (totalPromptTokens > 0 || totalCompletionTokens > 0) ? {
+         inputTokens: totalPromptTokens,
+         outputTokens: totalCompletionTokens,
+         cachedInputTokens: 0,
+       } : undefined,
+       usageBasis: "per_run",
+       model: primaryModel || ctx.agent.model || undefined,
+       provider: primaryProvider || "groq",
+       resultJson: {
+         ...resultJson,
+         tokenBreakdown: nodeUsageList,
+         totalTokens: totalPromptTokens + totalCompletionTokens,
+       }
+     };
+     ```
+3. **Cập nhật định dạng log `formatLogEvent`**:
+   - Hiển thị tổng kết token khi kết thúc execution:
+     ```text
+     ================================================================================
+     [14:45:00.123] [FINISHED] n8n workflow finished
+       ├─ Execution ID: 12345
+       ├─ Status: success
+       ├─ Total Token Usage: Prompt: 2581 | Completion: 463 | Total: 3044
+       └─ Models Used: openai/gpt-oss-120b (groq)
+     ================================================================================
+     ```
+
+---
+
+## 4. Kế hoạch xác minh (Verification Plan)
+
+### Kiểm thử tự động / Đơn vị (Automated Verification)
+- Chạy typecheck trên toàn bộ project:
+  ```powershell
+  pnpm -r typecheck
+  ```
+- Chạy test case kiểm thử bóc tách n8n execution data với mock payload (có chứa nhiều lượt gọi LLM và node lỗi 503).
+
+### Kiểm thử thực tế (Manual / Integration Verification)
+1. Kích hoạt một run qua `n8n_runtime` adapter từ Paperclip.
+2. Kiểm tra log stdout của run xem đã hiển thị đầy đủ thông tin `Model`, `Provider`, và bảng tổng kết token cuối run chưa.
+3. Kiểm tra Dashboard của Paperclip xem bảng chi phí / tokens của Agent đã cập nhật đúng số lượng token tiêu tốn của run đó chưa.

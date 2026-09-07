@@ -47,12 +47,23 @@ export interface AdapterExecutionContext {
   authToken?: string;
 }
 
+export interface UsageSummary {
+  inputTokens: number;
+  outputTokens: number;
+  cachedInputTokens?: number;
+}
+
 export interface AdapterExecutionResult {
   exitCode: number | null;
   signal: string | null;
   timedOut: boolean;
   errorMessage?: string | null;
   errorCode?: string | null;
+  usage?: UsageSummary;
+  usageBasis?: "per_run" | "session_cumulative" | null;
+  model?: string | null;
+  provider?: string | null;
+  costUsd?: number | null;
   resultJson?: Record<string, unknown> | null;
   summary?: string | null;
 }
