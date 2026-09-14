@@ -386,10 +386,10 @@ async function pollExecution(params: {
       const usageResult =
         totalPromptTokens > 0 || totalCompletionTokens > 0
           ? {
-              inputTokens: totalPromptTokens,
-              outputTokens: totalCompletionTokens,
-              cachedInputTokens: 0,
-            }
+            inputTokens: totalPromptTokens,
+            outputTokens: totalCompletionTokens,
+            cachedInputTokens: 0,
+          }
           : undefined;
 
       const agentConfig = parseObject(ctx.agent.adapterConfig);
@@ -436,10 +436,10 @@ async function pollExecution(params: {
   const usageResult =
     totalPromptTokens > 0 || totalCompletionTokens > 0
       ? {
-          inputTokens: totalPromptTokens,
-          outputTokens: totalCompletionTokens,
-          cachedInputTokens: 0,
-        }
+        inputTokens: totalPromptTokens,
+        outputTokens: totalCompletionTokens,
+        cachedInputTokens: 0,
+      }
       : undefined;
 
   return {

@@ -37,7 +37,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && esbuild src/stdio.ts --bundle --platform=node --format=esm --outfile=dist/stdio.js --external:@modelcontextprotocol/sdk --external:zod",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
