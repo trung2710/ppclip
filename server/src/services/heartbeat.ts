@@ -2681,10 +2681,15 @@ function resolveLedgerBiller(result: AdapterExecutionResult): string {
   return readNonEmptyString(result.biller) ?? readNonEmptyString(result.provider) ?? "unknown";
 }
 
+// function normalizeBilledCostCents(costUsd: number | null | undefined, billingType: BillingType): number {
+//   if (billingType === "subscription_included") return 0;
+//   if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return 0;
+//   return Math.max(0, Math.round(costUsd * 100));
+// }
 function normalizeBilledCostCents(costUsd: number | null | undefined, billingType: BillingType): number {
   if (billingType === "subscription_included") return 0;
   if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return 0;
-  return Math.max(0, Math.round(costUsd * 100));
+  return Math.max(0, costUsd * 100);
 }
 
 export function resolveLedgerCostStatus(input: {

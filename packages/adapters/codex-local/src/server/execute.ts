@@ -1222,7 +1222,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           biller: resolveCodexBiller(effectiveEnv, billingType),
           model,
           billingType,
-          costUsd: null,
+          costUsd: attempt.parsed.costUsd ?? null,
           resultJson: {
             stdout: attempt.proc.stdout,
             stderr: attempt.proc.stderr,
@@ -1346,7 +1346,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         biller: resolveCodexBiller(effectiveEnv, billingType),
         model,
         billingType,
-        costUsd: null,
+        costUsd: attempt.parsed.costUsd ?? null,
         resultJson: {
           stdout: attempt.proc.stdout,
           stderr: attempt.proc.stderr,

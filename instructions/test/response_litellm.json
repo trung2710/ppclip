@@ -1,0 +1,41 @@
+{
+    "id": "iMy0atFqsr7T6Q-Ct4mQAQ",
+    "created": 1790233732,
+    "model": "gemini/gemini-3.5-flash",
+    "object": "chat.completion",
+    "choices": [
+        {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+                "content": "Xin chào! Tôi là Gemini, một mô hình trí tuệ nhân tạo được phát triển bởi Google. \n\nTôi luôn được cập nhật và vận hành trên phiên bản công nghệ mới nhất của dòng mô hình Gemini để hỗ trợ bạn một cách tốt nhất. Hôm nay tôi có thể giúp gì cho bạn?",
+                "role": "assistant",
+                "images": [],
+                "thinking_blocks": [],
+                "provider_specific_fields": {
+                    "thought_signatures": [
+                        "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"
+                    ]
+                }
+            }
+        }
+    ],
+    "usage": {
+        "completion_tokens": 461,
+        "prompt_tokens": 11,
+        "total_tokens": 472,
+        "completion_tokens_details": {
+            "reasoning_tokens": 399,
+            "text_tokens": 62
+        },
+        "prompt_tokens_details": {
+            "text_tokens": 11
+        },
+        "cost": 0.0041655
+    },
+    "vertex_ai_grounding_metadata": [],
+    "vertex_ai_url_context_metadata": [],
+    "vertex_ai_safety_results": [],
+    "vertex_ai_citation_metadata": [],
+    "service_tier": "default"
+}
