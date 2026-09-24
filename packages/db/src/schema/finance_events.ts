@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, index, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, index, boolean, jsonb, doublePrecision } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { agents } from "./agents.js";
 import { issues } from "./issues.js";
@@ -30,7 +30,7 @@ export const financeEvents = pgTable(
     model: text("model"),
     quantity: integer("quantity"),
     unit: text("unit"),
-    amountCents: integer("amount_cents").notNull(),
+    amountCents: doublePrecision("amount_cents").notNull(),
     currency: text("currency").notNull().default("USD"),
     estimated: boolean("estimated").notNull().default(false),
     externalInvoiceId: text("external_invoice_id"),

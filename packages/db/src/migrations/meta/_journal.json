@@ -1352,6 +1352,13 @@
       "when": 1784920485226,
       "tag": "0194_company_skill_releases",
       "breakpoints": true
+    },
+    {
+      "idx": 195,
+      "version": "7",
+      "when": 1790241358885,
+      "tag": "0195_double_precision_costs",
+      "breakpoints": true
     }
   ]
 }
