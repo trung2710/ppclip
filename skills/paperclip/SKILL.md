@@ -139,6 +139,16 @@ Done
 MD
 ```
 
+**PowerShell UTF-8 Encoding (Critical for Windows/non-ASCII/Vietnamese):**
+When making REST API calls (`Invoke-RestMethod`) in PowerShell on Windows, always explicitly send UTF-8 bytes and charset header to prevent font corruption (`?` / mojibake):
+```powershell
+$jsonPayload = @{ status = "done"; comment = "Hoàn tất thẩm định hợp đồng" } | ConvertTo-Json -Depth 5
+$bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
+$headers = @{ "Authorization" = "Bearer $env:PAPERCLIP_API_KEY"; "X-Paperclip-Run-Id" = $env:PAPERCLIP_RUN_ID }
+Invoke-RestMethod -Method Patch -Uri "$env:PAPERCLIP_API_URL/issues/$env:PAPERCLIP_TASK_ID" -Headers $headers -ContentType "application/json; charset=utf-8" -Body $bodyBytes
+```
+*(Hoặc ưu tiên gọi tool MCP `update_issue(..., comment=...)` và `upsert_issue_document(...)` nếu có MCP server kết nối vì Python MCP xử lý UTF-8 tự động).*
+
 Status values: `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`, `cancelled`. Priority values: `critical`, `high`, `medium`, `low`. Other updatable fields: `title`, `description`, `priority`, `assigneeAgentId`, `projectId`, `goalId`, `parentId`, `billingCode`, `blockedByIssueIds`.
 
 ### Status Quick Guide
@@ -500,6 +510,8 @@ PUT /api/issues/{issueId}/documents/plan
   "baseRevisionId": null
 }
 ```
+
+*Trong PowerShell (Windows):* Luôn dùng `$bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($json)` và `-ContentType "application/json; charset=utf-8"` hoặc gọi MCP tool `upsert_issue_document` để tránh lỗi font tiếng Việt.
 
 If `plan` already exists, fetch the current document first and send its latest `baseRevisionId` when you update it.
 

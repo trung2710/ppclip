@@ -48,7 +48,7 @@ diagnostics/
 .paperclip-runtime/
 /.idea/
 /.agents/
-
+/paperclip-mcp
 # Doc maintenance cursor
 .doc-review-cursor
 
