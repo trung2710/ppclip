@@ -1637,7 +1637,7 @@ function CostsSection({
                     <td className="px-3 py-2 text-right tabular-nums">{formatTokens(metrics.output)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {metrics.cost > 0
-                        ? `$${metrics.cost.toFixed(4)}`
+                        ? `$${metrics.cost.toFixed(6)}`
                         : "-"
                       }
                     </td>
