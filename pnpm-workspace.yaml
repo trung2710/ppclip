@@ -12,4 +12,3 @@ packages:
   - server
   - ui
   - cli
-  - n8n-runtime-adapter

@@ -14,6 +14,7 @@ import {
   Sparkles,
   Terminal,
   Cpu,
+  Workflow,
 } from "lucide-react";
 import { OpenCodeLogoIcon } from "@/components/OpenCodeLogoIcon";
 
@@ -139,6 +140,11 @@ const adapterDisplayMap: Record<string, AdapterDisplayInfo> = {
     description: "Internal HTTP adapter",
     icon: Cpu,
     comingSoon: true,
+  },
+  n8n_runtime: {
+    label: "n8n Runtime",
+    description: "Trigger and monitor n8n workflows with real-time execution logs",
+    icon: Workflow,
   },
 };
 

@@ -107,6 +107,15 @@ import {
   agentConfigurationDoc as openclawGatewayAgentConfigurationDoc,
   models as openclawGatewayModels,
 } from "@paperclipai/adapter-openclaw-gateway";
+import {
+  execute as n8nRuntimeExecute,
+  testEnvironment as n8nRuntimeTestEnvironment,
+  getConfigSchema as getN8nRuntimeConfigSchema,
+} from "@paperclipai/adapter-n8n-runtime/server";
+import {
+  agentConfigurationDoc as n8nRuntimeAgentConfigurationDoc,
+  models as n8nRuntimeModels,
+} from "@paperclipai/adapter-n8n-runtime";
 import { listCodexModels, refreshCodexModels } from "./codex-models.js";
 import { listCursorModels } from "./cursor-models.js";
 import {
@@ -382,6 +391,18 @@ const openclawGatewayAdapter: ServerAdapterModule = {
   agentConfigurationDoc: openclawGatewayAgentConfigurationDoc,
 };
 
+const n8nRuntimeAdapter: ServerAdapterModule = {
+  type: "n8n_runtime",
+  execute: n8nRuntimeExecute,
+  testEnvironment: n8nRuntimeTestEnvironment,
+  models: n8nRuntimeModels,
+  supportsLocalAgentJwt: false,
+  supportsInstructionsBundle: false,
+  requiresMaterializedRuntimeSkills: false,
+  agentConfigurationDoc: n8nRuntimeAgentConfigurationDoc,
+  getConfigSchema: getN8nRuntimeConfigSchema,
+};
+
 const openCodeLocalAdapter: ServerAdapterModule = {
   type: "opencode_local",
   execute: openCodeExecute,
@@ -446,6 +467,7 @@ function registerBuiltInAdapters() {
     hermesGatewayAdapter,
     hermesLocalAdapter,
     openclawGatewayAdapter,
+    n8nRuntimeAdapter,
     processAdapter,
     httpAdapter,
   ]) {
