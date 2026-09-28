@@ -226,7 +226,7 @@ async function pruneBrokenUnavailablePaperclipSkillSymlinks(
       continue;
     }
 
-    await fs.unlink(target).catch(() => {});
+    await fs.unlink(target).catch(() => { });
     await onLog(
       "stdout",
       `[paperclip] Removed stale Codex skill "${entry.name}" from ${skillsHome}\n`,
@@ -481,18 +481,18 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const agentHome = asString(workspaceContext.agentHome, "");
   const workspaceHints = Array.isArray(context.paperclipWorkspaces)
     ? context.paperclipWorkspaces.filter(
-        (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
-      )
+      (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
+    )
     : [];
   const runtimeServiceIntents = Array.isArray(context.paperclipRuntimeServiceIntents)
     ? context.paperclipRuntimeServiceIntents.filter(
-        (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
-      )
+      (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
+    )
     : [];
   const runtimeServices = Array.isArray(context.paperclipRuntimeServices)
     ? context.paperclipRuntimeServices.filter(
-        (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
-      )
+      (value): value is Record<string, unknown> => typeof value === "object" && value !== null,
+    )
     : [];
   const runtimePrimaryUrl = asString(context.paperclipRuntimePrimaryUrl, "");
   const executionTarget = readAdapterExecutionTarget({
@@ -559,9 +559,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (credentialReadiness.managed && !credentialReadiness.ready) {
     throw new Error(
       `no Codex credentials provisioned for managed home "${effectiveCodexHome}" ` +
-        `(no usable auth.json and OPENAI_API_KEY is empty). ` +
-        `Sign in to Codex on the host with a ChatGPT subscription, or configure a per-agent ` +
-        `OPENAI_API_KEY.`,
+      `(no usable auth.json and OPENAI_API_KEY is empty). ` +
+      `Sign in to Codex on the host with a ChatGPT subscription, or configure a per-agent ` +
+      `OPENAI_API_KEY.`,
     );
   }
   // Merge custom model providers (PAPERCLIP_CODEX_PROVIDERS) into the managed
@@ -630,67 +630,67 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       : adapterExecutionTargetRemoteCwd(executionTarget, cwd);
     const preparedExecutionTargetRuntime = executionTargetIsRemote
       ? await (async () => {
-          await onLog(
-            "stdout",
-            `[paperclip] Syncing ${targetWorkspaceRealization?.mode === "in_place" ? "CODEX_HOME" : "workspace and CODEX_HOME"} to ${describeAdapterExecutionTarget(executionTarget)}.\n`,
-          );
-          // Stage only the files Codex actually needs into a curated temp dir and
-          // ship THAT as the `home` asset, instead of the whole managed
-          // CODEX_HOME + a name denylist. Staged AFTER the config.toml rewrites
-          // (provider merge + MCP block splice above) and skills injection, so the
-          // staged config.toml/skills reflect their final state. Symlinks (incl.
-          // the single-use `auth.json`) are dereferenced to bytes. This drops the
-          // large runtime state (`sessions/`, `*.sqlite`, `plugins/`, …) that the
-          // 4-name denylist missed and that a sandbox run never needs.
-          stagedCodexHomeDir = await stageCodexHomeForSync(effectiveCodexHome, { runId });
-          return await prepareAdapterExecutionTargetRuntime({
-            runId,
-            target: executionTarget,
-            adapterKey: "codex",
-            timeoutSec,
-            workspaceLocalDir: cwd,
-            workspaceRemoteDir:
-              targetWorkspaceRealization?.mode === "in_place"
-                ? targetWorkspaceRealization.authoritativeRoot
-                : undefined,
-            syncWorkspace: targetWorkspaceRealization?.mode !== "in_place",
-            installCommand: SANDBOX_INSTALL_COMMAND,
-            detectCommand: command,
-            onProgress: (line) => onLog("stdout", line),
-            onRuntimeProgress: ctx.onRuntimeProgress,
-            assets: [
-              {
-                key: "home",
-                localDir: stagedCodexHomeDir,
-                followSymlinks: true,
-                // Inbound (host→sandbox) auth-merge contribution: stages the two
-                // merge scripts and runs the merge-extract command so a sandbox
-                // that already carries a Codex `auth.json` keeps whichever
-                // credential is newer. The sandbox runtime core stays adapter-
-                // agnostic — it just invokes this generic `provision` seam.
-                provision: buildCodexAuthInboundProvision(),
-                // Outbound (sandbox→host) auth copy-back contribution: at
-                // teardown, read the sandbox's `auth.json` and — guarded by the
-                // same direction-agnostic decision predicate under a directory
-                // lock — atomically install it onto the shared host credential
-                // when it is a strictly-newer same-identity subscription copy.
-                // The sandbox core stays adapter-agnostic; it just awaits this
-                // generic `restore` seam per asset before destroying the sandbox.
-                // Target is the shared symlink SOURCE (what managed homes point
-                // `auth.json` at), not the in-sandbox symlink.
-                restore: async ({ assetDir, readFile }) =>
-                  void (await copyBackCodexAuth({
-                    readSandboxAuth: () => readFile(path.posix.join(assetDir, "auth.json")),
-                    hostAuthPath: path.join(resolveSharedCodexHomeDir(process.env), "auth.json"),
-                    log: (line) => onLog("stdout", `${line}\n`),
-                  })),
-                // No `exclude` denylist: `stagedCodexHomeDir` already contains
-                // ONLY the allowlisted files (auth/config/skills), so there is
-                // nothing to filter out.
-              },
-            ],
-          });
-        })()
+        await onLog(
+          "stdout",
+          `[paperclip] Syncing ${targetWorkspaceRealization?.mode === "in_place" ? "CODEX_HOME" : "workspace and CODEX_HOME"} to ${describeAdapterExecutionTarget(executionTarget)}.\n`,
+        );
+        // Stage only the files Codex actually needs into a curated temp dir and
+        // ship THAT as the `home` asset, instead of the whole managed
+        // CODEX_HOME + a name denylist. Staged AFTER the config.toml rewrites
+        // (provider merge + MCP block splice above) and skills injection, so the
+        // staged config.toml/skills reflect their final state. Symlinks (incl.
+        // the single-use `auth.json`) are dereferenced to bytes. This drops the
+        // large runtime state (`sessions/`, `*.sqlite`, `plugins/`, …) that the
+        // 4-name denylist missed and that a sandbox run never needs.
+        stagedCodexHomeDir = await stageCodexHomeForSync(effectiveCodexHome, { runId });
+        return await prepareAdapterExecutionTargetRuntime({
+          runId,
+          target: executionTarget,
+          adapterKey: "codex",
+          timeoutSec,
+          workspaceLocalDir: cwd,
+          workspaceRemoteDir:
+            targetWorkspaceRealization?.mode === "in_place"
+              ? targetWorkspaceRealization.authoritativeRoot
+              : undefined,
+          syncWorkspace: targetWorkspaceRealization?.mode !== "in_place",
+          installCommand: SANDBOX_INSTALL_COMMAND,
+          detectCommand: command,
+          onProgress: (line) => onLog("stdout", line),
+          onRuntimeProgress: ctx.onRuntimeProgress,
+          assets: [
+            {
+              key: "home",
+              localDir: stagedCodexHomeDir,
+              followSymlinks: true,
+              // Inbound (host→sandbox) auth-merge contribution: stages the two
+              // merge scripts and runs the merge-extract command so a sandbox
+              // that already carries a Codex `auth.json` keeps whichever
+              // credential is newer. The sandbox runtime core stays adapter-
+              // agnostic — it just invokes this generic `provision` seam.
+              provision: buildCodexAuthInboundProvision(),
+              // Outbound (sandbox→host) auth copy-back contribution: at
+              // teardown, read the sandbox's `auth.json` and — guarded by the
+              // same direction-agnostic decision predicate under a directory
+              // lock — atomically install it onto the shared host credential
+              // when it is a strictly-newer same-identity subscription copy.
+              // The sandbox core stays adapter-agnostic; it just awaits this
+              // generic `restore` seam per asset before destroying the sandbox.
+              // Target is the shared symlink SOURCE (what managed homes point
+              // `auth.json` at), not the in-sandbox symlink.
+              restore: async ({ assetDir, readFile }) =>
+                void (await copyBackCodexAuth({
+                  readSandboxAuth: () => readFile(path.posix.join(assetDir, "auth.json")),
+                  hostAuthPath: path.join(resolveSharedCodexHomeDir(process.env), "auth.json"),
+                  log: (line) => onLog("stdout", `${line}\n`),
+                })),
+              // No `exclude` denylist: `stagedCodexHomeDir` already contains
+              // ONLY the allowlisted files (auth/config/skills), so there is
+              // nothing to filter out.
+            },
+          ],
+        });
+      })()
       : null;
     if (preparedExecutionTargetRuntime?.workspaceRemoteDir) {
       effectiveExecutionCwd = preparedExecutionTargetRuntime.workspaceRemoteDir;
@@ -704,7 +704,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     let paperclipBridge: Awaited<ReturnType<typeof startAdapterExecutionTargetPaperclipBridge>> = null;
     const remoteCodexHome = executionTargetIsRemote
       ? preparedExecutionTargetRuntime?.assetDirs.home ??
-        path.posix.join(effectiveExecutionCwd, ".paperclip-runtime", "codex", "home")
+      path.posix.join(effectiveExecutionCwd, ".paperclip-runtime", "codex", "home")
       : null;
     await emitSandboxAuthPrecedenceWarningIfNeeded({
       runId,
@@ -824,23 +824,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const localProcessSandbox: LocalProcessSandboxOptions | null =
       (filesystemScope || networkScope) && !executionTargetIsRemote
         ? {
-            workspaceDir: effectiveExecutionCwd,
-            filesystemScope,
-            managedPaths: [{ path: effectiveCodexHome, access: "rw" }],
-            extraPaths: parseLocalProcessSandboxExtraPaths(config.filesystemExtraPaths),
-            pathAliases: targetWorkspaceRealization?.mode === "copy"
-              ? targetWorkspaceRealization.pathAliases
-              : [],
-            outboundRestorePaths: targetWorkspaceRealization?.outboundRestorePaths ?? [],
-            homeDir: filesystemScope ? effectiveCodexHome : null,
-            networkScope,
-            networkAllowlist: parseLocalProcessNetworkAllowlist(config.networkAllowlist),
-            networkTrustedUrls: [
-              paperclipBaseEnv.PAPERCLIP_API_URL,
-              ...runtimeMcpGateways.map((gateway) => gateway.endpointPath),
-            ],
-            command: asString(config.filesystemSandboxCommand, "bwrap"),
-          }
+          workspaceDir: effectiveExecutionCwd,
+          filesystemScope,
+          managedPaths: [{ path: effectiveCodexHome, access: "rw" }],
+          extraPaths: parseLocalProcessSandboxExtraPaths(config.filesystemExtraPaths),
+          pathAliases: targetWorkspaceRealization?.mode === "copy"
+            ? targetWorkspaceRealization.pathAliases
+            : [],
+          outboundRestorePaths: targetWorkspaceRealization?.outboundRestorePaths ?? [],
+          homeDir: filesystemScope ? effectiveCodexHome : null,
+          networkScope,
+          networkAllowlist: parseLocalProcessNetworkAllowlist(config.networkAllowlist),
+          networkTrustedUrls: [
+            paperclipBaseEnv.PAPERCLIP_API_URL,
+            ...runtimeMcpGateways.map((gateway) => gateway.endpointPath),
+          ],
+          command: asString(config.filesystemSandboxCommand, "bwrap"),
+        }
         : null;
     if (localProcessSandbox) {
       const scopes = [filesystemScope ? "workspace filesystem" : null, networkScope ? `${networkScope} network` : null]
@@ -955,10 +955,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const codexFallbackHandoffNote =
       forceFreshSession
         ? buildCodexTransientHandoffNote({
-            previousSessionId: runtimeSessionId || runtime.sessionId || null,
-            fallbackMode: codexTransientFallbackMode ?? "fresh_session",
-            continuationSummaryBody,
-          })
+          previousSessionId: runtimeSessionId || runtime.sessionId || null,
+          fallbackMode: codexTransientFallbackMode ?? "fresh_session",
+          continuationSummaryBody,
+        })
         : "";
     const commandNotes = (() => {
       if (!instructionsFilePath) {
@@ -1084,42 +1084,42 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         monitorResolution.mode === "disabled"
           ? null
           : createCodexOutputInactivityMonitor({
-              timeoutMs: monitorResolution.timeoutMs,
-              onFire: (state) => {
-                monitorFired = true;
-                monitorElapsedMs = (state.firedAt ?? Date.now()) - state.lastEventAt;
-                monitorTimeoutMs = monitorResolution.timeoutMs;
-                const message = formatOutputInactivityMonitorErrorMessage(monitorElapsedMs);
-                const elapsedSec = Math.round(monitorElapsedMs / 1000);
-                const timeoutSecLabel = Math.round(monitorResolution.timeoutMs / 1000);
-                const logLine =
-                  `[paperclip] adapter.invoke ${message}; ` +
-                  `timeoutMs=${monitorResolution.timeoutMs} elapsedSinceLastEventMs=${monitorElapsedMs} ` +
-                  `outputChunkCount=${state.outputChunkCount} outputBytes=${state.outputBytes} ` +
-                  `parsedEvents=${state.parsedEventCount} processActivityCount=${state.processActivityCount} ` +
-                  `(timeout=${timeoutSecLabel}s elapsed=${elapsedSec}s); ` +
-                  `terminating codex child via SIGTERM (5s grace, then SIGKILL).\n`;
-                // Issue the log without awaiting on the kill hot path, but capture
-                // the promise so the surrounding try/finally can await flush before
-                // the run resolves. Without this the diagnostic that explains the
-                // kill could be dropped if the child exits faster than onLog flushes.
-                monitorLogPromise = Promise.resolve(onLog("stderr", logLine)).catch(() => {});
-                const target = killTarget;
-                if (!target || (target.pid == null && target.processGroupId == null)) {
-                  return;
-                }
-                const sentSig = signalCodexChild(target, "SIGTERM");
-                if (sentSig) monitorTerminationSignal = "SIGTERM";
-                sigkillTimer = setTimeout(() => {
-                  sigkillTimer = null;
-                  const stillSent = signalCodexChild(target, "SIGKILL");
-                  if (stillSent) monitorTerminationSignal = "SIGKILL";
-                }, CODEX_OUTPUT_INACTIVITY_MONITOR_SIGTERM_GRACE_MS);
-                if (typeof (sigkillTimer as { unref?: () => void }).unref === "function") {
-                  (sigkillTimer as { unref: () => void }).unref();
-                }
-              },
-            });
+            timeoutMs: monitorResolution.timeoutMs,
+            onFire: (state) => {
+              monitorFired = true;
+              monitorElapsedMs = (state.firedAt ?? Date.now()) - state.lastEventAt;
+              monitorTimeoutMs = monitorResolution.timeoutMs;
+              const message = formatOutputInactivityMonitorErrorMessage(monitorElapsedMs);
+              const elapsedSec = Math.round(monitorElapsedMs / 1000);
+              const timeoutSecLabel = Math.round(monitorResolution.timeoutMs / 1000);
+              const logLine =
+                `[paperclip] adapter.invoke ${message}; ` +
+                `timeoutMs=${monitorResolution.timeoutMs} elapsedSinceLastEventMs=${monitorElapsedMs} ` +
+                `outputChunkCount=${state.outputChunkCount} outputBytes=${state.outputBytes} ` +
+                `parsedEvents=${state.parsedEventCount} processActivityCount=${state.processActivityCount} ` +
+                `(timeout=${timeoutSecLabel}s elapsed=${elapsedSec}s); ` +
+                `terminating codex child via SIGTERM (5s grace, then SIGKILL).\n`;
+              // Issue the log without awaiting on the kill hot path, but capture
+              // the promise so the surrounding try/finally can await flush before
+              // the run resolves. Without this the diagnostic that explains the
+              // kill could be dropped if the child exits faster than onLog flushes.
+              monitorLogPromise = Promise.resolve(onLog("stderr", logLine)).catch(() => { });
+              const target = killTarget;
+              if (!target || (target.pid == null && target.processGroupId == null)) {
+                return;
+              }
+              const sentSig = signalCodexChild(target, "SIGTERM");
+              if (sentSig) monitorTerminationSignal = "SIGTERM";
+              sigkillTimer = setTimeout(() => {
+                sigkillTimer = null;
+                const stillSent = signalCodexChild(target, "SIGKILL");
+                if (stillSent) monitorTerminationSignal = "SIGKILL";
+              }, CODEX_OUTPUT_INACTIVITY_MONITOR_SIGTERM_GRACE_MS);
+              if (typeof (sigkillTimer as { unref?: () => void }).unref === "function") {
+                (sigkillTimer as { unref: () => void }).unref();
+              }
+            },
+          });
 
       const wrappedOnSpawn = async (meta: { pid: number; processGroupId: number | null; startedAt: string }) => {
         killTarget = { pid: meta.pid ?? null, processGroupId: meta.processGroupId };
@@ -1171,11 +1171,11 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           parsed: parseCodexJsonl(proc.stdout),
           monitor: monitorFired
             ? {
-                fired: true as const,
-                terminationSignal: monitorTerminationSignal,
-                elapsedMsSinceLastEvent: monitorElapsedMs,
-                timeoutMs: monitorTimeoutMs,
-              }
+              fired: true as const,
+              terminationSignal: monitorTerminationSignal,
+              elapsedMsSinceLastEvent: monitorElapsedMs,
+              timeoutMs: monitorTimeoutMs,
+            }
             : { fired: false as const },
         };
       } finally {
@@ -1198,8 +1198,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         rawStderr: string;
         parsed: ReturnType<typeof parseCodexJsonl>;
         monitor?:
-          | { fired: false }
-          | { fired: true; terminationSignal: NodeJS.Signals | null; elapsedMsSinceLastEvent: number; timeoutMs: number };
+        | { fired: false }
+        | { fired: true; terminationSignal: NodeJS.Signals | null; elapsedMsSinceLastEvent: number; timeoutMs: number };
       },
       clearSessionOnMissingSession = false,
       isRetry = false,
@@ -1257,8 +1257,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           cwd: effectiveExecutionCwd,
           ...(executionTargetIsRemote
             ? {
-                remoteExecution: adapterExecutionTargetSessionIdentity(runtimeExecutionTarget),
-              }
+              remoteExecution: adapterExecutionTargetSessionIdentity(runtimeExecutionTarget),
+            }
             : {}),
           ...(workspaceId ? { workspaceId } : {}),
           ...(workspaceRepoUrl ? { repoUrl: workspaceRepoUrl } : {}),
@@ -1274,18 +1274,18 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const transientRetryNotBefore =
         (attempt.proc.exitCode ?? 0) !== 0
           ? extractCodexRetryNotBefore({
-              stdout: attempt.proc.stdout,
-              stderr: attempt.proc.stderr,
-              errorMessage: fallbackErrorMessage,
-            })
+            stdout: attempt.proc.stdout,
+            stderr: attempt.proc.stderr,
+            errorMessage: fallbackErrorMessage,
+          })
           : null;
       const authRefreshFailure =
         (attempt.proc.exitCode ?? 0) !== 0
           ? classifyCodexAuthRefreshFailure({
-              stdout: attempt.proc.stdout,
-              stderr: attempt.proc.stderr,
-              errorMessage: fallbackErrorMessage,
-            })
+            stdout: attempt.proc.stdout,
+            stderr: attempt.proc.stderr,
+            errorMessage: fallbackErrorMessage,
+          })
           : null;
       const providerQuota =
         (attempt.proc.exitCode ?? 0) !== 0 &&
@@ -1329,12 +1329,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
           authRefreshFailure
             ? authRefreshFailure
             : providerQuota
-            ? "provider_quota"
-            : transientUpstream
-            ? "codex_transient_upstream"
-            : harnessCrash
-            ? "codex_harness_crash"
-            : null,
+              ? "provider_quota"
+              : transientUpstream
+                ? "codex_transient_upstream"
+                : harnessCrash
+                  ? "codex_harness_crash"
+                  : null,
         errorFamily,
         retryNotBefore: transientRetryNotBefore ? transientRetryNotBefore.toISOString() : null,
         usage: attempt.parsed.usage,
@@ -1397,8 +1397,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       await fs.rm(stagedCodexHomeDir, { recursive: true, force: true }).catch(async (error) => {
         await onLog(
           "stderr",
-          `[paperclip] Failed to remove staged Codex home "${stagedCodexHomeDir}": ${
-            error instanceof Error ? error.message : String(error)
+          `[paperclip] Failed to remove staged Codex home "${stagedCodexHomeDir}": ${error instanceof Error ? error.message : String(error)
           }\n`,
         );
       });

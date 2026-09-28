@@ -74,3 +74,57 @@ Tuy nhiên, database thực tế đang chạy trên máy (PGlite) đã được 
 
 4. **Thực thi:**
    Quay lại thư mục gốc và chạy `pnpm dev` để apply migration vào DB mà không làm mất dữ liệu cũ.
+
+---
+
+## 3. Cách Mock Test để kiểm tra số thập phân (Micro-cents)
+
+Để kiểm chứng xem database và giao diện đã lưu và hiển thị đúng số lẻ chưa mà **không cần tốn tiền gọi API thật**, bạn có thể dùng thủ thuật "Mock" (Làm giả) kết quả trả về của LLM.
+
+**Bước 1: Sửa code Adapter**
+Mở file adapter bạn đang dùng (Ví dụ: `packages/adapters/codex-local/src/server/execute.ts`). Thêm đoạn code giả lập này vào ngay **dòng đầu tiên** bên trong hàm `execute()`:
+
+```typescript
+export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
+  // Bọc trong lệnh if để TypeScript không báo lỗi Unreachable code
+  if (Math.random() < 2) {
+    const { readFileSync } = await import("node:fs");
+    // Đọc số token từ file json mẫu
+    const mockData = JSON.parse(readFileSync("C:/paperclip/instructions/test/response_litellm.json", "utf-8"));
+    const inputTokens = mockData.usage?.prompt_tokens || 0;
+    const outputTokens = mockData.usage?.completion_tokens || 0;
+    
+    return {
+      exitCode: 0,
+      signal: null,
+      timedOut: false,
+      errorMessage: null,
+      errorCode: null,
+      errorFamily: null,
+      retryNotBefore: null,
+      usage: { inputTokens, outputTokens, cachedInputTokens: 0 },
+      usageBasis: "per_run", // Quan trọng: Bắt buộc là "per_run" thay vì "exact"
+      sessionId: "mock-session-id",
+      sessionParams: {},
+      sessionDisplayId: "mock-session-id",
+      provider: "openai",
+      biller: "openai",
+      model: "mock-model",
+      billingType: "api",
+      costUsd: 0.0001234567, // Con số siêu lẻ để test
+      resultJson: { mockData },
+      summary: "Mock run completed fast",
+      clearSession: false,
+    };
+  }
+  
+  // ... code gốc của Paperclip
+```
+
+**Bước 2: Nâng cấp hiển thị UI (Tuỳ chọn)**
+Mặc định UI của Paperclip chỉ hiển thị 2 đến 4 chữ số thập phân. Để thấy được con số `0.000123`, bạn cần sửa:
+1. `ui/src/lib/utils.ts`: Đổi `maximumFractionDigits` của hàm `formatCents` lên 6.
+2. `ui/src/pages/AgentDetail.tsx`: Đổi `metrics.cost.toFixed(4)` thành `toFixed(6)`.
+
+**Bước 3: Chạy test**
+Lên giao diện Web, bấm Start một Issue bất kỳ. Agent sẽ chạy xong trong 0 giây và ngay lập tức ghi nhận con số siêu lẻ `$0.000123` vào DB và hiển thị trên màn hình. Test xong thì xóa khối lệnh `if` kia đi là xong!
