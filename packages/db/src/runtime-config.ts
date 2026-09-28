@@ -22,20 +22,20 @@ type PartialConfig = {
 
 export type ResolvedDatabaseTarget =
   | {
-      mode: "postgres";
-      connectionString: string;
-      source: "DATABASE_URL" | "paperclip-env" | "config.database.connectionString";
-      configPath: string;
-      envPath: string;
-    }
+    mode: "postgres";
+    connectionString: string;
+    source: "DATABASE_URL" | "paperclip-env" | "config.database.connectionString";
+    configPath: string;
+    envPath: string;
+  }
   | {
-      mode: "embedded-postgres";
-      dataDir: string;
-      port: number;
-      source: `embedded-postgres@${number}`;
-      configPath: string;
-      envPath: string;
-    };
+    mode: "embedded-postgres";
+    dataDir: string;
+    port: number;
+    source: `embedded-postgres@${number}`;
+    configPath: string;
+    envPath: string;
+  };
 
 function resolveHomeAwarePath(value: string): string {
   return path.resolve(expandHomePrefix(value));
@@ -96,9 +96,24 @@ function parseEnvFile(contents: string): Record<string, string> {
   return entries;
 }
 
+function findEnvFileFromAncestors(startDir: string): string | null {
+  let currentDir = path.resolve(startDir);
+  while (true) {
+    const candidate = path.resolve(currentDir, ".env");
+    if (existsSync(candidate)) return candidate;
+    const nextDir = path.resolve(currentDir, "..");
+    if (nextDir === currentDir) return null;
+    currentDir = nextDir;
+  }
+}
+
 function readEnvEntries(envPath: string): Record<string, string> {
-  if (!existsSync(envPath)) return {};
-  return parseEnvFile(readFileSync(envPath, "utf8"));
+  const ancestorEnvPath = findEnvFileFromAncestors(process.cwd());
+  const ancestorEntries = ancestorEnvPath && existsSync(ancestorEnvPath)
+    ? parseEnvFile(readFileSync(ancestorEnvPath, "utf8"))
+    : {};
+  const instanceEntries = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, "utf8")) : {};
+  return { ...ancestorEntries, ...instanceEntries };
 }
 
 function migrateLegacyConfig(raw: unknown): PartialConfig | null {
@@ -158,25 +173,25 @@ function readConfig(configPath: string): PartialConfig | null {
 
   const database =
     typeof migrated.database === "object" &&
-    migrated.database !== null &&
-    !Array.isArray(migrated.database)
+      migrated.database !== null &&
+      !Array.isArray(migrated.database)
       ? migrated.database
       : undefined;
 
   return {
     database: database
       ? {
-          mode: database.mode === "postgres" ? "postgres" : "embedded-postgres",
-          connectionString:
-            typeof database.connectionString === "string" ? database.connectionString : undefined,
-          embeddedPostgresDataDir:
-            typeof database.embeddedPostgresDataDir === "string"
-              ? database.embeddedPostgresDataDir
-              : undefined,
-          embeddedPostgresPort: asPositiveInt(database.embeddedPostgresPort) ?? undefined,
-          pgliteDataDir: typeof database.pgliteDataDir === "string" ? database.pgliteDataDir : undefined,
-          pglitePort: asPositiveInt(database.pglitePort) ?? undefined,
-        }
+        mode: database.mode === "postgres" ? "postgres" : "embedded-postgres",
+        connectionString:
+          typeof database.connectionString === "string" ? database.connectionString : undefined,
+        embeddedPostgresDataDir:
+          typeof database.embeddedPostgresDataDir === "string"
+            ? database.embeddedPostgresDataDir
+            : undefined,
+        embeddedPostgresPort: asPositiveInt(database.embeddedPostgresPort) ?? undefined,
+        pgliteDataDir: typeof database.pgliteDataDir === "string" ? database.pgliteDataDir : undefined,
+        pglitePort: asPositiveInt(database.pglitePort) ?? undefined,
+      }
       : undefined,
   };
 }
@@ -220,7 +235,11 @@ export function resolveDatabaseTarget(): ResolvedDatabaseTarget {
     };
   }
 
-  const port = config?.database?.embeddedPostgresPort ?? 54329;
+  const envPortRaw = process.env.PAPERCLIP_EMBEDDED_POSTGRES_PORT ?? envEntries.PAPERCLIP_EMBEDDED_POSTGRES_PORT;
+  const envPort = envPortRaw ? Number(envPortRaw) : undefined;
+  const port = (Number.isInteger(envPort) && (envPort as number) > 0 ? (envPort as number) : undefined) ??
+    config?.database?.embeddedPostgresPort ??
+    54329;
   const dataDir = resolveHomeAwarePath(
     config?.database?.embeddedPostgresDataDir ?? resolveDefaultEmbeddedPostgresDir(),
   );

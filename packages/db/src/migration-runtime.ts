@@ -57,7 +57,7 @@ async function isPortInUse(port: number): Promise<boolean> {
     const server = createServer();
     server.unref();
     server.once("error", (error: NodeJS.ErrnoException) => {
-      resolve(error.code === "EADDRINUSE");
+      resolve(error.code === "EADDRINUSE" || error.code === "EACCES");
     });
     server.listen(port, "127.0.0.1", () => {
       server.close();
@@ -67,7 +67,7 @@ async function isPortInUse(port: number): Promise<boolean> {
 }
 
 async function findAvailablePort(startPort: number): Promise<number> {
-  const maxLookahead = 20;
+  const maxLookahead = 1000;
   let port = startPort;
   for (let i = 0; i < maxLookahead; i += 1, port += 1) {
     if (!(await isPortInUse(port))) return port;
