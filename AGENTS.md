@@ -224,3 +224,18 @@ PR #2218 (`feat/external-adapter-phase1`) adds external adapter support. See roo
 ## Design system
 
 `DESIGN.md` at the repo root is the source of truth for UI design decisions. The token-only rule applies to all `ui/` changes: every color, spacing, radius, type, shadow, and motion value in `ui/src/components/**` and `ui/src/pages/**` comes from the token layer in `ui/src/index.css` — no hex, raw px, arbitrary Tailwind bracket values, or raw `font-size`/`fontSize` declarations in components, outside the documented allowlist in `ui/src/index.css`. Run `pnpm check:token-gates` (`scripts/check-token-gates.mjs`) before committing UI changes — it fails on any violation not covered by that allowlist.
+
+## Task Completion & Telegram Interaction Guidelines
+
+Khi thực hiện task có nguồn gốc từ Telegram hoặc cần phản hồi kết quả trực tiếp cho người dùng Telegram:
+1. Khi đã hoàn thành công việc hoặc đã tạo xong file kết quả (báo cáo, file dữ liệu, hình ảnh...), **BẮT BUỘC** gọi công cụ:
+   ```python
+   finish_task_and_reply_telegram(
+       message="<Câu trả lời đầy đủ, lịch sự, chi tiết cho người dùng>",
+       file_path="<đường dẫn tương đối hoặc tuyệt đối tới file kết quả nếu có>"
+   )
+   ```
+2. **Quy tắc Zero-Hallucination:**
+   - **KHÔNG CẦN** và **KHÔNG NÊN** tự điền `task_id`, `chat_id` hay `run_id`. Hệ thống MCP Server sẽ tự động trích xuất chính xác 100% từ phiên làm việc và siêu dữ liệu của Task.
+   - Nếu có file kết quả trên ổ đĩa, chỉ cần truyền `file_path`. MCP Server sẽ tự động upload file vào Attachments của Paperclip và chuyển tiếp link tải về Telegram cho người dùng.
+
