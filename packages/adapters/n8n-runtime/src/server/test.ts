@@ -45,18 +45,30 @@ export async function testEnvironment(
     });
   }
 
-  if (!apiKey) {
-    checks.push({
-      code: "missing_n8n_api_key",
-      level: "error",
-      message: "n8n Execution API key is missing.",
-      hint: "Set N8N_API_KEY in the Paperclip server environment.",
-    });
+  const isRedactedKey = apiKey.includes("REDACTED");
+  const effectiveApiKey = isRedactedKey ? asString(process.env.N8N_API_KEY) : apiKey;
+
+  if (!effectiveApiKey) {
+    if (isRedactedKey) {
+      checks.push({
+        code: "n8n_api_key_redacted",
+        level: "info",
+        message: "n8n API Key is masked (***REDACTED***) for security.",
+        hint: "Re-paste the API key if you want to re-test the live API connection, or set N8N_API_KEY in server environment.",
+      });
+    } else {
+      checks.push({
+        code: "missing_n8n_api_key",
+        level: "error",
+        message: "n8n Execution API key is missing.",
+        hint: "Set N8N_API_KEY in the Paperclip server environment.",
+      });
+    }
   }
 
   const hasBlockingConfigError = checks.some((check) => check.level === "error");
-  if (!hasBlockingConfigError && baseUrl && workflowId && apiKey) {
-    const probe = await probeExecutions(baseUrl, workflowId, apiKey);
+  if (!hasBlockingConfigError && baseUrl && workflowId && effectiveApiKey) {
+    const probe = await probeExecutions(baseUrl, workflowId, effectiveApiKey);
     checks.push(probe);
   }
 
