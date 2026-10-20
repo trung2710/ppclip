@@ -1081,6 +1081,26 @@ describe("resolveCodexAcpBillingIdentity", () => {
     ).toEqual({ provider: "openai", biller: "openrouter", billingType: "api" });
   });
 
+  it("meters a LiteLLM gateway agent as api billing to litellm even without OPENAI_API_KEY", () => {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
+    expect(
+      resolveCodexAcpBillingIdentity({ config: { env: { LITELLM_API_KEY: "sk-gw", LITELLM_BASE_URL: "http://gw/v1" } } }),
+    ).toEqual({ provider: "openai", biller: "litellm", billingType: "api" });
+    expect(
+      resolveCodexAcpBillingIdentity({ config: { env: { LITELLM_API_KEY: "sk-gw" } } }).billingType,
+    ).toBe("api");
+  });
+
+  it("keeps an OpenRouter-backed gateway billed to openrouter", () => {
+    delete process.env.OPENAI_API_KEY;
+    expect(
+      resolveCodexAcpBillingIdentity({
+        config: { env: { LITELLM_API_KEY: "sk-gw", OPENROUTER_API_KEY: "or-test" } },
+      }),
+    ).toEqual({ provider: "openai", biller: "openrouter", billingType: "api" });
+  });
+
   it("ignores host env for remote execution targets", () => {
     process.env.OPENAI_API_KEY = "sk-host-only";
     expect(

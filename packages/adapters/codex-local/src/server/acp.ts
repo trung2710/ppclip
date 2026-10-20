@@ -14,6 +14,7 @@ import {
   parseLocalProcessNetworkScope,
 } from "@paperclipai/adapter-utils/local-process-sandbox";
 import { inferOpenAiCompatibleBiller } from "@paperclipai/adapter-utils";
+import { resolveCodexGatewayConfig } from "@paperclipai/adapter-utils/codex-toml";
 import {
   ensureAdapterExecutionTargetCommandResolvable,
   readAdapterExecutionTarget,
@@ -322,13 +323,19 @@ export function resolveCodexAcpBillingIdentity(
     ),
   };
   const apiKey = typeof mergedEnv.OPENAI_API_KEY === "string" && mergedEnv.OPENAI_API_KEY.trim().length > 0;
-  const billingType: AdapterBillingType = apiKey ? "api" : "subscription";
+  // A LiteLLM gateway bills per request through its own virtual key, so a gateway
+  // agent has no OPENAI_API_KEY yet is metered, not a ChatGPT subscription. The
+  // ledger zeroes the cost of "subscription" runs, which hid the gateway cost.
+  const viaGateway = resolveCodexGatewayConfig({ env: mergedEnv }).isGateway;
+  const billingType: AdapterBillingType = apiKey || viaGateway ? "api" : "subscription";
   const openAiCompatibleBiller = inferOpenAiCompatibleBiller(mergedEnv, "openai");
   const biller =
     openAiCompatibleBiller === "openrouter"
       ? "openrouter"
       : billingType === "subscription"
       ? "chatgpt"
+      : viaGateway
+      ? "litellm"
       : openAiCompatibleBiller ?? "openai";
   return { provider: "openai", biller, billingType };
 }

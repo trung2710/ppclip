@@ -3025,3 +3025,112 @@ describe("ACPX engine per-step startup timing (run.startup.step events)", () => 
     expect(emitted.has("bridge.process-session")).toBe(false);
   });
 });
+
+describe("ACPX engine LiteLLM gateway run usage", () => {
+  const GATEWAY_ENV = {
+    LITELLM_API_KEY: "sk-gateway",
+    LITELLM_BASE_URL: "http://gw.test:4000/v1",
+  };
+
+  function spendLogRow(tags: string[], fields: Record<string, unknown>) {
+    return { request_tags: tags, ...fields };
+  }
+
+  /** Fake LiteLLM management API: /key/info and /spend/logs. */
+  function stubGateway(input: { spends: number[]; logs: unknown[] }) {
+    const calls: string[] = [];
+    let keyInfoCalls = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      calls.push(url);
+      if (url.includes("/key/info")) {
+        const spend = input.spends[Math.min(keyInfoCalls, input.spends.length - 1)];
+        keyInfoCalls += 1;
+        return { ok: true, json: async () => ({ key: "key-hash-1", info: { spend } }) };
+      }
+      if (url.includes("/spend/logs")) {
+        return { ok: true, json: async () => input.logs };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return { calls };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function codexConfig(env: Record<string, string>) {
+    const root = await makeTempRoot();
+    return {
+      agent: "codex",
+      stateDir: path.join(root, "state"),
+      // An external CODEX_HOME keeps the managed-home seed out of the test.
+      env: { CODEX_HOME: path.join(root, "codex-home"), ...env },
+      litellmSpendSettleMs: 1,
+    };
+  }
+
+  it("tags the run and replaces ACP usage with the summed gateway logs", async () => {
+    const tag = "paperclip_run:run-1";
+    const { calls } = stubGateway({
+      spends: [1],
+      logs: [
+        spendLogRow([tag, "User-Agent: acpx"], {
+          spend: 0.01,
+          prompt_tokens: 29156,
+          completion_tokens: 145,
+          metadata: { usage_object: { prompt_tokens_details: { cached_tokens: 27248 } } },
+        }),
+        spendLogRow([tag], { spend: 0.02, prompt_tokens: 33708, completion_tokens: 186, metadata: { additional_usage_values: { cache_read_input_tokens: 31440 } } }),
+        spendLogRow([tag], { spend: 0, prompt_tokens: 0, completion_tokens: 0, status: "failure" }),
+        spendLogRow(["paperclip_run:another-run"], { spend: 9, prompt_tokens: 9999, completion_tokens: 9999 }),
+      ],
+    });
+
+    const { result, logs, sessionInputs } = await runExecutor(await codexConfig(GATEWAY_ENV));
+
+    const env = (sessionInputs[0]!.sessionOptions as { env: Record<string, string> }).env;
+    expect(env.PAPERCLIP_LITELLM_TAGS).toBe(
+      "paperclip_run:run-1,paperclip_agent:agent-1,paperclip_company:company-1",
+    );
+    // Guardian is bypassed for gateway agents through the codex-acp session mode.
+    expect(env.INITIAL_AGENT_MODE).toBe("read-only");
+
+    expect(result.usage).toEqual({
+      inputTokens: (29156 - 27248) + (33708 - 31440),
+      cachedInputTokens: 27248 + 31440,
+      outputTokens: 145 + 186,
+    });
+    expect(result.costUsd).toBe(0.03);
+    expect(result.usageBasis).toBe("per_run");
+    expect((result.resultJson as { usage?: Record<string, number> }).usage).toMatchObject({
+      gatewayRequestCount: 3,
+      gatewayFailedRequestCount: 1,
+    });
+    expect(logs.some((entry) => entry.text.includes("[paperclip] LiteLLM usage for paperclip_run:run-1: 3 request(s) (1 failed)"))).toBe(true);
+    expect(logs.some((entry) => entry.text.includes("cost $0.03."))).toBe(true);
+    expect(calls.some((url) => url.startsWith("http://gw.test:4000/spend/logs?api_key=key-hash-1&"))).toBe(true);
+  });
+
+  it("falls back to the key spend delta when no request carries the run tag", async () => {
+    stubGateway({ spends: [1, 1.25], logs: [spendLogRow(["paperclip_run:someone-else"], { spend: 5 })] });
+
+    const { result, logs } = await runExecutor(await codexConfig(GATEWAY_ENV));
+
+    expect(result.costUsd).toBe(0.25);
+    expect(logs.some((entry) => entry.text.includes("LiteLLM usage for"))).toBe(false);
+  });
+
+  it("leaves non-gateway codex agents alone", async () => {
+    const { calls } = stubGateway({ spends: [1], logs: [] });
+
+    const { result, sessionInputs } = await runExecutor(await codexConfig({ OPENAI_API_KEY: "sk-openai" }));
+
+    const env = (sessionInputs[0]!.sessionOptions as { env: Record<string, string> }).env;
+    expect(env.PAPERCLIP_LITELLM_TAGS).toBeUndefined();
+    expect(env.INITIAL_AGENT_MODE).toBeUndefined();
+    expect(calls).toEqual([]);
+    expect(result.costUsd ?? null).toBeNull();
+  });
+});

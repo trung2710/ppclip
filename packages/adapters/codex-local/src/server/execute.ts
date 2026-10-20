@@ -163,13 +163,18 @@ function hasNonEmptyEnvValue(env: Record<string, string>, key: string): boolean 
 
 function resolveCodexBillingType(env: Record<string, string>): "api" | "subscription" {
   // Codex uses API-key auth when OPENAI_API_KEY is present; otherwise rely on local login/session auth.
-  return hasNonEmptyEnvValue(env, "OPENAI_API_KEY") ? "api" : "subscription";
+  // A LiteLLM gateway agent is metered through its own virtual key even without OPENAI_API_KEY; treating
+  // it as a subscription makes the ledger drop the run's cost.
+  if (hasNonEmptyEnvValue(env, "OPENAI_API_KEY")) return "api";
+  return resolveCodexGatewayConfig({ env }).isGateway ? "api" : "subscription";
 }
 
 function resolveCodexBiller(env: Record<string, string>, billingType: "api" | "subscription"): string {
   const openAiCompatibleBiller = inferOpenAiCompatibleBiller(env, "openai");
   if (openAiCompatibleBiller === "openrouter") return "openrouter";
-  return billingType === "subscription" ? "chatgpt" : openAiCompatibleBiller ?? "openai";
+  if (billingType === "subscription") return "chatgpt";
+  if (resolveCodexGatewayConfig({ env }).isGateway) return "litellm";
+  return openAiCompatibleBiller ?? "openai";
 }
 
 async function isLikelyPaperclipRepoRoot(candidate: string): Promise<boolean> {
@@ -721,13 +726,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       runId,
       target: runtimeExecutionTarget,
       cwd: effectiveExecutionCwd,
-      configuredApiKey: Boolean(configuredOpenAiApiKey),
+      configuredApiKey: Boolean(gateway.apiKey),
       hostAuthJson: await codexHomeHasUsableAuth(effectiveCodexHome),
       onLog,
       onEvent,
     });
     const env: Record<string, string> = { ...paperclipBaseEnv };
     env.PAPERCLIP_RUN_ID = runId;
+    // config.toml forwards this as x-litellm-tags for gateway agents.
+    if (gateway.isGateway) {
+      env[LITELLM_TAGS_ENV] = buildPaperclipLiteLlmTags({ runId, agentId: agent.id, companyId: agent.companyId });
+    }
     const wakeTaskId =
       (typeof context.taskId === "string" && context.taskId.trim().length > 0 && context.taskId.trim()) ||
       (typeof context.issueId === "string" && context.issueId.trim().length > 0 && context.issueId.trim()) ||

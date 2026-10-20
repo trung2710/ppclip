@@ -83,6 +83,33 @@ import {
   DEFAULT_ACP_ENGINE_WARM_HANDLE_IDLE_MS,
 } from "./constants.js";
 import { measureStartupStep, type StartupStepMeasureOptions } from "./startup-timing.js";
+import {
+  ToolOutputCarry,
+  isEmptyToolUpdate,
+  redactToolOutput,
+  summarizeToolInputForLog,
+  summarizeToolOutputForLog,
+} from "./tool-output.js";
+import {
+  LITELLM_PROVIDER_ID,
+  LITELLM_TAGS_ENV,
+  buildPaperclipLiteLlmTags,
+  disableCodexApprovalsInHome,
+  ensurePaperclipMcpEnvVarsInHome,
+  paperclipRunTag,
+  patchCodexTomlForLiteLlmGateway,
+  resolveCodexAcpInitialMode,
+  resolveCodexGatewayConfig,
+} from "../codex-toml.js";
+import {
+  DEFAULT_LITELLM_LOG_SETTLE_MS,
+  DEFAULT_LITELLM_SPEND_SETTLE_MS,
+  collectLiteLlmRunUsage,
+  measureLiteLlmRunCostUsd,
+  readLiteLlmKeyInfo,
+  type LiteLlmRunUsage,
+  type LiteLlmSpendClient,
+} from "../litellm-spend.js";
 import type { CommandManagedRuntimeRunner } from "../command-managed-runtime.js";
 
 const defaultModuleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -558,10 +585,10 @@ async function writeFileAtomically(input: {
     await handle.writeFile(input.contents, "utf8");
     await handle.close();
     await fs.rename(tempPath, input.target);
-    await fs.chmod(input.target, input.mode).catch(() => {});
+    await fs.chmod(input.target, input.mode).catch(() => { });
   } catch (err) {
-    await handle.close().catch(() => {});
-    await fs.rm(tempPath, { force: true }).catch(() => {});
+    await handle.close().catch(() => { });
+    await fs.rm(tempPath, { force: true }).catch(() => { });
     throw err;
   }
 }
@@ -610,29 +637,90 @@ async function ensureCopiedFile(target: string, source: string): Promise<void> {
   await fs.copyFile(source, target);
 }
 
+function isManagedCodexHomePath(companyId: string | undefined, candidate: string): boolean {
+  if (!companyId) return false;
+  const companyRoot = path.resolve(defaultPaperclipInstanceDir(), "companies", companyId);
+  const resolved = path.resolve(candidate);
+  return resolved === companyRoot || resolved.startsWith(companyRoot + path.sep);
+}
+
 async function prepareManagedCodexHome(input: {
   companyId: string;
   sourceHome: string;
   targetHome: string;
   onLog: AdapterExecutionContext["onLog"];
+  apiKey?: string | null;
+  liteLlmBaseUrl?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
+  disableApprovalGuardian?: boolean;
 }): Promise<string> {
   const { sourceHome, targetHome, onLog } = input;
-  if (path.resolve(sourceHome) === path.resolve(targetHome)) return targetHome;
+  const seedFromShared = path.resolve(sourceHome) !== path.resolve(targetHome);
 
   await fs.mkdir(targetHome, { recursive: true });
 
-  const authJson = path.join(sourceHome, "auth.json");
-  if (await pathExists(authJson)) await ensureSymlink(path.join(targetHome, "auth.json"), authJson);
+  if (seedFromShared) {
+    if (!input.apiKey && !input.liteLlmBaseUrl) {
+      const authJson = path.join(sourceHome, "auth.json");
+      if (await pathExists(authJson)) await ensureSymlink(path.join(targetHome, "auth.json"), authJson);
+    }
 
-  for (const name of ["config.json", "config.toml", "instructions.md"]) {
-    const source = path.join(sourceHome, name);
-    if (await pathExists(source)) await ensureCopiedFile(path.join(targetHome, name), source);
+    for (const name of ["config.json", "config.toml", "instructions.md"]) {
+      const source = path.join(sourceHome, name);
+      if (await pathExists(source)) await ensureCopiedFile(path.join(targetHome, name), source);
+    }
+
+    // The gateway patch below already disables approvals/Guardian.
+    if (input.disableApprovalGuardian && !input.liteLlmBaseUrl) {
+      await disableCodexApprovalsInHome(targetHome);
+    }
+
+    // The copied config is only written once, so homes seeded earlier (or from
+    // a host config without it) get the run identity forwarded to the Paperclip
+    // MCP server here, on every seed.
+    await ensurePaperclipMcpEnvVarsInHome(targetHome);
+
+    await onLog(
+      "stdout",
+      `[paperclip] Using Paperclip-managed ACPX Codex home "${targetHome}" (seeded from "${sourceHome}").
+`,
+    );
   }
 
-  await onLog(
-    "stdout",
-    `[paperclip] Using Paperclip-managed ACPX Codex home "${targetHome}" (seeded from "${sourceHome}").\n`,
-  );
+  if (input.liteLlmBaseUrl) {
+    await patchCodexTomlForLiteLlmGateway(targetHome, {
+      baseUrl: input.liteLlmBaseUrl,
+      model: input.model,
+      reasoningEffort: input.reasoningEffort,
+    });
+    await onLog(
+      "stdout",
+      `[paperclip] Configured LiteLLM provider in "${targetHome}/config.toml" (base_url: ${input.liteLlmBaseUrl}).
+`,
+    );
+  }
+
+  if (input.apiKey) {
+    const authPath = path.join(targetHome, "auth.json");
+    await fs.rm(authPath, { force: true }).catch(() => { });
+    await fs.writeFile(authPath, JSON.stringify({ OPENAI_API_KEY: input.apiKey }), { mode: 0o600 });
+    await onLog(
+      "stdout",
+      `[paperclip] Wrote API-key auth.json into Codex home "${targetHome}".
+`,
+    );
+  } else if (input.liteLlmBaseUrl) {
+    const authPath = path.join(targetHome, "auth.json");
+    await fs.rm(authPath, { force: true }).catch(() => { });
+    await fs.writeFile(authPath, JSON.stringify({ OPENAI_API_KEY: "litellm-placeholder" }), { mode: 0o600 });
+    await onLog(
+      "stdout",
+      `[paperclip] Wrote placeholder auth.json into Codex home "${targetHome}" for LiteLLM.
+`,
+    );
+  }
+
   return targetHome;
 }
 
@@ -741,11 +829,11 @@ async function prepareClaudeSkillRuntime(input: {
   const selectedNames = selectedSkills.map((entry) => entry.runtimeName).sort();
   const promptInstructions = selectedSkills.length > 0
     ? [
-        "Paperclip has materialized selected runtime skills for this ACPX Claude session.",
-        `Skill root: ${skillsHome}`,
-        selectedNames.length > 0 ? `Selected skills: ${selectedNames.join(", ")}` : "",
-        "When a task calls for one of these skills, read its SKILL.md from that root and follow it.",
-      ].filter(Boolean).join("\n")
+      "Paperclip has materialized selected runtime skills for this ACPX Claude session.",
+      `Skill root: ${skillsHome}`,
+      selectedNames.length > 0 ? `Selected skills: ${selectedNames.join(", ")}` : "",
+      "When a task calls for one of these skills, read its SKILL.md from that root and follow it.",
+    ].filter(Boolean).join("\n")
     : "";
 
   return {
@@ -850,7 +938,7 @@ async function prepareCodexSkillRuntime(input: {
   // same host→sandbox counters as its siblings (0 here — skill prep is
   // host-only — which is itself the answer to "does this step exec?").
   stepMetrics?: StartupStepMeasureOptions;
-}): Promise<{ identity: Record<string, unknown>; commandNotes: string[] }> {
+}): Promise<{ identity: Record<string, unknown>; promptInstructions: string; commandNotes: string[] }> {
   const now = input.now ?? (() => Date.now());
   const envConfig = parseObject(input.config.env);
   const configuredCodexHome =
@@ -862,13 +950,23 @@ async function prepareCodexSkillRuntime(input: {
       ? path.resolve(process.env.CODEX_HOME.trim())
       : path.join(os.homedir(), ".codex");
   const managedCodexHome = resolveManagedCodexHomeDir(input.companyId);
-  const effectiveCodexHome = configuredCodexHome ??
+  const gateway = resolveCodexGatewayConfig(input.config);
+
+  const effectiveCodexHome = configuredCodexHome ?? managedCodexHome;
+  const effectiveIsManaged = !configuredCodexHome || isManagedCodexHomePath(input.companyId, configuredCodexHome);
+  if (effectiveIsManaged) {
     await prepareManagedCodexHome({
       companyId: input.companyId,
       sourceHome: sourceCodexHome,
-      targetHome: managedCodexHome,
+      targetHome: effectiveCodexHome,
       onLog: input.onLog,
+      apiKey: gateway.apiKey,
+      liteLlmBaseUrl: gateway.liteLlmBaseUrl,
+      model: gateway.model,
+      reasoningEffort: gateway.reasoningEffort,
+      disableApprovalGuardian: gateway.disableApprovalGuardian,
     });
+  }
   const { allSkills, selectedSkills, desiredSkillNames } = await resolveSelectedRuntimeSkills(input.config, input.moduleDir);
   const skillSetKey = await buildSkillSetKey({ skills: selectedSkills, label: "codex" });
   const skillsHome = path.join(effectiveCodexHome, "skills");
@@ -906,15 +1004,26 @@ async function prepareCodexSkillRuntime(input: {
 
   input.env.CODEX_HOME = effectiveCodexHome;
 
+  const selectedNames = selectedSkills.map((entry) => entry.runtimeName).sort();
+  const promptInstructions = selectedSkills.length > 0
+    ? [
+      "Paperclip has materialized selected runtime skills for this ACPX Codex session.",
+      `Skill root: ${skillsHome}`,
+      selectedNames.length > 0 ? `Selected skills: ${selectedNames.join(", ")}` : "",
+      "When a task calls for one of these skills, read its SKILL.md from that root and follow it.",
+    ].filter(Boolean).join("\n")
+    : "";
+
   return {
     identity: {
       mode: "codex",
       skillSetKey,
       desiredSkillNames,
-      selectedSkills: selectedSkills.map((entry) => entry.runtimeName).sort(),
+      selectedSkills: selectedNames,
       codexHome: effectiveCodexHome,
       skillsHome,
     },
+    promptInstructions,
     commandNotes: [`Prepared ACPX Codex skill home at ${skillsHome}.`],
   };
 }
@@ -1015,9 +1124,15 @@ function buildCodexStartupConfig(input: {
   requestedModel: string;
   requestedThinkingEffort: string;
   fastMode: boolean;
+  modelProvider?: string;
+  disableApprovalGuardian?: boolean;
 }): { value: string | null; invalidExistingConfig: boolean } {
   const hasRuntimeConfig = Boolean(
-    input.requestedModel || input.requestedThinkingEffort || input.fastMode,
+    input.requestedModel ||
+    input.requestedThinkingEffort ||
+    input.fastMode ||
+    input.modelProvider ||
+    input.disableApprovalGuardian,
   );
   if (!hasRuntimeConfig) return { value: null, invalidExistingConfig: false };
 
@@ -1032,22 +1147,25 @@ function buildCodexStartupConfig(input: {
     }
   }
 
+  const features = {
+    ...parseObject(existing.features),
+    ...(input.fastMode ? { fast_mode: true } : {}),
+    ...(input.disableApprovalGuardian ? { guardian_approval: false, guardian: false } : {}),
+  };
+
   return {
     value: JSON.stringify({
       ...existing,
+      ...(input.modelProvider ? { model_provider: input.modelProvider } : {}),
       ...(input.requestedModel ? { model: input.requestedModel } : {}),
       ...(input.requestedThinkingEffort
         ? { model_reasoning_effort: input.requestedThinkingEffort }
         : {}),
-      ...(input.fastMode
-        ? {
-            service_tier: "fast",
-            features: {
-              ...parseObject(existing.features),
-              fast_mode: true,
-            },
-          }
+      ...(input.fastMode ? { service_tier: "fast" } : {}),
+      ...(input.disableApprovalGuardian
+        ? { approval_policy: "never", approvals_reviewer: "user" }
         : {}),
+      ...(Object.keys(features).length > 0 ? { features } : {}),
     }),
     invalidExistingConfig,
   };
@@ -1416,11 +1534,25 @@ async function buildRuntime(input: {
     env.ANTHROPIC_MODEL = requestedModel;
   }
   if (acpxAgent === "codex") {
+    const isLiteLlm = resolveCodexGatewayConfig({ env }).isGateway;
+    // Forwarded by Codex as `x-litellm-tags` (env_http_headers in config.toml)
+    // so every gateway request of this run carries `paperclip_run:<runId>`.
+    // Set on the runtime env, not the adapter env, so it stays out of the
+    // session fingerprint and does not break session resume.
+    if (isLiteLlm) {
+      env[LITELLM_TAGS_ENV] = buildPaperclipLiteLlmTags({
+        runId,
+        agentId: agent.id,
+        companyId: agent.companyId,
+      });
+    }
     const codexStartupConfig = buildCodexStartupConfig({
       existingConfig: env.CODEX_CONFIG,
       requestedModel,
       requestedThinkingEffort,
       fastMode,
+      modelProvider: isLiteLlm ? LITELLM_PROVIDER_ID : undefined,
+      disableApprovalGuardian: isLiteLlm,
     });
     if (codexStartupConfig.invalidExistingConfig) {
       await input.ctx.onLog(
@@ -1429,6 +1561,13 @@ async function buildRuntime(input: {
       );
     }
     if (codexStartupConfig.value) env.CODEX_CONFIG = codexStartupConfig.value;
+    // codex-acp overrides config.toml with its session mode on every turn; the
+    // default mode routes approvals to the Guardian model (see codex-toml.ts).
+    const acpInitialMode = resolveCodexAcpInitialMode({
+      isGateway: isLiteLlm,
+      existingMode: env.INITIAL_AGENT_MODE,
+    });
+    if (acpInitialMode) env.INITIAL_AGENT_MODE = acpInitialMode;
   }
 
   let skillPromptInstructions = "";
@@ -1452,8 +1591,7 @@ async function buildRuntime(input: {
       companyId: agent.companyId,
     });
     skillCommandNotes.push(
-      `Wrote Paperclip-managed Claude settings to ${paperclipClaudeSettings.filePath} (defaultMode=${paperclipClaudeSettings.defaultMode}${
-        paperclipClaudeSettings.overrodeDontAsk ? "; overrode user dontAsk" : ""
+      `Wrote Paperclip-managed Claude settings to ${paperclipClaudeSettings.filePath} (defaultMode=${paperclipClaudeSettings.defaultMode}${paperclipClaudeSettings.overrodeDontAsk ? "; overrode user dontAsk" : ""
       }, +${paperclipClaudeSettings.additionalDirectories.length} read root(s), +${paperclipClaudeSettings.allow.length} allow rule(s)).`,
     );
   } else if (acpxAgent === "codex") {
@@ -1473,6 +1611,7 @@ async function buildRuntime(input: {
       }),
       stepMetrics,
     );
+    skillPromptInstructions = preparedSkills.promptInstructions;
     skillsIdentity = preparedSkills.identity;
     skillCommandNotes.push(...preparedSkills.commandNotes);
   } else if (acpxAgent === "gemini") {
@@ -1557,10 +1696,10 @@ async function buildRuntime(input: {
     skillPromptInstructions,
     paperclipClaudeSettings: paperclipClaudeSettings
       ? {
-          allow: paperclipClaudeSettings.allow,
-          additionalDirectories: paperclipClaudeSettings.additionalDirectories,
-          defaultMode: paperclipClaudeSettings.defaultMode,
-        }
+        allow: paperclipClaudeSettings.allow,
+        additionalDirectories: paperclipClaudeSettings.additionalDirectories,
+        defaultMode: paperclipClaudeSettings.defaultMode,
+      }
       : null,
     mcpServers: mcpIdentity,
     secretManifestHash: shortHash(secretManifest),
@@ -1670,7 +1809,7 @@ async function buildRuntime(input: {
       const stale = stagedRuntimes.get(sessionKey);
       if (stale) {
         stagedRuntimes.delete(sessionKey);
-        if (stale.dispose) await stale.dispose().catch(() => {});
+        if (stale.dispose) await stale.dispose().catch(() => { });
       }
       const stage = (assets: AdapterManagedRuntimeAsset[]) =>
         stageAcpRemoteRuntime({
@@ -1784,14 +1923,14 @@ async function buildRuntime(input: {
       // the process-session bridge consumes it at launch or we finalize it below.
       let launchEnvPromise: Promise<Record<string, string>> | null = null;
       const finalizeLaunchEnv = (): Promise<Record<string, string>> =>
-        (launchEnvPromise ??= (async () => {
-          const paperclip = await paperclipStart;
-          if (paperclip) {
-            Object.assign(env, paperclip.env);
-            await input.ctx.onLog("stdout", "[paperclip] Sandbox ACP API callback bridge enabled for this run.\n");
-          }
-          return (runtimeEnv = resolveRuntimeEnv(env));
-        })());
+      (launchEnvPromise ??= (async () => {
+        const paperclip = await paperclipStart;
+        if (paperclip) {
+          Object.assign(env, paperclip.env);
+          await input.ctx.onLog("stdout", "[paperclip] Sandbox ACP API callback bridge enabled for this run.\n");
+        }
+        return (runtimeEnv = resolveRuntimeEnv(env));
+      })());
       const processSessionStart = measureStartupStep(input.ctx, nowMs, "bridge.process-session", () =>
         startAdapterExecutionTargetProcessSessionBridge({
           runId,
@@ -1838,8 +1977,8 @@ async function buildRuntime(input: {
     // abandoned, so its staged temp must be released — and release the per-session
     // staging lease so the abandoned run does not strand the next same-session run
     // (cleanupRemoteBridges, which normally releases it, is never reached here).
-    await remoteManagedHomeTeardown?.().catch(() => {});
-    await remoteStagingDispose?.().catch(() => {});
+    await remoteManagedHomeTeardown?.().catch(() => { });
+    await remoteStagingDispose?.().catch(() => { });
     sessionStagingLeaseRelease?.();
     throw err;
   }
@@ -2016,7 +2155,7 @@ async function cleanupRemoteBridges(prepared: AcpxPreparedRuntime): Promise<void
   // residual on the next host Codex use, never silent HOST-credential corruption
   // — so a teardown fault never masks or fails the run result here.
   if (prepared.remoteManagedHomeTeardown) {
-    await prepared.remoteManagedHomeTeardown().catch(() => {});
+    await prepared.remoteManagedHomeTeardown().catch(() => { });
   }
   prepared.sessionStagingLeaseRelease?.();
 }
@@ -2276,22 +2415,22 @@ export function summarizeAcpxTurnUsage(input: {
   // entries; UsageSummary has no dedicated field, so count them as input.
   const usage: UsageSummary | null = hasTokens
     ? {
-        inputTokens: inputTokens + cachedWriteTokens,
-        outputTokens,
-        cachedInputTokens: cachedReadTokens,
-      }
+      inputTokens: inputTokens + cachedWriteTokens,
+      outputTokens,
+      cachedInputTokens: cachedReadTokens,
+    }
     : null;
   const usageDetail = breakdown
     ? Object.fromEntries(
-        Object.entries({
-          inputTokens: breakdown.inputTokens,
-          outputTokens: breakdown.outputTokens,
-          cachedReadTokens: breakdown.cachedReadTokens,
-          cachedWriteTokens: breakdown.cachedWriteTokens,
-          thoughtTokens: breakdown.thoughtTokens,
-          totalTokens: breakdown.totalTokens,
-        }).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
-      )
+      Object.entries({
+        inputTokens: breakdown.inputTokens,
+        outputTokens: breakdown.outputTokens,
+        cachedReadTokens: breakdown.cachedReadTokens,
+        cachedWriteTokens: breakdown.cachedWriteTokens,
+        thoughtTokens: breakdown.thoughtTokens,
+        totalTokens: breakdown.totalTokens,
+      }).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
+    )
     : null;
 
   const previousCostUsd = usdCostAmount(input.preStatus?.usage?.cost);
@@ -2311,6 +2450,15 @@ export function summarizeAcpxTurnUsage(input: {
   }
 
   return { usage, usageDetail, costUsd, cumulativeCostUsd };
+}
+
+function resolveGatewaySpendClient(
+  prepared: Pick<AcpxPreparedRuntime, "acpxAgent" | "env">,
+): LiteLlmSpendClient | null {
+  if (prepared.acpxAgent !== "codex") return null;
+  const gateway = resolveCodexGatewayConfig({ env: prepared.env });
+  if (!gateway.isGateway || !gateway.apiKey || !gateway.liteLlmBaseUrl) return null;
+  return { baseUrl: gateway.liteLlmBaseUrl, apiKey: gateway.apiKey };
 }
 
 type AcpxExecutionPhase = "ensure_session" | "configure_session" | "turn";
@@ -2956,13 +3104,19 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
       // Snapshot pre-turn usage so cumulative agent-reported cost can be
       // attributed to this run alone.
       const preTurnStatus = await readRuntimeStatus(runtime, sessionHandle);
+      // Codex/codex-acp never forward the gateway's response cost, so for
+      // LiteLLM agents the run cost is the spend delta of the agent's key.
+      const gatewaySpendClient = resolveGatewaySpendClient(prepared);
+      const gatewayKeyInfo = gatewaySpendClient ? await readLiteLlmKeyInfo(gatewaySpendClient) : null;
+      const gatewaySpendBefore = gatewayKeyInfo?.spend ?? null;
+      const turnStartedAtMs = now();
       const timeoutMs = prepared.timeoutSec > 0 ? prepared.timeoutSec * 1000 : undefined;
       controller = new AbortController();
       if (timeoutMs) {
         timeout = setTimeout(() => {
           timedOut = true;
           controller?.abort();
-          void cancelActiveTurn?.(formatAdapterExecutionTimeoutErrorMessage(prepared.timeoutResolution)).catch(() => {});
+          void cancelActiveTurn?.(formatAdapterExecutionTimeoutErrorMessage(prepared.timeoutResolution)).catch(() => { });
         }, timeoutMs);
       }
       const turn = runtime.startTurn({
@@ -2994,6 +3148,49 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
         eventBreakdown,
         eventCostUsd,
       });
+      // A warm (reused) process keeps the tags env of the run that spawned it,
+      // so tagged attribution is only trusted on a runtime created for this run.
+      let gatewayRunUsage: LiteLlmRunUsage | null = null;
+      if (gatewaySpendClient && gatewayKeyInfo?.keyHash && !cached?.runtime) {
+        gatewayRunUsage = await collectLiteLlmRunUsage({
+          client: gatewaySpendClient,
+          keyHash: gatewayKeyInfo.keyHash,
+          runTag: paperclipRunTag(ctx.runId),
+          startedAtMs: turnStartedAtMs,
+          endedAtMs: now(),
+          settleMs: asNumber(ctx.config.litellmSpendSettleMs, DEFAULT_LITELLM_LOG_SETTLE_MS),
+        });
+      }
+      if (gatewayRunUsage && gatewayRunUsage.requestCount > 0) {
+        // codex-acp only reports the last model call of the turn; the gateway
+        // logs hold every call, so they replace the ACP numbers outright.
+        const hasGatewayTokens =
+          gatewayRunUsage.inputTokens > 0 || gatewayRunUsage.cachedInputTokens > 0 || gatewayRunUsage.outputTokens > 0;
+        turnUsage.usage = hasGatewayTokens
+          ? {
+            inputTokens: gatewayRunUsage.inputTokens,
+            outputTokens: gatewayRunUsage.outputTokens,
+            cachedInputTokens: gatewayRunUsage.cachedInputTokens,
+          }
+          : null;
+        turnUsage.costUsd = gatewayRunUsage.costUsd;
+        turnUsage.usageDetail = {
+          ...(turnUsage.usageDetail ?? {}),
+          gatewayRequestCount: gatewayRunUsage.requestCount,
+          gatewayFailedRequestCount: gatewayRunUsage.failedRequestCount,
+        };
+        await ctx.onLog(
+          "stdout",
+          `[paperclip] LiteLLM usage for ${paperclipRunTag(ctx.runId)}: ${gatewayRunUsage.requestCount} request(s) (${gatewayRunUsage.failedRequestCount} failed), input ${gatewayRunUsage.inputTokens}, cached ${gatewayRunUsage.cachedInputTokens}, output ${gatewayRunUsage.outputTokens}, cost $${gatewayRunUsage.costUsd}.\n`,
+        );
+      } else if (turnUsage.costUsd == null && gatewaySpendClient && gatewaySpendBefore != null) {
+        const gatewayCostUsd = await measureLiteLlmRunCostUsd({
+          client: gatewaySpendClient,
+          before: gatewaySpendBefore,
+          settleMs: asNumber(ctx.config.litellmSpendSettleMs, DEFAULT_LITELLM_SPEND_SETTLE_MS),
+        });
+        if (gatewayCostUsd != null) turnUsage.costUsd = gatewayCostUsd;
+      }
       if (terminal.status === "failed" || terminal.status === "cancelled" || timedOut) {
         const existing = warmHandles.get(prepared.sessionKey);
         if (warmHandleMatches(existing, runtime, sessionHandle) && existing) {
