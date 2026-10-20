@@ -6,7 +6,12 @@ import { parseAcpxStdoutLine } from "@paperclipai/adapter-utils/acpx-engine/ui";
 import { buildTranscript, type RunLogChunk, type TranscriptEntry } from "../../adapters";
 import type { ToolRunDecision } from "@paperclipai/shared";
 import { ThemeProvider } from "../../context/ThemeContext";
-import { RunTranscriptView, normalizeTranscript } from "./RunTranscriptView";
+import {
+  RunTranscriptView,
+  formatTranscriptClock,
+  formatTranscriptClockTitle,
+  normalizeTranscript,
+} from "./RunTranscriptView";
 
 describe("RunTranscriptView", () => {
   it("folds repeated tool_call status updates for the same toolUseId into one block", () => {
@@ -321,5 +326,58 @@ describe("RunTranscriptView", () => {
     expect(html).toContain("line-179");
     expect(html).not.toContain("line-250");
     expect(html).not.toContain("line-499");
+  });
+});
+
+describe("RunTranscriptView timestamps", () => {
+  const entries: TranscriptEntry[] = [
+    { kind: "assistant", ts: "2026-10-19T09:46:23.452Z", text: "Reading the skill" },
+    { kind: "tool_call", ts: "2026-10-19T09:46:28.442Z", name: "read", toolUseId: "t1", input: { text: "read a.md" } },
+    { kind: "tool_result", ts: "2026-10-19T09:46:29.001Z", toolUseId: "t1", toolName: "read", content: "ok", isError: false },
+  ];
+  const local = (ts: string) => {
+    const date = new Date(ts);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
+  it("formats the clock as HH:MM:SS in local time and returns empty for invalid dates", () => {
+    expect(formatTranscriptClock("2026-10-19T09:46:23.452Z")).toBe(local("2026-10-19T09:46:23.452Z"));
+    expect(formatTranscriptClock("2026-10-19T09:46:23.452Z")).toMatch(/^\d{2}:\d{2}:\d{2}$/);
+    expect(formatTranscriptClockTitle("2026-10-19T09:46:23.452Z")).toBe(`${local("2026-10-19T09:46:23.452Z")}.452`);
+    expect(formatTranscriptClock("not-a-date")).toBe("");
+    expect(formatTranscriptClockTitle("not-a-date")).toBe("");
+  });
+
+  it("does not render any clock unless showTimestamps is set (default unchanged)", () => {
+    const html = renderToStaticMarkup(
+      <ThemeProvider>
+        <RunTranscriptView entries={entries} />
+      </ThemeProvider>,
+    );
+    expect(html).not.toContain("<time");
+  });
+
+  it("renders a clock column in nice mode with the original content intact", () => {
+    const html = renderToStaticMarkup(
+      <ThemeProvider>
+        <RunTranscriptView entries={entries} showTimestamps />
+      </ThemeProvider>,
+    );
+    expect(html).toContain("<time");
+    expect(html).toContain(`dateTime="2026-10-19T09:46:23.452Z"`);
+    expect(html).toContain(`title="${local("2026-10-19T09:46:23.452Z")}.452"`);
+    expect(html).toContain(`>${local("2026-10-19T09:46:23.452Z")}</time>`);
+    expect(html).toContain("Reading the skill");
+  });
+
+  it("renders a clock in raw mode too", () => {
+    const html = renderToStaticMarkup(
+      <ThemeProvider>
+        <RunTranscriptView mode="raw" entries={entries} showTimestamps />
+      </ThemeProvider>,
+    );
+    expect(html.match(/<time/g)?.length).toBe(entries.length);
+    expect(html).toContain(`>${local("2026-10-19T09:46:28.442Z")}</time>`);
   });
 });

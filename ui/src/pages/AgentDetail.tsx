@@ -3460,6 +3460,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
   const [isFollowing, setIsFollowing] = useState(false);
   const [isStreamingConnected, setIsStreamingConnected] = useState(false);
   const [transcriptMode, setTranscriptMode] = useState<TranscriptMode>("nice");
+  const [showTranscriptTimestamps, setShowTranscriptTimestamps] = useState(true);
   const logEndRef = useRef<HTMLDivElement>(null);
   const pendingLogLineRef = useRef("");
   const seenProgressLogLineKeysRef = useRef<Set<string>>(new Set());
@@ -3924,6 +3925,20 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            aria-pressed={showTranscriptTimestamps}
+            title="Show the time of each transcript row"
+            className={cn(
+              "rounded-lg border border-border/70 bg-background/70 px-2.5 py-1 text-(length:--text-micro) font-medium transition-colors",
+              showTranscriptTimestamps
+                ? "bg-accent text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => setShowTranscriptTimestamps((value) => !value)}
+          >
+            Time
+          </button>
           {isLive && !isFollowing && (
             <Button
               variant="ghost"
@@ -3955,6 +3970,7 @@ function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: strin
           entries={transcript}
           toolDecisions={toolDecisionLookup.data?.decisions ?? []}
           mode={transcriptMode}
+          showTimestamps={showTranscriptTimestamps}
           streaming={isLive}
           limit={isLive ? LIVE_TRANSCRIPT_RENDER_LIMIT : undefined}
           emptyMessage={run.logRef ? "Waiting for transcript..." : "No persisted transcript for this run."}

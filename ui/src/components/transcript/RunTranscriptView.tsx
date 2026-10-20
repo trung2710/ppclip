@@ -35,6 +35,39 @@ interface RunTranscriptViewProps {
   className?: string;
   thinkingClassName?: string;
   externalReferences?: MarkdownExternalReferenceMap;
+  /** Show a clock column (HH:MM:SS, local time) in front of every transcript row. */
+  showTimestamps?: boolean;
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/** HH:MM:SS in local time (24h), or "" when `ts` is not a valid date. */
+export function formatTranscriptClock(ts: string): string {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+
+/** Same clock with milliseconds, for the hover tooltip. */
+export function formatTranscriptClockTitle(ts: string): string {
+  const clock = formatTranscriptClock(ts);
+  if (!clock) return "";
+  return `${clock}.${String(new Date(ts).getMilliseconds()).padStart(3, "0")}`;
+}
+
+function TranscriptClock({ ts }: { ts: string }) {
+  const clock = formatTranscriptClock(ts);
+  return (
+    <time
+      dateTime={ts}
+      title={formatTranscriptClockTitle(ts)}
+      className="shrink-0 font-mono text-(length:--text-nano) tabular-nums text-muted-foreground"
+    >
+      {clock}
+    </time>
+  );
 }
 
 type TranscriptBlock =
@@ -1611,9 +1644,11 @@ function rawEntryContent(entry: TranscriptEntry): string {
 function RawTranscriptView({
   entries,
   density,
+  showTimestamps = false,
 }: {
   entries: TranscriptEntry[];
   density: TranscriptDensity;
+  showTimestamps?: boolean;
 }) {
   const compact = density === "compact";
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -1678,8 +1713,9 @@ function RawTranscriptView({
             "grid-cols-(--gtc-16)",
           )}
         >
-          <span className="text-(length:--text-nano) uppercase tracking-(--tracking-caps) text-muted-foreground">
-            {entry.kind}
+          <span className="flex gap-x-2 text-(length:--text-nano) uppercase tracking-(--tracking-caps) text-muted-foreground">
+            {showTimestamps && <TranscriptClock ts={entry.ts} />}
+            <span>{entry.kind}</span>
           </span>
           <pre className="min-w-0 whitespace-pre-wrap break-words text-foreground/80">
             {rawEntryContent(entry)}
@@ -1703,6 +1739,7 @@ export function RunTranscriptView({
   className,
   thinkingClassName,
   externalReferences,
+  showTimestamps = false,
 }: RunTranscriptViewProps) {
   const toolDecisionMaps = useMemo(() => buildToolDecisionMaps(toolDecisions), [toolDecisions]);
   const blocks = useMemo(
@@ -1723,7 +1760,7 @@ export function RunTranscriptView({
   if (mode === "raw") {
     return (
       <div className={className}>
-        <RawTranscriptView entries={visibleEntries} density={density} />
+        <RawTranscriptView entries={visibleEntries} density={density} showTimestamps={showTimestamps} />
       </div>
     );
   }
@@ -1733,50 +1770,56 @@ export function RunTranscriptView({
       {visibleBlocks.map((block, index) => (
         <div
           key={`${block.type}-${block.ts}-${index}`}
-          className={cn(index === visibleBlocks.length - 1 && streaming && "animate-in fade-in slide-in-from-bottom-1 duration-300")}
+          className={cn(
+            index === visibleBlocks.length - 1 && streaming && "animate-in fade-in slide-in-from-bottom-1 duration-300",
+            showTimestamps && "grid grid-cols-(--gtc-16) items-start gap-x-3",
+          )}
         >
-          {block.type === "message" && (
-            <TranscriptMessageBlock
-              block={block}
-              density={density}
-              externalReferences={externalReferences}
-            />
-          )}
-          {block.type === "thinking" && (
-            <TranscriptThinkingBlock
-              block={block}
-              density={density}
-              className={thinkingClassName}
-              externalReferences={externalReferences}
-            />
-          )}
-          {block.type === "tool" && (
-            <TranscriptToolCard
-              block={block}
-              density={density}
-              decision={findToolDecision(toolDecisionMaps, block)}
-            />
-          )}
-          {block.type === "command_group" && (
-            <TranscriptCommandGroup block={block} density={density} toolDecisionMaps={toolDecisionMaps} />
-          )}
-          {block.type === "tool_group" && (
-            <TranscriptToolGroup block={block} density={density} toolDecisionMaps={toolDecisionMaps} />
-          )}
-          {block.type === "diff_group" && <TranscriptDiffGroup block={block} density={density} />}
-          {block.type === "stderr_group" && <TranscriptStderrGroup block={block} density={density} />}
-          {block.type === "system_group" && <TranscriptSystemGroup block={block} density={density} />}
-          {block.type === "stdout" && (
-            <TranscriptStdoutRow block={block} density={density} collapseByDefault={collapseStdout} />
-          )}
-          {block.type === "activity" && <TranscriptActivityRow block={block} density={density} />}
-          {block.type === "event" && (
-            <TranscriptEventRow
-              block={block}
-              density={density}
-              externalReferences={externalReferences}
-            />
-          )}
+          {showTimestamps && <TranscriptClock ts={block.ts} />}
+          <div className={cn(showTimestamps && "min-w-0")}>
+            {block.type === "message" && (
+              <TranscriptMessageBlock
+                block={block}
+                density={density}
+                externalReferences={externalReferences}
+              />
+            )}
+            {block.type === "thinking" && (
+              <TranscriptThinkingBlock
+                block={block}
+                density={density}
+                className={thinkingClassName}
+                externalReferences={externalReferences}
+              />
+            )}
+            {block.type === "tool" && (
+              <TranscriptToolCard
+                block={block}
+                density={density}
+                decision={findToolDecision(toolDecisionMaps, block)}
+              />
+            )}
+            {block.type === "command_group" && (
+              <TranscriptCommandGroup block={block} density={density} toolDecisionMaps={toolDecisionMaps} />
+            )}
+            {block.type === "tool_group" && (
+              <TranscriptToolGroup block={block} density={density} toolDecisionMaps={toolDecisionMaps} />
+            )}
+            {block.type === "diff_group" && <TranscriptDiffGroup block={block} density={density} />}
+            {block.type === "stderr_group" && <TranscriptStderrGroup block={block} density={density} />}
+            {block.type === "system_group" && <TranscriptSystemGroup block={block} density={density} />}
+            {block.type === "stdout" && (
+              <TranscriptStdoutRow block={block} density={density} collapseByDefault={collapseStdout} />
+            )}
+            {block.type === "activity" && <TranscriptActivityRow block={block} density={density} />}
+            {block.type === "event" && (
+              <TranscriptEventRow
+                block={block}
+                density={density}
+                externalReferences={externalReferences}
+              />
+            )}
+          </div>
         </div>
       ))}
     </div>
