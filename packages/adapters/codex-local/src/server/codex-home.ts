@@ -3,6 +3,19 @@ import os from "node:os";
 import path from "node:path";
 import type { AdapterExecutionContext } from "@paperclipai/adapter-utils";
 import { resolvePaperclipInstanceRootForAdapter } from "@paperclipai/adapter-utils/server-utils";
+import {
+  DEFAULT_LITELLM_BASE_URL,
+  disableCodexApprovalsInHome,
+  ensurePaperclipMcpEnvVarsInHome,
+  patchCodexTomlForLiteLlmGateway,
+  type PatchCodexTomlForLiteLlmGatewayOptions,
+} from "@paperclipai/adapter-utils/codex-toml";
+
+export {
+  DEFAULT_LITELLM_BASE_URL,
+  patchCodexTomlForLiteLlmGateway,
+  type PatchCodexTomlForLiteLlmGatewayOptions,
+};
 
 const TRUTHY_ENV_RE = /^(1|true|yes|on)$/i;
 const COPIED_SHARED_FILES = ["config.json", "config.toml", "instructions.md"] as const;
@@ -575,13 +588,41 @@ export async function stageCodexHomeForSync(
  * `auth.json` instead. Used both for the default company home and for the
  * per-agent home set by the server isolation guard.
  */
+export interface SeedManagedCodexHomeOptions {
+  apiKey?: string | null;
+  liteLlmApiKey?: string | null;
+  liteLlmBaseUrl?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
+  /** Force `approval_policy="never"` and disable Guardian approval in the seeded config. */
+  disableApprovalGuardian?: boolean;
+}
+
+/**
+ * Normalises the API key / gateway inputs shared by seeding and reconciling:
+ * a LiteLLM key or base URL means gateway mode, and the key doubles as the
+ * auth.json API key when no OpenAI key is given.
+ */
+function resolveGatewaySeedInputs(input: {
+  apiKey?: string | null;
+  liteLlmApiKey?: string | null;
+  liteLlmBaseUrl?: string | null;
+}): { apiKey: string | null; isLiteLlm: boolean; liteLlmBaseUrl: string | null } {
+  const isLiteLlm = Boolean(input.liteLlmBaseUrl || input.liteLlmApiKey);
+  return {
+    apiKey: nonEmpty(input.apiKey ?? input.liteLlmApiKey ?? undefined),
+    isLiteLlm,
+    liteLlmBaseUrl: nonEmpty(input.liteLlmBaseUrl ?? (isLiteLlm ? DEFAULT_LITELLM_BASE_URL : undefined)),
+  };
+}
+
 export async function seedManagedCodexHome(
   targetHome: string,
   env: NodeJS.ProcessEnv,
   onLog: AdapterExecutionContext["onLog"],
-  options: { apiKey?: string | null } = {},
+  options: SeedManagedCodexHomeOptions = {},
 ): Promise<void> {
-  const apiKey = nonEmpty(options.apiKey ?? undefined);
+  const { apiKey, isLiteLlm, liteLlmBaseUrl } = resolveGatewaySeedInputs(options);
 
   const sourceHome = resolveSharedCodexHomeDir(env);
   const seedFromShared = path.resolve(sourceHome) !== path.resolve(targetHome);
@@ -601,10 +642,12 @@ export async function seedManagedCodexHome(
   }
 
   if (seedFromShared) {
-    for (const name of SYMLINKED_SHARED_FILES) {
-      const source = path.join(sourceHome, name);
-      if (!(await pathExists(source))) continue;
-      await ensureSymlink(path.join(targetHome, name), source);
+    if (!isLiteLlm) {
+      for (const name of SYMLINKED_SHARED_FILES) {
+        const source = path.join(sourceHome, name);
+        if (!(await pathExists(source))) continue;
+        await ensureSymlink(path.join(targetHome, name), source);
+      }
     }
 
     for (const name of COPIED_SHARED_FILES) {
@@ -613,9 +656,31 @@ export async function seedManagedCodexHome(
       await ensureCopiedFile(path.join(targetHome, name), source);
     }
 
+    // The gateway patch below already disables approvals/Guardian.
+    if (options.disableApprovalGuardian && !liteLlmBaseUrl) {
+      await disableCodexApprovalsInHome(targetHome);
+    }
+
+    // The copied config is only written once, so homes seeded earlier (or from
+    // a host config without it) get the run identity forwarded to the Paperclip
+    // MCP server here, on every seed.
+    await ensurePaperclipMcpEnvVarsInHome(targetHome);
+
     await onLog(
       "stdout",
       `[paperclip] Using ${isWorktreeMode(env) ? "worktree-isolated" : "Paperclip-managed"} Codex home "${targetHome}" (seeded from "${sourceHome}").\n`,
+    );
+  }
+
+  if (liteLlmBaseUrl) {
+    await patchCodexTomlForLiteLlmGateway(targetHome, {
+      baseUrl: liteLlmBaseUrl,
+      model: options.model,
+      reasoningEffort: options.reasoningEffort,
+    });
+    await onLog(
+      "stdout",
+      `[paperclip] Configured LiteLLM provider in "${targetHome}/config.toml" (base_url: ${liteLlmBaseUrl}).\n`,
     );
   }
 
@@ -623,7 +688,13 @@ export async function seedManagedCodexHome(
     await writeApiKeyAuthJson(targetHome, apiKey);
     await onLog(
       "stdout",
-      `[paperclip] Wrote API-key auth.json into Codex home "${targetHome}" from configured OPENAI_API_KEY.\n`,
+      `[paperclip] Wrote API-key auth.json into Codex home "${targetHome}" from configured key.\n`,
+    );
+  } else if (isLiteLlm) {
+    await writeApiKeyAuthJson(targetHome, "litellm-placeholder");
+    await onLog(
+      "stdout",
+      `[paperclip] Wrote placeholder auth.json into Codex home "${targetHome}" for LiteLLM.\n`,
     );
   }
 }
@@ -632,7 +703,7 @@ export async function prepareManagedCodexHome(
   env: NodeJS.ProcessEnv,
   onLog: AdapterExecutionContext["onLog"],
   companyId?: string,
-  options: { apiKey?: string | null } = {},
+  options: SeedManagedCodexHomeOptions = {},
 ): Promise<string> {
   const targetHome = resolveManagedCodexHomeDir(env, companyId);
   await seedManagedCodexHome(targetHome, env, onLog, options);
@@ -650,6 +721,11 @@ export interface ReconcileManagedCodexHomeInput {
   companyId: string | undefined;
   configuredCodexHome: string | null | undefined;
   apiKey?: string | null;
+  liteLlmApiKey?: string | null;
+  liteLlmBaseUrl?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
+  disableApprovalGuardian?: boolean;
   /**
    * Set when the agent's persisted `OPENAI_API_KEY` is a secret binding that
    * could not be resolved in this context (e.g. startup reconciliation, which
@@ -691,7 +767,7 @@ export async function reconcileManagedCodexHome(
     return { status: "external_override", home: resolved };
   }
 
-  const apiKey = nonEmpty(input.apiKey ?? undefined);
+  const { apiKey, liteLlmBaseUrl } = resolveGatewaySeedInputs(input);
   const hadUsableAuth = await codexHomeHasUsableAuth(resolved);
 
   // A secret-bound OPENAI_API_KEY cannot be resolved here, so we cannot rewrite
@@ -701,14 +777,31 @@ export async function reconcileManagedCodexHome(
   // the shared subscription symlink, silently changing the agent's credentials
   // on every boot while the persisted config still says "use the secret key".
   if (input.apiKeySecretBound && hadUsableAuth) {
+    if (liteLlmBaseUrl) {
+      await patchCodexTomlForLiteLlmGateway(resolved, {
+        baseUrl: liteLlmBaseUrl,
+        model: input.model,
+        reasoningEffort: input.reasoningEffort,
+      });
+    } else if (input.disableApprovalGuardian) {
+      await disableCodexApprovalsInHome(resolved);
+    }
     return { status: "already_seeded", home: resolved };
   }
 
-  if (apiKey && await codexHomeHasMatchingApiKeyAuth(resolved, apiKey)) {
+  const apiKeyMatches = apiKey ? await codexHomeHasMatchingApiKeyAuth(resolved, apiKey) : false;
+  if (apiKeyMatches && !liteLlmBaseUrl) {
     return { status: "already_seeded", home: resolved };
   }
 
-  await seedManagedCodexHome(resolved, env, input.onLog ?? noopOnLog, { apiKey });
+  await seedManagedCodexHome(resolved, env, input.onLog ?? noopOnLog, {
+    apiKey,
+    liteLlmApiKey: input.liteLlmApiKey,
+    liteLlmBaseUrl: input.liteLlmBaseUrl,
+    model: input.model,
+    reasoningEffort: input.reasoningEffort,
+    disableApprovalGuardian: input.disableApprovalGuardian,
+  });
 
   if (!apiKey && !(await codexHomeHasUsableAuth(resolved))) {
     return { status: "source_auth_missing", home: resolved };
@@ -718,7 +811,7 @@ export async function reconcileManagedCodexHome(
   // With an API key, the matching-file short-circuit above filters out the
   // already-seeded case before this write path.
   const status: ReconcileManagedCodexHomeStatus =
-    !apiKey && hadUsableAuth ? "already_seeded" : "seeded";
+    !apiKey && hadUsableAuth && !liteLlmBaseUrl ? "already_seeded" : "seeded";
   return { status, home: resolved };
 }
 

@@ -91,6 +91,8 @@ import {
 } from "../services/instance-settings.js";
 import { runClaudeLogin } from "@paperclipai/adapter-claude-local/server";
 import { DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX } from "@paperclipai/adapter-codex-local";
+import { reconcileManagedCodexHome } from "@paperclipai/adapter-codex-local/server";
+import { DEFAULT_LITELLM_BASE_URL, resolveCodexGatewayConfig } from "@paperclipai/adapter-utils/codex-toml";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
 import { DEFAULT_OPENCODE_LOCAL_MODEL } from "@paperclipai/adapter-opencode-local";
@@ -1297,12 +1299,71 @@ export function agentRoutes(
     if (adapterType !== "codex_local") return adapterConfig;
     const existingEnv = asRecord(adapterConfig.env);
     if (!existingEnv) return adapterConfig;
-    if (!codexLocalEnvKeyConfigured(existingEnv.OPENAI_API_KEY)) return adapterConfig;
+    const hasKeyOrGateway =
+      codexLocalEnvKeyConfigured(existingEnv.OPENAI_API_KEY) ||
+      codexLocalEnvKeyConfigured(existingEnv.LITELLM_API_KEY) ||
+      codexLocalEnvKeyConfigured(existingEnv.LITELLM_BASE_URL) ||
+      codexLocalEnvKeyConfigured(existingEnv.OPENAI_BASE_URL);
+    if (!hasKeyOrGateway) return adapterConfig;
     if (codexLocalEnvKeyConfigured(existingEnv.CODEX_HOME)) return adapterConfig;
     return {
       ...adapterConfig,
       env: { ...existingEnv, CODEX_HOME: codexLocalAgentHome(companyId, agentId) },
     };
+  }
+
+  async function reconcileCodexLocalAgentOnSave(agent: {
+    companyId: string;
+    id?: string;
+    adapterType: string | null | undefined;
+    adapterConfig: Record<string, unknown> | null | undefined;
+  }): Promise<void> {
+    if (agent.adapterType !== "codex_local") return;
+    const adapterConfig = asRecord(agent.adapterConfig) ?? {};
+    const env = asRecord(adapterConfig.env) ?? {};
+    const configuredCodexHome = asEnvBindingString(env.CODEX_HOME);
+
+    let resolvedEnv: Record<string, string> = {};
+    try {
+      const res = await secretService(db).resolveEnvBindings(agent.companyId, env);
+      resolvedEnv = res.env;
+    } catch (err) {
+      logger.warn({ err, agentId: agent.id }, "Could not resolve secrets during codex_local agent save reconciliation");
+    }
+
+    // Plain values from the raw bindings, overlaid with the resolved secrets.
+    const effectiveEnv: Record<string, string> = { ...resolvedEnv };
+    for (const [key, value] of Object.entries(env)) {
+      const plain = asEnvBindingString(value);
+      if (plain && !effectiveEnv[key]) effectiveEnv[key] = plain;
+    }
+    const gateway = resolveCodexGatewayConfig({
+      env: effectiveEnv,
+      model: adapterConfig.model,
+      modelReasoningEffort: adapterConfig.modelReasoningEffort,
+      effort: adapterConfig.effort,
+    });
+    // A secret binding that could not be resolved still marks a gateway agent.
+    const isLiteLlm =
+      gateway.isGateway ||
+      codexLocalEnvKeyConfigured(env.LITELLM_API_KEY) ||
+      codexLocalEnvKeyConfigured(env.LITELLM_BASE_URL) ||
+      codexLocalEnvKeyConfigured(env.OPENAI_BASE_URL);
+
+    try {
+      await reconcileManagedCodexHome({
+        companyId: agent.companyId,
+        configuredCodexHome,
+        apiKey: gateway.apiKey,
+        liteLlmApiKey: effectiveEnv.LITELLM_API_KEY ?? null,
+        liteLlmBaseUrl: gateway.liteLlmBaseUrl ?? (isLiteLlm ? DEFAULT_LITELLM_BASE_URL : null),
+        model: gateway.model,
+        reasoningEffort: gateway.reasoningEffort,
+        disableApprovalGuardian: isLiteLlm,
+      });
+    } catch (err) {
+      logger.warn({ err, agentId: agent.id }, "Failed to pre-seed codex_local agent home on save");
+    }
   }
 
   function applyCreateDefaultsByAdapterType(
@@ -2462,6 +2523,7 @@ export function agentRoutes(
       lastHeartbeatAt: null,
     });
     const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent, instructionsBundle);
+    await reconcileCodexLocalAgentOnSave(agent);
 
     let approval: Awaited<ReturnType<typeof approvalsSvc.getById>> | null = null;
     const actor = getActorInfo(req);
@@ -2647,6 +2709,7 @@ export function agentRoutes(
       lastHeartbeatAt: null,
     });
     const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent, instructionsBundle);
+    await reconcileCodexLocalAgentOnSave(agent);
 
     const actor = getActorInfo(req);
     await logActivity(db, {
@@ -3117,6 +3180,7 @@ export function agentRoutes(
       res.status(404).json({ error: "Agent not found" });
       return;
     }
+    await reconcileCodexLocalAgentOnSave(agent);
 
     await logActivity(db, {
       companyId: agent.companyId,

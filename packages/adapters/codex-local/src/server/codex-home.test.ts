@@ -400,6 +400,75 @@ describe("seedManagedCodexHome", () => {
       await fs.rm(root, { recursive: true, force: true });
     }
   });
+
+  describe("Paperclip MCP run identity (env_vars)", () => {
+    const MCP_BLOCK = [
+      "[mcp_servers.paperclip]",
+      'command = "python"',
+      'args = ["C:/paperclip/paperclip-mcp/src/paperclip_mcp/server.py", "--transport", "stdio"]',
+      'env = { PAPERCLIP_BASE_URL = "http://localhost:3100/api" }',
+      "",
+    ].join("\n");
+
+    it("forwards the run identity to the Paperclip MCP server in a freshly seeded home", async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-mcp-new-"));
+      try {
+        const shared = path.join(root, "shared");
+        const agentHome = path.join(root, "agent-home");
+        await fs.mkdir(shared, { recursive: true });
+        await fs.writeFile(path.join(shared, "config.toml"), MCP_BLOCK, "utf8");
+
+        await seedManagedCodexHome(agentHome, { CODEX_HOME: shared }, async () => {});
+
+        const config = await fs.readFile(path.join(agentHome, "config.toml"), "utf8");
+        expect(config).toContain('"PAPERCLIP_API_KEY"');
+        expect(config).toContain('"PAPERCLIP_RUN_ID"');
+        // The shared host config is never rewritten.
+        expect(await fs.readFile(path.join(shared, "config.toml"), "utf8")).toBe(MCP_BLOCK);
+      } finally {
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    });
+
+    it("patches a home that was seeded before, and stays stable on re-seed", async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-mcp-old-"));
+      try {
+        const shared = path.join(root, "shared");
+        const agentHome = path.join(root, "agent-home");
+        await fs.mkdir(shared, { recursive: true });
+        await fs.mkdir(agentHome, { recursive: true });
+        // An old per-agent config copied before env_vars existed; the copy step
+        // never overwrites it.
+        await fs.writeFile(path.join(agentHome, "config.toml"), `model = "m"\n\n${MCP_BLOCK}`, "utf8");
+
+        await seedManagedCodexHome(agentHome, { CODEX_HOME: shared }, async () => {});
+        const first = await fs.readFile(path.join(agentHome, "config.toml"), "utf8");
+        expect(first).toContain('"PAPERCLIP_API_KEY"');
+        expect(first).toContain('model = "m"');
+
+        await seedManagedCodexHome(agentHome, { CODEX_HOME: shared }, async () => {});
+        expect(await fs.readFile(path.join(agentHome, "config.toml"), "utf8")).toBe(first);
+        expect(first.split("env_vars").length - 1).toBe(1);
+      } finally {
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    });
+
+    it("does not touch the shared home when the target is the shared home itself", async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-mcp-same-"));
+      try {
+        const shared = path.join(root, "shared");
+        await fs.mkdir(shared, { recursive: true });
+        await fs.writeFile(path.join(shared, "config.toml"), MCP_BLOCK, "utf8");
+
+        await seedManagedCodexHome(shared, { CODEX_HOME: shared }, async () => {});
+
+        expect(await fs.readFile(path.join(shared, "config.toml"), "utf8")).toBe(MCP_BLOCK);
+      } finally {
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    });
+  });
 });
 
 // Startup backfill for already-isolated managed homes.
@@ -1124,6 +1193,62 @@ describe("stageCodexHomeForSync", () => {
       expect(stagedSkillEntries).not.toContain("up");
     } finally {
       if (staged) await fs.rm(staged, { recursive: true, force: true });
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("patches config.toml for LiteLLM gateway with root variables at the top and creates auth.json", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-litellm-"));
+    try {
+      const home = path.join(root, "codex-home");
+      await seedManagedCodexHome(home, process.env, async () => {}, {
+        liteLlmBaseUrl: "http://localhost:4000/v1",
+        liteLlmApiKey: "sk-litellm-test-key",
+        model: "lfm-free",
+        reasoningEffort: "low",
+      });
+
+      const configContent = await fs.readFile(path.join(home, "config.toml"), "utf8");
+      expect(configContent).toContain('model_provider = "mygw"');
+      expect(configContent).toContain('model = "lfm-free"');
+      expect(configContent).toContain('model_reasoning_effort = "low"');
+      expect(configContent).toContain('[model_providers.mygw]');
+      expect(configContent).toContain('base_url = "http://localhost:4000/v1"');
+      expect(configContent).toContain('env_key = "LITELLM_API_KEY"');
+      expect(configContent).toContain('wire_api = "responses"');
+      // Per-run spend tags: Codex forwards PAPERCLIP_LITELLM_TAGS as x-litellm-tags.
+      expect(configContent).toContain('env_http_headers = { "x-litellm-tags" = "PAPERCLIP_LITELLM_TAGS" }');
+
+      // Verify root keys are before table header
+      const providerIndex = configContent.indexOf('model_provider = "mygw"');
+      const tableIndex = configContent.indexOf('[model_providers.mygw]');
+      expect(providerIndex).toBeLessThan(tableIndex);
+
+      // Verify auth.json was created with OPENAI_API_KEY
+      const authContent = JSON.parse(await fs.readFile(path.join(home, "auth.json"), "utf8"));
+      expect(authContent).toEqual({ OPENAI_API_KEY: "sk-litellm-test-key" });
+    } finally {
+      if (root) await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("defaults base_url to http://localhost:4000/v1 when liteLlmBaseUrl is omitted", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-codex-litellm-default-url-"));
+    try {
+      const home = path.join(root, "codex-home");
+      await seedManagedCodexHome(home, process.env, async () => {}, {
+        liteLlmApiKey: "sk-litellm-only-key",
+      });
+
+      const configContent = await fs.readFile(path.join(home, "config.toml"), "utf8");
+      expect(configContent).toContain('model_provider = "mygw"');
+      expect(configContent).toContain('[model_providers.mygw]');
+      expect(configContent).toContain('base_url = "http://localhost:4000/v1"');
+      expect(configContent).toContain('env_key = "LITELLM_API_KEY"');
+
+      const authContent = JSON.parse(await fs.readFile(path.join(home, "auth.json"), "utf8"));
+      expect(authContent).toEqual({ OPENAI_API_KEY: "sk-litellm-only-key" });
+    } finally {
       await fs.rm(root, { recursive: true, force: true });
     }
   });

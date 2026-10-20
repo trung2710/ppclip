@@ -1,4 +1,5 @@
 import { asBoolean, asString, asStringArray } from "@paperclipai/adapter-utils/server-utils";
+import { resolveCodexGatewayConfig } from "@paperclipai/adapter-utils/codex-toml";
 import {
   CODEX_LOCAL_FAST_MODE_SUPPORTED_MODELS,
   isCodexLocalFastModeSupported,
@@ -54,6 +55,14 @@ export function buildCodexExecArgs(
   if (options.skipGitRepoCheck) args.push("--skip-git-repo-check");
   if (search) args.unshift("--search");
   if (bypass) args.push("--dangerously-bypass-approvals-and-sandbox");
+  if (resolveCodexGatewayConfig(record).disableApprovalGuardian) {
+    args.push(
+      "-c", 'approval_policy="never"',
+      "-c", 'approvals_reviewer="user"',
+      "-c", "features.guardian_approval=false",
+      "-c", "features.guardian=false",
+    );
+  }
   if (model) args.push("--model", model);
   if (modelReasoningEffort) {
     args.push("-c", `model_reasoning_effort=${JSON.stringify(modelReasoningEffort)}`);

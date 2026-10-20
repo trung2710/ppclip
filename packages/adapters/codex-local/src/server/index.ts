@@ -12,11 +12,16 @@ export * from "./acp.js";
 export { getConfigSchema } from "./config-schema.js";
 export {
   reconcileManagedCodexHome,
+  seedManagedCodexHome,
+  patchCodexTomlForLiteLlmGateway,
+  DEFAULT_LITELLM_BASE_URL,
   isManagedCodexHomePath,
   evaluateCodexCredentialReadiness,
   type ReconcileManagedCodexHomeInput,
   type ReconcileManagedCodexHomeResult,
   type ReconcileManagedCodexHomeStatus,
+  type SeedManagedCodexHomeOptions,
+  type PatchCodexTomlForLiteLlmGatewayOptions,
   type CodexCredentialReadiness,
   type CodexCredentialReadinessInput,
   type CodexCredentialAuthMode,

@@ -81,6 +81,11 @@ import {
 import { prepareCodexRuntimeConfig } from "./runtime-config.js";
 import { resolveCodexDesiredSkillNames } from "./skills.js";
 import { buildCodexExecArgs } from "./codex-args.js";
+import {
+  LITELLM_TAGS_ENV,
+  buildPaperclipLiteLlmTags,
+  resolveCodexGatewayConfig,
+} from "@paperclipai/adapter-utils/codex-toml";
 import { SANDBOX_INSTALL_COMMAND } from "../index.js";
 import {
   CODEX_OUTPUT_INACTIVITY_MONITOR_SIGTERM_GRACE_MS,
@@ -517,10 +522,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   if (!executionTargetIsRemote) {
     await ensureAbsoluteDirectory(cwd, { createIfMissing: true });
   }
-  const configuredOpenAiApiKey =
-    typeof envConfig.OPENAI_API_KEY === "string" && envConfig.OPENAI_API_KEY.trim().length > 0
-      ? envConfig.OPENAI_API_KEY.trim()
-      : null;
+  const gateway = resolveCodexGatewayConfig(config);
+
   // A configured CODEX_HOME that lives under the Paperclip-managed company tree
   // (the per-agent home set by the server isolation guard) still needs auth
   // seeded — it ships with no credentials and OPENAI_API_KEY="" by default.
@@ -531,11 +534,19 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     isManagedCodexHomePath(process.env, agent.companyId, configuredCodexHome);
   if (configuredCodexHome == null) {
     await prepareManagedCodexHome(process.env, onLog, agent.companyId, {
-      apiKey: configuredOpenAiApiKey,
+      apiKey: gateway.apiKey,
+      liteLlmBaseUrl: gateway.liteLlmBaseUrl,
+      model: gateway.model,
+      reasoningEffort: gateway.reasoningEffort,
+      disableApprovalGuardian: gateway.disableApprovalGuardian,
     });
   } else if (configuredHomeIsManaged) {
     await seedManagedCodexHome(configuredCodexHome, process.env, onLog, {
-      apiKey: configuredOpenAiApiKey,
+      apiKey: gateway.apiKey,
+      liteLlmBaseUrl: gateway.liteLlmBaseUrl,
+      model: gateway.model,
+      reasoningEffort: gateway.reasoningEffort,
+      disableApprovalGuardian: gateway.disableApprovalGuardian,
     });
   }
   const defaultCodexHome = resolveManagedCodexHomeDir(process.env, agent.companyId);
@@ -554,7 +565,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     env: process.env,
     companyId: agent.companyId,
     configuredCodexHome,
-    configuredApiKey: configuredOpenAiApiKey,
+    configuredApiKey: gateway.apiKey,
   });
   if (credentialReadiness.managed && !credentialReadiness.ready) {
     throw new Error(
