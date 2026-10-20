@@ -92,9 +92,19 @@ export function parseAcpxStdoutLine(line: string, ts: string): TranscriptEntry[]
     const name = asString(parsed.name, "acp_tool");
     const toolUseId = pickToolUseId(parsed);
     const parsedInput = parsed.input;
+    // `args` (đầu vào thật của tool) và `kind` được nối THÊM vào input đang hiển thị.
+    const args = asString(parsed.args).trim();
+    const kind = asString(parsed.kind).trim();
     const input = (() => {
       if (parsedInput === undefined) {
-        return text || status ? { ...(text ? { text } : {}), ...(status ? { status } : {}) } : {};
+        return text || status || args || kind
+          ? {
+              ...(text ? { text } : {}),
+              ...(status ? { status } : {}),
+              ...(kind ? { kind } : {}),
+              ...(args ? { args } : {}),
+            }
+          : {};
       }
       const inputRecord = asRecord(parsedInput);
       if (!inputRecord) return parsedInput;
@@ -102,6 +112,8 @@ export function parseAcpxStdoutLine(line: string, ts: string): TranscriptEntry[]
         ...inputRecord,
         ...(status && inputRecord.status === undefined ? { status } : {}),
         ...(text && inputRecord.text === undefined ? { text } : {}),
+        ...(kind && inputRecord.kind === undefined ? { kind } : {}),
+        ...(args && inputRecord.args === undefined ? { args } : {}),
       };
     })();
     const entries: TranscriptEntry[] = [
@@ -114,12 +126,15 @@ export function parseAcpxStdoutLine(line: string, ts: string): TranscriptEntry[]
       },
     ];
     if (status === "completed" || status === "failed" || status === "cancelled") {
+      // `output` là nội dung kết quả/lỗi thật của tool (nếu có); nối THÊM sau nội dung cũ.
+      const output = asString(parsed.output).trim();
+      const base = text || status;
       entries.push({
         kind: "tool_result",
         ts,
         toolUseId: toolUseId || name,
         toolName: name,
-        content: text || status,
+        content: output ? `${base}\n${output}` : base,
         isError: status !== "completed",
       });
     }

@@ -95,6 +95,10 @@ export function printAcpxStreamEvent(raw: string, debug: boolean): void {
       const text = asString(parsed.text).trim();
       if (text) console.log(pc.gray(text));
     }
+    const args = asString(parsed.args).trim();
+    if (args) console.log(pc.gray(`args: ${args}`));
+    const output = asString(parsed.output).trim();
+    if (output) console.log((isError ? pc.red : pc.gray)(output));
     return;
   }
   if (type === "acpx.tool_result") {

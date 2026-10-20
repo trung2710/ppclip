@@ -2283,6 +2283,31 @@ async function emitAcpxLog(ctx: AdapterExecutionContext, payload: Record<string,
   await ctx.onLog("stdout", `${JSON.stringify(payload)}\n`);
 }
 
+// Ghi sự kiện tool thô (đã che secret) ra <thư mục>/<runId>.ndjson khi đặt biến môi trường
+// PAPERCLIP_ACPX_DEBUG_TOOL_EVENTS_DIR cho server Paperclip. Chỉ dùng để chẩn đoán (ví dụ xem
+// các dòng "tool call" không tiêu đề chứa gì); lỗi ghi file không được làm hỏng run.
+const MAX_RAW_TOOL_EVENT_CHARS = 20000;
+
+async function captureRawToolEvent(runId: string, event: Record<string, unknown>) {
+  const dir = process.env.PAPERCLIP_ACPX_DEBUG_TOOL_EVENTS_DIR?.trim();
+  if (!dir) return;
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    const line = redactToolOutput(JSON.stringify({ ts: new Date().toISOString(), ...event }));
+    const safeRunId = runId.replace(/[^A-Za-z0-9_-]/g, "_") || "unknown-run";
+    await fs.appendFile(
+      path.join(dir, `${safeRunId}.ndjson`),
+      `${line.length > MAX_RAW_TOOL_EVENT_CHARS ? `${line.slice(0, MAX_RAW_TOOL_EVENT_CHARS)}...[đã cắt]` : line}\n`,
+      "utf8",
+    );
+  } catch {
+    // chỉ phục vụ chẩn đoán
+  }
+}
+
+// Output của tool đang chạy, giữ theo từng run để gắn vào sự kiện kết thúc (xem ToolOutputCarry).
+const toolOutputCarries = new WeakMap<AdapterExecutionContext, ToolOutputCarry>();
+
 async function emitRuntimeEvent(ctx: AdapterExecutionContext, event: AcpRuntimeEvent) {
   if (event.type === "text_delta") {
     await emitAcpxLog(ctx, {
@@ -2296,6 +2321,29 @@ async function emitRuntimeEvent(ctx: AdapterExecutionContext, event: AcpRuntimeE
   if (event.type === "tool_call") {
     const eventRecord = event as Record<string, unknown>;
     const toolInput = eventRecord.input;
+    await captureRawToolEvent(ctx.runId, eventRecord);
+    // Cập nhật rỗng (không trạng thái, không dữ liệu) không mang thông tin: không ghi vào log.
+    if (isEmptyToolUpdate(eventRecord)) return;
+    // Chi tiết của tool để trace (acpx đã chuyển tiếp rawInput/rawOutput/content/locations):
+    // đầu vào, output lệnh, nội dung file đọc/sửa/tạo, lỗi. Chỉ THÊM vào log, các trường hiện có
+    // giữ nguyên.
+    const toolArgs = summarizeToolInputForLog(eventRecord.rawInput);
+    let carry = toolOutputCarries.get(ctx);
+    if (!carry) {
+      carry = new ToolOutputCarry();
+      toolOutputCarries.set(ctx, carry);
+    }
+    const toolOutput = carry.resolve(
+      event.toolCallId,
+      event.status,
+      summarizeToolOutputForLog({
+        rawOutput: eventRecord.rawOutput,
+        content: eventRecord.content,
+        locations: eventRecord.locations,
+        text: event.text,
+      }),
+    );
+    const toolKind = typeof eventRecord.kind === "string" ? eventRecord.kind : "";
     await emitAcpxLog(ctx, {
       type: "acpx.tool_call",
       name: event.title ?? "acp_tool",
@@ -2304,6 +2352,9 @@ async function emitRuntimeEvent(ctx: AdapterExecutionContext, event: AcpRuntimeE
       text: event.text,
       tag: event.tag,
       ...(toolInput !== undefined ? { input: toolInput } : {}),
+      ...(toolKind ? { kind: toolKind } : {}),
+      ...(toolArgs ? { args: toolArgs } : {}),
+      ...(toolOutput ? { output: toolOutput } : {}),
     });
     return;
   }
@@ -2567,7 +2618,7 @@ async function readChildStderrTail(input: {
   } catch {
     return null;
   } finally {
-    if (handle) await handle.close().catch(() => {});
+    if (handle) await handle.close().catch(() => { });
   }
 }
 
@@ -2657,7 +2708,7 @@ async function cleanupIdleStagedRuntimes(input: {
       if (current !== entry) return;
       if (input.now() - current.lastUsedAt < input.idleMs) return;
       input.handles.delete(key);
-      if (entry.dispose) await entry.dispose().catch(() => {});
+      if (entry.dispose) await entry.dispose().catch(() => { });
     });
     lease.release();
   }
@@ -2702,7 +2753,7 @@ async function discardStagedRuntime(input: {
   if (existing && prepared.stagedRuntime && existing.stagedRuntime === prepared.stagedRuntime) {
     handles.delete(prepared.sessionKey);
   }
-  if (prepared.remoteStagingDispose) await prepared.remoteStagingDispose().catch(() => {});
+  if (prepared.remoteStagingDispose) await prepared.remoteStagingDispose().catch(() => { });
 }
 
 // Per-`sessionKey` async lease: chains each caller after the previous one so
@@ -2725,7 +2776,7 @@ async function withSessionStagingLease<T>(
   // the gate below, so callers run one at a time.
   const mine: Promise<unknown> = prev.then(() => gate);
   locks.set(key, mine);
-  await prev.catch(() => {});
+  await prev.catch(() => { });
   let released = false;
   const release = () => {
     if (released) return;
@@ -2763,7 +2814,7 @@ async function closeWarmHandle(input: {
     handle: input.entry.handle,
     reason: input.reason,
     discardPersistentState: input.discardPersistentState ?? false,
-  }).catch(() => {});
+  }).catch(() => { });
   flushChildStderr(input.entry.childStderrState);
 }
 
@@ -3020,7 +3071,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
         handle: sessionHandle,
         reason: "paperclip config cleanup",
         discardPersistentState: false,
-      }).catch(() => {});
+      }).catch(() => { });
       const existing = warmHandles.get(prepared.sessionKey);
       if (warmHandleMatches(existing, runtime, sessionHandle) && existing) {
         clearWarmHandleTimer(existing);
@@ -3072,12 +3123,12 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
           `Effective ACPX permission mode: ${prepared.permissionMode}.`,
           ...(prepared.requestedModel
             ? [
-                prepared.acpxAgent === "claude"
-                  ? `Requested ACPX model: ${prepared.requestedModel} (set via ANTHROPIC_MODEL env at startup).`
-                  : prepared.acpxAgent === "codex"
-                    ? `Requested ACPX model: ${prepared.requestedModel} (set via CODEX_CONFIG at startup).`
+              prepared.acpxAgent === "claude"
+                ? `Requested ACPX model: ${prepared.requestedModel} (set via ANTHROPIC_MODEL env at startup).`
+                : prepared.acpxAgent === "codex"
+                  ? `Requested ACPX model: ${prepared.requestedModel} (set via CODEX_CONFIG at startup).`
                   : `Requested ACPX model: ${prepared.requestedModel}.`,
-              ]
+            ]
             : []),
           ...(prepared.requestedThinkingEffort ? [`Requested ACPX thinking effort: ${prepared.requestedThinkingEffort}.`] : []),
           ...(prepared.fastMode ? ["Requested ACPX Codex fast mode."] : []),
@@ -3206,7 +3257,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
             handle: sessionHandle,
             reason: timedOut ? "paperclip timeout cleanup" : `paperclip turn ${terminal.status}`,
             discardPersistentState: terminal.status === "cancelled" || timedOut,
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (prepared.mode === "persistent" && warmIdleMs > 0 && !prepared.processSessionBridge) {
         const existing = warmHandles.get(prepared.sessionKey);
@@ -3215,7 +3266,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
             handle: sessionHandle,
             reason: "paperclip duplicate warm handle cleanup",
             discardPersistentState: false,
-          }).catch(() => {});
+          }).catch(() => { });
         } else {
           const entry: RuntimeCacheEntry = {
             runtime,
@@ -3247,7 +3298,7 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
             handle: sessionHandle,
             reason: "paperclip completed turn cleanup",
             discardPersistentState: false,
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
 
@@ -3311,12 +3362,12 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
       const cancel = cancelActiveTurn as ((reason: string) => Promise<void>) | null;
       const preEmitMessage =
         messageOverride ?? (err instanceof Error ? err.message : String(err));
-      if (cancel) await cancel(preEmitMessage).catch(() => {});
+      if (cancel) await cancel(preEmitMessage).catch(() => { });
       await runtime.close({
         handle: sessionHandle,
         reason: timedOut ? "paperclip timeout cleanup" : "paperclip error cleanup",
         discardPersistentState: timedOut,
-      }).catch(() => {});
+      }).catch(() => { });
       const existing = warmHandles.get(prepared.sessionKey);
       if (warmHandleMatches(existing, runtime, sessionHandle) && existing) {
         clearWarmHandleTimer(existing);
