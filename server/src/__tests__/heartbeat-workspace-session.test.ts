@@ -15,6 +15,7 @@ import {
   buildExplicitResumeSessionOverride,
   buildEffectiveRunSessionConfigMetadata,
   buildEffectiveRunWorkspaceConfigMetadata,
+  buildSessionWorkspaceConfigFingerprintInput,
   buildWorkspaceConfigFreshnessOperation,
   deriveTaskKeyWithHeartbeatFallback,
   extractWakeCommentIds,
@@ -1853,6 +1854,58 @@ describe("effective run session config freshness", () => {
     expect(decision.reset).toBe(true);
     expect(decision.changedCategories).toEqual(metadata.categories);
     expect(decision.reasons).toEqual(["effective run configuration fingerprint metadata is missing"]);
+  });
+
+  describe("session fingerprint noise", () => {
+    const workspaceInput = (overrides: Partial<Parameters<typeof buildSessionWorkspaceConfigFingerprintInput>[0]> = {}) =>
+      buildSessionWorkspaceConfigFingerprintInput({
+        requestedMode: "agent_default",
+        effectiveMode: "agent_default",
+        projectUpdatedAt: "2026-06-01T00:00:00.000Z",
+        projectPolicy: null,
+        issueSettings: null,
+        reusableExecutionWorkspaceConfig: null,
+        existingExecutionWorkspace: null,
+        ...overrides,
+      });
+
+    async function decide(next: Parameters<typeof buildSessionConfigMetadata>[0]) {
+      const base = await buildSessionConfigMetadata({ workspaceConfig: workspaceInput() });
+      return resolveTaskSessionConfigFreshness({
+        hasTaskSession: true,
+        configuredModel: "gpt-5.4-mini",
+        taskSessionParams: sessionParamsWithConfigMetadata(base),
+        configMetadata: await buildSessionConfigMetadata(next),
+      });
+    }
+
+    it("never hashes an issue timestamp, so comments/status changes/checkouts keep the saved session", async () => {
+      // issues.updated_at moves on every comment, status change and checkout.
+      expect(JSON.stringify(workspaceInput())).not.toMatch(/issue[A-Za-z]*(updated|revision)/i);
+
+      const decision = await decide({ workspaceConfig: workspaceInput() });
+
+      expect(decision.reset).toBe(false);
+      expect(decision.changedCategories).toEqual([]);
+    });
+
+    it("still resets when the issue's real workspace settings change", async () => {
+      const decision = await decide({
+        workspaceConfig: workspaceInput({ issueSettings: { mode: "isolated_workspace" } }),
+      });
+
+      expect(decision.reset).toBe(true);
+      expect(decision.changedCategories).toEqual(["workspaceConfig"]);
+    });
+
+    it("still resets when the project is edited", async () => {
+      const decision = await decide({
+        workspaceConfig: workspaceInput({ projectUpdatedAt: new Date("2026-07-01T00:00:00.000Z") }),
+      });
+
+      expect(decision.reset).toBe(true);
+      expect(decision.changedCategories).toEqual(["workspaceConfig"]);
+    });
   });
 
   it("uses persisted fingerprint metadata even when an adapter codec omits it from resume params", async () => {

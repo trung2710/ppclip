@@ -3795,6 +3795,57 @@ export async function buildEffectiveRunSessionConfigMetadata(input: {
   };
 }
 
+/**
+ * Session fingerprint input for the `workspaceConfig` category.
+ *
+ * Deliberately omits `issues.updated_at`: it moves on every comment, status
+ * change and checkout, so hashing it made every wake look like a workspace
+ * config change and dropped the saved provider session. The issue's real
+ * workspace configuration is already covered by `issueSettings`. The project
+ * revision timestamp stays because it only moves when the project is edited.
+ */
+export function buildSessionWorkspaceConfigFingerprintInput(input: {
+  requestedMode: unknown;
+  effectiveMode: unknown;
+  projectUpdatedAt: Date | string | null | undefined;
+  projectPolicy: unknown;
+  issueSettings: unknown;
+  reusableExecutionWorkspaceConfig: unknown;
+  existingExecutionWorkspace: {
+    id: string;
+    mode: unknown;
+    strategyType: unknown;
+    projectWorkspaceId: unknown;
+    repoUrl: unknown;
+    baseRef: unknown;
+    branchName: unknown;
+    config: unknown;
+  } | null | undefined;
+}) {
+  return {
+    requestedMode: input.requestedMode,
+    effectiveMode: input.effectiveMode,
+    projectConfigRevisionAt: input.projectUpdatedAt instanceof Date
+      ? input.projectUpdatedAt.toISOString()
+      : input.projectUpdatedAt ?? null,
+    projectPolicy: input.projectPolicy,
+    issueSettings: input.issueSettings,
+    reusableExecutionWorkspaceConfig: input.reusableExecutionWorkspaceConfig,
+    existingExecutionWorkspace: input.existingExecutionWorkspace
+      ? {
+        id: input.existingExecutionWorkspace.id,
+        mode: input.existingExecutionWorkspace.mode,
+        strategyType: input.existingExecutionWorkspace.strategyType,
+        projectWorkspaceId: input.existingExecutionWorkspace.projectWorkspaceId,
+        repoUrl: input.existingExecutionWorkspace.repoUrl,
+        baseRef: input.existingExecutionWorkspace.baseRef,
+        branchName: input.existingExecutionWorkspace.branchName,
+        config: input.existingExecutionWorkspace.config,
+      }
+      : null,
+  };
+}
+
 function buildWorkspaceConfigCategoryValues(input: {
   mode: unknown;
   projectId: unknown;
@@ -12435,31 +12486,15 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         agentRuntimeConfig: agent.runtimeConfig,
         modelProfile: modelProfileMetadata,
         issueOverrides: issueAssigneeOverrides,
-        workspaceConfig: {
+        workspaceConfig: buildSessionWorkspaceConfigFingerprintInput({
           requestedMode: requestedExecutionWorkspaceMode,
           effectiveMode: effectiveExecutionWorkspaceMode,
-          issueConfigRevisionAt: issueContext?.updatedAt instanceof Date
-            ? issueContext.updatedAt.toISOString()
-            : issueContext?.updatedAt ?? null,
-          projectConfigRevisionAt: projectContext?.updatedAt instanceof Date
-            ? projectContext.updatedAt.toISOString()
-            : projectContext?.updatedAt ?? null,
+          projectUpdatedAt: projectContext?.updatedAt,
           projectPolicy: projectExecutionWorkspacePolicy,
           issueSettings: issueExecutionWorkspaceSettings,
           reusableExecutionWorkspaceConfig: requestedReusableExecutionWorkspaceConfig,
-          existingExecutionWorkspace: reusableExistingExecutionWorkspace
-            ? {
-              id: reusableExistingExecutionWorkspace.id,
-              mode: reusableExistingExecutionWorkspace.mode,
-              strategyType: reusableExistingExecutionWorkspace.strategyType,
-              projectWorkspaceId: reusableExistingExecutionWorkspace.projectWorkspaceId,
-              repoUrl: reusableExistingExecutionWorkspace.repoUrl,
-              baseRef: reusableExistingExecutionWorkspace.baseRef,
-              branchName: reusableExistingExecutionWorkspace.branchName,
-              config: reusableExistingExecutionWorkspace.config,
-            }
-            : null,
-        },
+          existingExecutionWorkspace: reusableExistingExecutionWorkspace,
+        }),
         environment: {
           selectionSource: environmentResolution.source,
           selectedEnvironmentId,
