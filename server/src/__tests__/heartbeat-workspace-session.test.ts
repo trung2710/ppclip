@@ -15,6 +15,7 @@ import {
   buildExplicitResumeSessionOverride,
   buildEffectiveRunSessionConfigMetadata,
   buildEffectiveRunWorkspaceConfigMetadata,
+  buildSessionModelProfileFingerprintInput,
   buildSessionWorkspaceConfigFingerprintInput,
   buildWorkspaceConfigFreshnessOperation,
   deriveTaskKeyWithHeartbeatFallback,
@@ -1905,6 +1906,54 @@ describe("effective run session config freshness", () => {
 
       expect(decision.reset).toBe(true);
       expect(decision.changedCategories).toEqual(["workspaceConfig"]);
+    });
+
+    it("treats a requested-but-not-applied model profile as no profile", async () => {
+      const requestedOnly = {
+        requested: "cheap",
+        requestedBy: "wake_context",
+        applied: null,
+        configSource: null,
+        fallbackReason: "agent_runtime_profile_disabled",
+      };
+      expect(buildSessionModelProfileFingerprintInput(requestedOnly)).toBeNull();
+      expect(buildSessionModelProfileFingerprintInput(null)).toBeNull();
+
+      const decision = await decide({
+        workspaceConfig: workspaceInput(),
+        modelProfile: buildSessionModelProfileFingerprintInput(requestedOnly),
+      });
+
+      expect(decision.reset).toBe(false);
+    });
+
+    it("still resets when an applied model profile appears or switches", async () => {
+      const applied = (profile: string) =>
+        buildSessionModelProfileFingerprintInput({
+          requested: profile,
+          requestedBy: "issue_override",
+          applied: profile,
+          configSource: "agent_runtime",
+          fallbackReason: null,
+        });
+      expect(applied("cheap")).toEqual({ applied: "cheap", configSource: "agent_runtime" });
+
+      const appeared = await decide({ workspaceConfig: workspaceInput(), modelProfile: applied("cheap") });
+      expect(appeared.reset).toBe(true);
+      expect(appeared.changedCategories).toEqual(["modelProfile"]);
+
+      const withCheap = await buildSessionConfigMetadata({ workspaceConfig: workspaceInput(), modelProfile: applied("cheap") });
+      const switched = resolveTaskSessionConfigFreshness({
+        hasTaskSession: true,
+        configuredModel: "gpt-5.4-mini",
+        taskSessionParams: sessionParamsWithConfigMetadata(withCheap),
+        configMetadata: await buildSessionConfigMetadata({
+          workspaceConfig: workspaceInput(),
+          modelProfile: applied("strong"),
+        }),
+      });
+      expect(switched.reset).toBe(true);
+      expect(switched.changedCategories).toEqual(["modelProfile"]);
     });
   });
 

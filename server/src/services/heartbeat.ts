@@ -3846,6 +3846,26 @@ export function buildSessionWorkspaceConfigFingerprintInput(input: {
   };
 }
 
+/**
+ * Session fingerprint input for the `modelProfile` category.
+ *
+ * A wake may request a profile that is never applied (adapter lacks it, or the
+ * agent disabled it). The run then uses the normal model, so the request alone
+ * must not look like a config change. Once a profile is applied, its overrides
+ * are already part of `adapterConfig`; `applied`/`configSource` are kept so a
+ * switch between applied profiles is still detected.
+ */
+export function buildSessionModelProfileFingerprintInput(
+  metadata: Record<string, unknown> | null | undefined,
+) {
+  const applied = readNonEmptyString(metadata?.applied);
+  if (!applied) return null;
+  return {
+    applied,
+    configSource: readNonEmptyString(metadata?.configSource),
+  };
+}
+
 function buildWorkspaceConfigCategoryValues(input: {
   mode: unknown;
   projectId: unknown;
@@ -12484,7 +12504,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         adapterType: agent.adapterType,
         effectiveAdapterConfig: runtimeConfig,
         agentRuntimeConfig: agent.runtimeConfig,
-        modelProfile: modelProfileMetadata,
+        modelProfile: buildSessionModelProfileFingerprintInput(modelProfileMetadata),
         issueOverrides: issueAssigneeOverrides,
         workspaceConfig: buildSessionWorkspaceConfigFingerprintInput({
           requestedMode: requestedExecutionWorkspaceMode,
