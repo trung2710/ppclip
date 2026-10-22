@@ -82,6 +82,8 @@ import {
   DEFAULT_ACP_ENGINE_TIMEOUT_SEC,
   DEFAULT_ACP_ENGINE_WARM_HANDLE_IDLE_MS,
 } from "./constants.js";
+import { stripRunScopedEnvForFingerprint } from "./fingerprint-env.js";
+import { requestFreshClientForResume } from "./session-refresh.js";
 import { measureStartupStep, type StartupStepMeasureOptions } from "./startup-timing.js";
 import {
   ToolOutputCarry,
@@ -1710,7 +1712,9 @@ async function buildRuntime(input: {
     // that sources the latest env. secretManifestHash alone misses plain-value
     // edits and same-version secret rotations. Per-wake runtime vars never enter
     // resolvedAdapterEnv, so they don't churn the fingerprint every heartbeat.
-    adapterEnvHash: shortHash(resolvedAdapterEnv),
+    // The server also writes the unique per-run scratch dir into the adapter
+    // env; stripRunScopedEnvForFingerprint drops it for the same reason.
+    adapterEnvHash: shortHash(stripRunScopedEnvForFingerprint(resolvedAdapterEnv)),
   });
   const taskKey = asString(input.ctx.runtime.taskKey, "") || wakeTaskId || workspaceId || "default";
   const sessionKey = `paperclip:${agent.companyId}:${agent.id}:${taskKey}:${fingerprint}`;
@@ -2954,6 +2958,12 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
     let handle = cached?.handle ?? null;
     let resumedSession = Boolean(handle ?? resumeSessionId);
     let clearSession = false;
+    // A cold resume must not inherit the stored record's env (run-scoped API
+    // key and run id of the run that created the session); see
+    // requestFreshClientForResume. A warm handle is this run's own process.
+    if (!handle && resumeSessionId && prepared.mode === "persistent") {
+      await requestFreshClientForResume(runtimeOptions.sessionStore, prepared.sessionKey).catch(() => false);
+    }
 
     try {
       if (!handle) {
