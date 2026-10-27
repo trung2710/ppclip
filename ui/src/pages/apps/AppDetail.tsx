@@ -457,6 +457,8 @@ export function AppDetail() {
           galleryEntry={logoEntry}
           removing={removeApp.isPending}
           onRemove={() => removeApp.mutate()}
+          configUpdateDisabled={updateConfig.isPending}
+          onUpdateConfig={(config) => updateConfig.mutate(config)}
           onReplaced={() => {
             queryClient.invalidateQueries({ queryKey: queryKeys.tools.connection(connectionId) });
             queryClient.invalidateQueries({ queryKey: queryKeys.tools.connections(selectedCompanyId) });

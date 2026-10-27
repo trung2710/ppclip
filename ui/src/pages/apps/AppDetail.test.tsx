@@ -321,6 +321,94 @@ describe("AppDetail", () => {
     expect(container.textContent).not.toContain("zapier-secret");
   });
 
+  it("turns on run identity forwarding from advanced without dropping the url", async () => {
+    mockParams.tab = "advanced";
+    getConnectionMock.mockResolvedValue(
+      connection({
+        config: { url: "http://127.0.0.1:9011/mcp", quarantineNewEntries: true },
+        transportConfig: { url: "http://127.0.0.1:9011/mcp", quarantineNewEntries: true },
+      }),
+    );
+    updateConnectionMock.mockResolvedValue(connection());
+
+    await renderAppDetail();
+
+    expect(container.textContent).toContain("Send run identity");
+    expect(container.textContent).toContain("This app runs on this machine.");
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Send run identity"]');
+    expect(toggle?.getAttribute("aria-checked")).toBe("false");
+    await act(async () => {
+      toggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(updateConnectionMock).toHaveBeenCalledWith("conn-1", {
+      config: {
+        url: "http://127.0.0.1:9011/mcp",
+        quarantineNewEntries: true,
+        headerPolicy: { metadata: { forward: ["run_id", "issue_id", "company_id", "agent_id"] } },
+      },
+      transportConfig: { url: "http://127.0.0.1:9011/mcp", quarantineNewEntries: true },
+    });
+  });
+
+  it("turns on the run token for a server on this machine and keeps identity forwarding", async () => {
+    mockParams.tab = "advanced";
+    const forward = ["run_id", "issue_id", "company_id", "agent_id"];
+    getConnectionMock.mockResolvedValue(
+      connection({
+        config: { url: "http://127.0.0.1:9011/mcp", headerPolicy: { metadata: { forward } } },
+        transportConfig: { url: "http://127.0.0.1:9011/mcp" },
+      }),
+    );
+    updateConnectionMock.mockResolvedValue(connection());
+
+    await renderAppDetail();
+
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Send run token"]');
+    expect(toggle?.disabled).toBe(false);
+    await act(async () => {
+      toggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flushReact();
+
+    expect(updateConnectionMock).toHaveBeenCalledWith("conn-1", {
+      config: {
+        url: "http://127.0.0.1:9011/mcp",
+        headerPolicy: { metadata: { forward }, runCredential: true },
+      },
+      transportConfig: { url: "http://127.0.0.1:9011/mcp" },
+    });
+  });
+
+  it("does not offer the run token for servers outside this machine", async () => {
+    mockParams.tab = "advanced";
+
+    await renderAppDetail();
+
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Send run token"]');
+    expect(toggle?.disabled).toBe(true);
+    expect(container.textContent).toContain("Only available for servers on this machine.");
+  });
+
+  it("shows run identity as on and warns for servers outside this machine", async () => {
+    mockParams.tab = "advanced";
+    getConnectionMock.mockResolvedValue(
+      connection({
+        config: {
+          url: "https://github.example/mcp",
+          headerPolicy: { metadata: { forward: ["run_id", "issue_id", "company_id", "agent_id"] } },
+        },
+      }),
+    );
+
+    await renderAppDetail();
+
+    const toggle = container.querySelector<HTMLButtonElement>('button[aria-label="Stop sending run identity"]');
+    expect(toggle?.getAttribute("aria-checked")).toBe("true");
+    expect(container.textContent).toContain("This app runs outside this machine.");
+  });
+
   it("shows new quarantined actions on the review tab instead of an empty state", async () => {
     mockParams.tab = "review";
 

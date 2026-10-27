@@ -6,8 +6,18 @@ import { credentialConfigPath, getAvailableConnectionMethod, humanizeConnectionD
 import { toolsApi } from "@/api/tools";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { useToast } from "@/context/ToastContext";
 import { redactUrlSecrets } from "@/lib/redact-url-secrets";
+import {
+  RUN_IDENTITY_HEADER_NAMES,
+  configWithRunCredential,
+  configWithRunIdentityForwarding,
+  forwardsRunIdentity,
+  isLoopbackAddress,
+  partialRunIdentityKeys,
+  sendsRunCredential,
+} from "../run-identity";
 import type { AppDetailSectionProps } from "./types";
 
 export function AdvancedPanel({
@@ -17,14 +27,21 @@ export function AdvancedPanel({
   removing,
   onRemove,
   onReplaced,
+  configUpdateDisabled,
+  onUpdateConfig,
 }: Pick<AppDetailSectionProps, "connection" | "appName" | "galleryEntry"> & {
   removing: boolean;
   onRemove: () => void;
   onReplaced: () => void;
+  configUpdateDisabled: boolean;
+  onUpdateConfig: (config: Record<string, unknown>) => void;
 }) {
   return (
     <div className="space-y-6">
       <KeySection connection={connection} galleryEntry={galleryEntry} onReplaced={onReplaced} />
+      {connection.transport === "mcp_remote" && (
+        <RunIdentitySection connection={connection} disabled={configUpdateDisabled} onUpdateConfig={onUpdateConfig} />
+      )}
       <TechnicalDetails connection={connection} />
       <DangerZone appName={appName} removing={removing} onRemove={onRemove} />
     </div>
@@ -207,6 +224,82 @@ function ReconnectForm({
         )}
       </div>
     </div>
+  );
+}
+
+export function RunIdentitySection({
+  connection,
+  disabled,
+  onUpdateConfig,
+}: {
+  connection: ToolConnection;
+  disabled: boolean;
+  onUpdateConfig: (config: Record<string, unknown>) => void;
+}) {
+  const config = connection.config ?? connection.transportConfig ?? {};
+  const enabled = forwardsRunIdentity(config);
+  const partial = partialRunIdentityKeys(config);
+  const local = isLoopbackAddress(config.url ?? config.endpoint ?? config.remoteUrl);
+  const tokenOn = sendsRunCredential(config);
+  const storedAuthorization = (connection.credentialRefs ?? []).some(
+    (ref) => ref.placement === "header" && ref.key.toLowerCase() === "authorization",
+  );
+  return (
+    <section className="rounded-xl border border-border bg-card px-5 py-4">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-bold text-foreground">Send run identity</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Adds the run, task, company and agent IDs to every call this app receives. No keys are sent.
+          </p>
+        </div>
+        <ToggleSwitch
+          aria-label={enabled ? "Stop sending run identity" : "Send run identity"}
+          checked={enabled}
+          disabled={disabled}
+          onCheckedChange={(next) => onUpdateConfig(configWithRunIdentityForwarding(config, next))}
+          size="lg"
+        />
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        {local
+          ? "This app runs on this machine. Turn this on when its server needs to know which run is calling."
+          : "This app runs outside this machine. Only turn this on for a server you run yourself."}
+      </p>
+      {partial.length > 0 && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Already sending {partial.join(", ")}. Turning this on sends all four.
+        </p>
+      )}
+      <p className="mt-1 font-mono text-xs text-muted-foreground">{RUN_IDENTITY_HEADER_NAMES.join(", ")}</p>
+
+      <div className="mt-4 flex items-center justify-between gap-4 border-t border-border pt-4">
+        <div>
+          <h3 className="text-sm font-bold text-foreground">Send run token</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Sends the calling run's own API key as Authorization, so the server can call Paperclip as that agent.
+            The key works only while the run is active.
+          </p>
+        </div>
+        <ToggleSwitch
+          aria-label={tokenOn ? "Stop sending run token" : "Send run token"}
+          checked={tokenOn}
+          disabled={disabled || (!tokenOn && (!local || storedAuthorization))}
+          onCheckedChange={(next) => onUpdateConfig(configWithRunCredential(config, next))}
+          size="lg"
+        />
+      </div>
+      {!local && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Only available for servers on this machine. This address is outside it.
+        </p>
+      )}
+      {storedAuthorization && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          This app already sends a stored key as Authorization. Remove that key before using the run token.
+        </p>
+      )}
+    </section>
   );
 }
 
