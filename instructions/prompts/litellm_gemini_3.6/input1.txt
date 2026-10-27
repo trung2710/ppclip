@@ -1,0 +1,130 @@
+You are a coding agent running in the Codex CLI, a terminal-based coding assistant. Codex CLI is an open source project led by OpenAI. You are expected to be precise, safe, and helpful.
+
+Your capabilities:
+
+- Receive user prompts and other context provided by the harness, such as files in the workspace.
+- Communicate with the user by streaming thinking & responses, and by making & updating plans.
+- Emit function calls to run terminal commands and apply patches. Depending on how this specific run is configured, you can request that these function calls be escalated to the user for approval before running. More on this in the "Sandbox and approvals" section.
+
+Within this context, Codex refers to the o... (litellm_truncated skipped 15127 chars. Truncation is a DB storage safeguard. Full, untruncated data is logged to logging callbacks (OTEL, Datadog, etc.). To increase the truncation limit, set `MAX_STRING_LENGTH_PROMPT_IN_DB` in your env.) ...llet; split for clarity.
+- Don’t let keyword lists run long — wrap or reformat for scanability.
+
+Generally, ensure your final answers adapt their shape and depth to the request. For example, answers to code explanations should have a precise, structured explanation with code references that answer the question directly. For tasks with a simple implementation, lead with the outcome and supplement only with what’s needed for clarity. Larger changes can be presented as a logical walkthrough of your approach, grouping related steps, explaining rationale where it adds value, and highlighting next actions to accelerate the user. Your answers should provide the right level of detail while being easily scannable.
+
+For casual greetings, acknowledgements, or other one-off conversational messages that are not delivering substantive information or structured results, respond naturally without section headers or bullet formatting.
+
+# Tool Guidelines
+
+## Shell commands
+
+When using the shell, you must adhere to the following guidelines:
+
+- When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
+- Do not use python scripts to attempt to output larger chunks of a file.
+USER
+<environment_context>
+  <cwd>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7</cwd>
+  <shell>powershell</shell>
+  <current_date>2026-10-22</current_date>
+  <timezone>Asia/Saigon</timezone>
+  <filesystem><workspace_roots><root>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7</root></workspace_roots><permission_profile type="managed"><file_system type="restricted"><entry access="read"><special>:root</special></entry><entry access="write"><path>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7</path></entry><entry access="write"><special>:slash_tmp</special></entry><entry access="write"><special>:tmpdir</special></entry><entry access="read"><path>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7\.git</path></entry><entry access="read"><path>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7\.agents</path></entry><entry access="read"><path>C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7\.codex</path></entry></file_system></permission_profile></filesystem>
+</environment_context>
+USER
+Paperclip has materialized selected runtime skills for this ACPX Codex session.
+Skill root: C:\Users\LAPTOP HP\.paperclip\instances\default\companies\b0964fd7-2db2-482a-94eb-2fff77c5b50c\agents\87c740d4-edfd-4ac6-83ca-0100026dceb7\codex-home\skills
+Selected skills: mcp-gateway--5fba1b3449, reflection-coach--aa25458030
+When a task calls for one of these skills, read its SKILL.md from that root and follow it.
+
+You are an agent at Paperclip company.
+
+## Execution Contract
+
+- Start actionable work in the same heartbeat. Do not stop at a plan unless the issue explicitly asks for planning.
+- Keep the work moving until it is done. If you need QA to review it, ask them. If you need your boss to review it, ask ... (litellm_truncated skipped 8805 chars. Truncation is a DB storage safeguard. Full, untruncated data is logged to logging callbacks (OTEL, Datadog, etc.). To increase the truncation limit, set `MAX_STRING_LENGTH_PROMPT_IN_DB` in your env.) ...gested tasks, answer structured questions, or confirm a proposal.
+- Use `PAPERCLIP_SCRATCH_DIR` / `PAPERCLIP_RUN_SCRATCH_DIR` for temporary scratch files instead of ad hoc `/tmp` paths; Paperclip removes that run-owned directory after the run ends.
+- To ask for that input, create an interaction on the current issue with POST /api/issues/{issueId}/interactions using kind suggest_tasks, ask_user_questions, or request_confirmation. Use continuationPolicy wake_assignee when you need to resume after a response; for request_confirmation this resumes only after acceptance.
+- When you intentionally restart follow-up work on a completed assigned issue, include structured `resume: true` with the POST /api/issues/{issueId}/comments or PATCH /api/issues/{issueId} comment payload. Generic agent comments on closed issues are inert by default.
+- For plan approval, update the plan document first, then create request_confirmation targeting the latest plan revision with idempotencyKey confirmation:{issueId}:plan:{revisionId}. Wait for acceptance before creating implementation subtasks, and create a fresh confirmation after superseding board/user comments if approval is still needed.
+- If blocked, mark the issue blocked and name the unblock owner and action.
+- Respect budget, pause/cancel, approval gates, and company boundaries.
+ASSISTANT
+function
+exec_command
+cmd: "Get-ChildItem -Path ."
+TOOL
+Chunk ID: 4a78d9
+Wall time: 0.1897 seconds
+Process exited with code 0
+Original token count: 152
+Output:
+
+
+    Directory: C:\Users\LAPTOP HP\.paperclip\instances\default\workspaces\87c740d4-edfd-4ac6-83ca-0100026dceb7
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+-a----        10/12/2026  11:50 AM           1386 count.ps1                                                            
+-a----        10/12/2026  11:49 AM            693 count_issues.ps1                                                     
+
+
+ASSISTANT
+function
+get_agent
+agent_id: "me"
+TOOL
+Wall time: 0.2444 seconds
+Output:
+{"id":"87c740d4-edfd-4ac6-83ca-0100026dceb7","companyId":"b0964fd7-2db2-482a-94eb-2fff77c5b50c","name":"DW VT","role":"general","title":null,"icon":null,"status":"running","reportsTo":null,"capabilities":null,"adapterType":"codex_local","adapterConfig":{"env":{"CODEX_HOME":{"type":"plain","value":"C:\\Users\\LAPTOP HP\\.paperclip\\instances\\default\\companies\\b0964fd7-2db2-482a-94eb-2fff77c5b50c\\agents\\87c740d4-edfd-4ac6-83ca-0100026dceb7\\codex-home"},"LITELLM_API_KEY":{"type":"plain","value":"sk-0hqCDBmdgtWRS0a59RC0Ng"}},"model":"gemini/gemini-3.6-flash","search":false,"fastMode":false,"graceSec":15,"timeoutSec":0,"paperclipSkillSync":{"desiredSkills":["paperclipai/bu... (litellm_truncated skipped 940 chars. Truncation is a DB storage safeguard. Full, untruncated data is logged to logging callbacks (OTEL, Datadog, etc.). To increase the truncation limit, set `MAX_STRING_LENGTH_PROMPT_IN_DB` in your env.) ...son":null,"permissions":{"trustPreset":"standard","canCreateAgents":false,"canCreateSkills":true},"lastHeartbeatAt":"2026-10-15T10:58:56.469Z","metadata":null,"createdAt":"2026-10-08T08:55:48.411Z","updatedAt":"2026-10-22T09:10:40.840Z","urlKey":"dw-vt","orgChainHealth":{"status":"healthy","reason":"healthy","fullChain":[{"id":"87c740d4-edfd-4ac6-83ca-0100026dceb7","companyId":"b0964fd7-2db2-482a-94eb-2fff77c5b50c","name":"DW VT","status":"running","reportsTo":null,"depth":0,"relation":"self"}],"firstInvalidAncestor":null,"invalidAncestors":[],"repairGuidance":null},"chainOfCommand":[],"access":{"canAssignTasks":true,"taskAssignSource":"explicit_grant","membership":{"id":"2bf28647-1974-4fa5-a04f-f8a53d9c2c0a","companyId":"b0964fd7-2db2-482a-94eb-2fff77c5b50c","principalType":"agent","principalId":"87c740d4-edfd-4ac6-83ca-0100026dceb7","status":"active","membershipRole":"member","createdAt":"2026-10-08T08:55:48.468Z","updatedAt":"2026-10-08T08:55:48.468Z"},"grants":[{"id":"453cebd3-1a0e-4984-b854-9173927f8347","companyId":"b0964fd7-2db2-482a-94eb-2fff77c5b50c","principalType":"agent","principalId":"87c740d4-edfd-4ac6-83ca-0100026dceb7","permissionKey":"tasks:assign","scope":null,"grantedByUserId":"YRjisRuKyODMdpHs2ZEvmKQOVQQY2DAz","createdAt":"2026-10-08T08:55:48.471Z","updatedAt":"2026-10-08T08:55:48.471Z"}]}}
+ASSISTANT
+function
+finish_task_and_reply_telegram
+message: "Chào bạn! 👋\n\nMình là **DW VT**, trợ lý AI thuộc hệ thống **Paperclip**.\n\n🤖 **Đôi nét giới thiệu về mình:**\n- **Tên Agent:** DW VT\n- **Vai trò:** Trợ lý tổng hợp (General Assistant) & Điều phối công việc.\n- **Nhiệm vụ chính:** \n 1. Tiếp nhận và phản hồi các yêu cầu, thắc mắc của bạn qua Telegram.\n 2. Xử lý các tác vụ phân tích dữ liệu, tự động hóa và hỗ trợ tra cứu thông tin.\n 3. Phối hợp cùng các Agent chuyên biệt khác trong hệ thống để giải quyết công việc nhanh chóng và chính xác nhất.\n\nRất vui được làm quen với bạn! Nếu bạn cần hỗ trợ công việc hay hỏi đáp thông tin gì, cứ gửi tin nhắn cho mình nhé! 😊"
+status: "done"
+TOOL
+Wall time: 1.6605 seconds
+Output:
+{"ok":true,"status":"success","chat_id":8882960938,"message_id":2,"chat_source":"description_json","task_id":"2e841161-dfd9-4c17-97f7-6be43a0c6cad","run_id":"49910113-605a-4d09-a089-728589187b07","task_status":"done","message_sent_to_telegram":true,"telegram_skipped":false,"message_preview":"Chào bạn! 👋\n\nMình là **DW VT**, trợ lý AI thuộc hệ thống **Paperclip**.\n\n🤖 **Đôi nét giới thiệu về mình:**\n- **Tên Agent:** DW VT\n- **Vai trò:** Trợ l...","steps":["[Bắt đầu] Tham số nhận vào: status='done', file_path=''","[Step 1/5 SUCCESS] Xác định được Task ID: 2e841161-dfd9-4c17-97f7-6be43a0c6cad","[Step 1/5 SUCCESS] Đã đọc thông tin task từ Paperclip API (UUID: 2e841161-dfd9-4c17-97f7-6be43a0c6cad)","[Step 2/5 SUCCESS] Trích xuất thành công: chat_id=8882960938, message_id=2 (nguồn: description_json)","[Step 3/5 SUCCESS] Gửi Webhook sang n8n thành công (HTTP 200)","[Step 4/5 SUCCESS] Đã cập nhật trạng thái task sang 'done' trên Paperclip","[Step 5/5 SUCCESS] Đã ghi comment báo cáo vào task"]}
+ASSISTANT
+I have completed the intro task and responded directly to the user on Telegram.
+
+**Summary of Actions:**
+- Identified agent identity as **DW VT**, a general AI assistant on the Paperclip platform.
+- Executed `finish_task_and_reply_telegram` to send a friendly and informative introduction to the Telegram user (`chat_id: 8882960938`).
+- Closed task **KHT-114** with status `done`.
+USER
+Paperclip has materialized selected runtime skills for this ACPX Codex session.
+Skill root: C:\Users\LAPTOP HP\.paperclip\instances\default\companies\b0964fd7-2db2-482a-94eb-2fff77c5b50c\agents\87c740d4-edfd-4ac6-83ca-0100026dceb7\codex-home\skills
+Selected skills: mcp-gateway--5fba1b3449, reflection-coach--aa25458030
+When a task calls for one of these skills, read its SKILL.md from that root and follow it.
+
+## Paperclip Resume Delta
+
+You are resuming an existing Paperclip session.
+This heartbeat is scoped to the issue below. Do not switch to another issue until you have handled this wake.
+Focus on the new wake delta below and continue the current task without restating the full heartbeat boilerplate.
+Fetch... (litellm_truncated skipped 6015 chars. Truncation is a DB storage safeguard. Full, untruncated data is logged to logging callbacks (OTEL, Datadog, etc.). To increase the truncation limit, set `MAX_STRING_LENGTH_PROMPT_IN_DB` in your env.) ...`text
+bạn có đang cấu hình với litellm đúng không bạn
+```
+
+Use this task context as the current assignment.
+
+Paperclip runtime note:
+The following PAPERCLIP_* environment variables are available in this run: PAPERCLIP_AGENT_ID, PAPERCLIP_API_KEY, PAPERCLIP_API_URL, PAPERCLIP_COMPANY_ID, PAPERCLIP_ISSUE_WORK_MODE, PAPERCLIP_LITELLM_TAGS, PAPERCLIP_RUN_ID, PAPERCLIP_RUN_SCRATCH_DIR, PAPERCLIP_SCRATCH_DIR, PAPERCLIP_TASK_ID, PAPERCLIP_TASK_SCRATCH_DIR, PAPERCLIP_TMPDIR, PAPERCLIP_WAKE_COMMENT_ID, PAPERCLIP_WAKE_PAYLOAD_JSON, PAPERCLIP_WAKE_REASON, PAPERCLIP_WORKSPACE_CWD, PAPERCLIP_WORKSPACE_SOURCE, PAPERCLIP_WORKSPACE_STRATEGY
+Do not assume these variables are missing without checking your shell environment.
+
+Paperclip API access note:
+Use terminal commands with curl to make Paperclip API requests.
+Normalize the base URL before adding API paths:
+  PAPERCLIP_API_BASE="${PAPERCLIP_API_URL%/}"; PAPERCLIP_API_BASE="${PAPERCLIP_API_BASE%/api}"
+GET example:
+  curl -s -H "Authorization: Bearer $PAPERCLIP_API_KEY" "$PAPERCLIP_API_BASE/api/agents/me"
+Scoped issue comment example:
+  curl -s -X POST -H "Authorization: Bearer $PAPERCLIP_API_KEY" -H "Content-Type: application/json" -H "X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID" -d '{"body":"Status update from agent."}' "$PAPERCLIP_API_BASE/api/issues/$PAPERCLIP_TASK_ID/comments"
+ASSISTANT
+function
+mcp__paperclip__finish_task_and_reply_telegram
+status: "done"
+message: "Đúng rồi bạn nhé! \n\nHiện tại agent **DW VT** đang được cấu hình chạy thông qua **LiteLLM proxy** làm bộ định tuyến (gateway) cho các mô hình AI (như model `gemini/gemini-3.6-flash`). LiteLLM giúp quản lý API key, theo dõi ngân sách (budgeting), ghi log/metrics và điều hướng request từ Paperclip đến các LLM provider một cách linh hoạt.\n\nNếu bạn cần kiểm tra thêm chi tiết cấu hình hoặc tùy chỉnh mô hình nào khác, cứ báo mình nhé! 😊"
+TOOL
+unsupported call: mcp__paperclip__finish_task_and_reply_telegram

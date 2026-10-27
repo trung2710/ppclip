@@ -1,0 +1,5 @@
+ASSISTANT
+function
+mcp__paperclip__comment_on_issue
+issue_id: "KHT-114"
+body: "Chào bạn,\n\nĐúng rồi bạn nhé! Hiện tại agent **DW VT** đang được cấu hình chạy thông qua **LiteLLM proxy** (sử dụng API key `LITELLM_API_KEY` và điều hướng model `gemini/gemini-3.6-flash`). LiteLLM đóng vai trò làm API Gateway giúp Paperclip kết nối, theo dõi chi phí (budgeting/token spending) và quản lý các mô hình LLM một cách thống nhất.\n\nNếu bạn cần kiểm tra thêm về cấu hình hay tùy chỉnh gì, cứ báo mình nhé!"
