@@ -1941,28 +1941,45 @@ async def finish_task_and_reply_telegram(
 
     # 4. Tự động cập nhật trạng thái của Task trên Paperclip sang done/cancelled/blocked (Non-blocking)
     paperclip_status = "done" if valid_status == "done" else ("cancelled" if valid_status in ["cancelled", "failed"] else "blocked")
+    # Bước 4 và 5 chạy sau khi Telegram đã gửi nên không raise: agent gọi lại tool sẽ gửi trùng tin.
+    # Lỗi được báo qua `ok: False` và `task_status_updated` / `comment_saved` trong kết quả.
     steps.info(4, f"Đang cập nhật trạng thái Task '{real_issue_uuid}' sang '{paperclip_status}' trên Paperclip")
+    task_status_updated = False
     try:
         await _patch(f"/issues/{real_issue_uuid}", {"status": paperclip_status}, headers=req_headers)
+        task_status_updated = True
         steps.ok(4, f"Đã cập nhật trạng thái task sang '{paperclip_status}' trên Paperclip")
     except Exception as e:
         steps.warn(4, f"Không thể cập nhật trạng thái task trên Paperclip: {str(e)[:120]}")
 
     # 5. Lưu luôn một Comment báo cáo hoàn chỉnh vào Task trên Paperclip (Non-blocking)
     steps.info(5, f"Đang ghi Comment báo cáo vào Task '{real_issue_uuid}'")
+    comment_saved = False
     try:
         comment_body = message.strip()
         if telegram_skipped:
             comment_body += "\n\n_(Không gửi Telegram: task không có chat_id.)_"
         await _post(f"/issues/{real_issue_uuid}/comments", {"body": comment_body}, headers=req_headers)
+        comment_saved = True
         steps.ok(5, "Đã ghi comment báo cáo vào task")
     except Exception as e:
         steps.warn(5, f"Không thể ghi comment vào task: {str(e)[:120]}")
 
-    log.info("[finish_task] ================= HOÀN TẤT THÀNH CÔNG CHO TASK %s =================", effective_task_id)
+    completed = task_status_updated and comment_saved
+    if completed:
+        log.info("[finish_task] ================= HOÀN TẤT THÀNH CÔNG CHO TASK %s =================", effective_task_id)
+    else:
+        log.warning(
+            "[finish_task] ================= HOÀN TẤT CÓ LỖI CHO TASK %s: cập nhật trạng thái=%s, ghi comment=%s =================",
+            effective_task_id,
+            "OK" if task_status_updated else "LỖI",
+            "OK" if comment_saved else "LỖI",
+        )
     result: dict[str, Any] = {
-        "ok": True,
-        "status": "success",
+        "ok": completed,
+        "status": "success" if completed else "partial_failure",
+        "task_status_updated": task_status_updated,
+        "comment_saved": comment_saved,
         "chat_id": effective_chat_id,
         "message_id": effective_message_id,
         "chat_source": chat_source,
@@ -1973,7 +1990,18 @@ async def finish_task_and_reply_telegram(
         "telegram_skipped": telegram_skipped,
         "message_preview": message.strip()[:150] + ("..." if len(message.strip()) > 150 else ""),
     }
-    if telegram_skipped:
+    if not completed:
+        failed = [
+            label
+            for label, done in (("cập nhật trạng thái task", task_status_updated), ("ghi comment vào task", comment_saved))
+            if not done
+        ]
+        sent = "Không gửi Telegram (task không có chat_id)." if telegram_skipped else "Tin Telegram đã gửi."
+        result["warning"] = (
+            f"{sent} Chưa {' và '.join(failed)} trên Paperclip (xem `steps`). "
+            "KHÔNG gọi lại tool này vì sẽ gửi trùng tin; báo lỗi này trong câu trả lời cuối."
+        )
+    elif telegram_skipped:
         result["warning"] = (
             "Task không có chat_id nên không gửi Telegram. Task vẫn đã được ghi comment và cập nhật trạng thái."
         )

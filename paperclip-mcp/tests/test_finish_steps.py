@@ -140,6 +140,40 @@ class FinishSteps(unittest.TestCase):
         self.assertIn("[Step 4/5 WARNING] Không thể cập nhật trạng thái task trên Paperclip: HTTP 500 khi PATCH", joined)
         self.assertIn("[Step 5/5 WARNING] Không thể ghi comment vào task: HTTP 500 khi comment", joined)
 
+    def test_failed_status_and_comment_calls_are_not_reported_as_success(self) -> None:
+        self.patch_error = RuntimeError("HTTP 401 khi PATCH")
+        self.comment_error = RuntimeError("HTTP 401 khi comment")
+        with self.assertLogs(server.log, level="WARNING") as logs:
+            result = self.run_tool(message="Xong")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "partial_failure")
+        self.assertFalse(result["task_status_updated"])
+        self.assertFalse(result["comment_saved"])
+        self.assertTrue(result["message_sent_to_telegram"])
+        self.assertIn("Tin Telegram đã gửi", result["warning"])
+        self.assertIn("cập nhật trạng thái task và ghi comment vào task", result["warning"])
+        self.assertIn("KHÔNG gọi lại tool này", result["warning"])
+        output = "\n".join(logs.output)
+        self.assertIn("HOÀN TẤT CÓ LỖI", output)
+        self.assertNotIn("HOÀN TẤT THÀNH CÔNG", output)
+
+    def test_only_the_failed_part_is_named(self) -> None:
+        self.comment_error = RuntimeError("HTTP 500 khi comment")
+        result = self.run_tool(message="Xong")
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["task_status_updated"])
+        self.assertFalse(result["comment_saved"])
+        self.assertIn("Chưa ghi comment vào task", result["warning"])
+        self.assertNotIn("cập nhật trạng thái", result["warning"])
+
+    def test_full_success_stays_ok(self) -> None:
+        result = self.run_tool(message="Xong")
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["task_status_updated"])
+        self.assertTrue(result["comment_saved"])
+        self.assertNotIn("warning", result)
+
     def test_file_error_message_lists_the_steps_that_ran(self) -> None:
         with self.assertRaises(server.ToolError) as ctx:
             self.run_tool(message="Xong", file_path=self.missing_file)
