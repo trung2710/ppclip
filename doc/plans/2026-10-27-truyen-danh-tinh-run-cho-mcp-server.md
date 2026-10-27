@@ -122,6 +122,13 @@ Các bước:
 - Tài liệu: mục "Run identity and run token for your own local MCP server" trong `doc/MCP-ACCESS-GOVERNANCE.md`.
 - Hạn chế đã biết: tab Test và lời gọi được duyệt sau khi run đã kết thúc sẽ bị từ chối khi `runCredential` bật, vì không còn run đang chạy.
 
+**Chạy thật (27/10, 10:24 UTC): đạt.** Task KHT-121 (tạo tay, agent Codex, run `ef5f6e96`), connection bật cả `metadata.forward` và `runCredential`:
+
+- Server MCP gọi API Paperclip bằng JWT của run: `list_agents`, `GET /issues`, `PATCH /issues` (200), `POST /comments` (201). Hết lỗi 401.
+- `finish_task_and_reply_telegram` đủ 5 bước. Bước 2 bỏ qua Telegram là đúng vì task không đến từ Telegram.
+- DB: task `done`; comment do **agent Codex** viết, `created_by_run_id` đúng run `ef5f6e96`; không sinh run bàn giao nào sau đó.
+- Còn phải thử: một task đến từ Telegram để kiểm tra cả đường gửi webhook.
+
 | Việc | Chi tiết |
 |---|---|
 | Cấu hình | Tuỳ chọn mới trong `config.headerPolicy`, ví dụ `runCredential: { header: "Authorization", prefix: "Bearer " }`, **mặc định tắt**. Chọn tên khoá không bị `rejectSensitiveConfigKeys` chặn và kiểm tra bằng test |
