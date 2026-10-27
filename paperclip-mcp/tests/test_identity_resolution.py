@@ -1,4 +1,6 @@
-"""Danh tính của run (api key, run id, company id) chỉ đọc từ biến môi trường.
+"""Danh tính của run (api key, run id, company id) đọc từ biến môi trường khi không có header HTTP.
+
+Header x-paperclip-* của request HTTP: xem test_header_identity.py.
 
 Chạy:  python -m unittest discover -s tests -v
 """
@@ -12,6 +14,7 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -21,8 +24,8 @@ from paperclip_mcp import server  # noqa: E402
 IDENTITY_ENV = ("PAPERCLIP_API_KEY", "PAPERCLIP_RUN_ID", "PAPERCLIP_COMPANY_ID")
 
 
-def make_jwt(claims: dict) -> str:
-    def b64(data: dict) -> str:
+def make_jwt(claims: dict[str, Any]) -> str:
+    def b64(data: dict[str, Any]) -> str:
         return base64.urlsafe_b64encode(json.dumps(data).encode()).decode().rstrip("=")
 
     return f"{b64({'alg': 'none'})}.{b64(claims)}.sig"

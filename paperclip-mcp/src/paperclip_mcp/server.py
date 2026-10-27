@@ -31,6 +31,7 @@ from typing import Any, NoReturn, cast
 import httpx
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.middleware import Middleware, MiddlewareContext
 
 try:
@@ -67,22 +68,46 @@ def _decode_jwt_claims(token: str) -> dict[str, Any]:
         return {}
 
 
-# ── Danh tính của run: đọc từ biến môi trường của tiến trình MCP ───────────────
-# Codex chuyển PAPERCLIP_API_KEY / RUN_ID / COMPANY_ID / TASK_ID của đúng run qua `env_vars`
-# trong config.toml, nên tool không nhận các giá trị này qua tham số.
+# ── Danh tính của run ───────────────────────────────────────────────────────────
+# Chạy stdio: Codex chuyển PAPERCLIP_API_KEY / RUN_ID / COMPANY_ID / TASK_ID của đúng run qua
+# `env_vars` trong config.toml. Chạy HTTP (một tiến trình chung cho mọi run): gateway của Paperclip
+# gắn danh tính vào header của từng request (connection phải bật headerPolicy.metadata.forward,
+# và credentialRefs cho Authorization). Header của request đang xử lý được ưu tiên, thiếu thì dùng
+# biến môi trường. Luôn đọc tại lúc gọi, không lưu vào biến toàn cục, vì nhiều run dùng chung tiến trình.
+# Tool không nhận các giá trị này qua tham số.
+
+HEADER_AUTHORIZATION = "authorization"
+HEADER_RUN_ID = "x-paperclip-run-id"
+HEADER_ISSUE_ID = "x-paperclip-issue-id"
+HEADER_COMPANY_ID = "x-paperclip-company-id"
+
+
+def _header(name: str) -> str:
+    """Giá trị header (tên chữ thường) của request HTTP đang xử lý; rỗng khi chạy stdio."""
+    try:
+        return get_http_headers(include_all=True).get(name, "").strip()
+    except Exception:
+        return ""
 
 
 def _api_key() -> str:
-    return os.environ.get("PAPERCLIP_API_KEY", "").strip() or API_KEY.strip()
+    scheme, _, token = _header(HEADER_AUTHORIZATION).partition(" ")
+    authorization = token.strip() if scheme.lower() == "bearer" else f"{scheme} {token}".strip()
+    return authorization or os.environ.get("PAPERCLIP_API_KEY", "").strip() or API_KEY.strip()
 
 
 def _run_id() -> str:
-    """Run id từ PAPERCLIP_RUN_ID, nếu thiếu thì giải mã từ JWT của API key."""
-    from_env = os.environ.get("PAPERCLIP_RUN_ID", "").strip()
-    if from_env:
-        return from_env
+    """Run id từ header x-paperclip-run-id, rồi PAPERCLIP_RUN_ID, nếu thiếu thì giải mã từ JWT của API key."""
+    from_request = _header(HEADER_RUN_ID) or os.environ.get("PAPERCLIP_RUN_ID", "").strip()
+    if from_request:
+        return from_request
     claims = _decode_jwt_claims(_api_key())
     return str(claims.get("run_id") or claims.get("runId") or "").strip()
+
+
+def _task_id() -> str:
+    """Task id từ header x-paperclip-issue-id, nếu thiếu thì từ PAPERCLIP_TASK_ID."""
+    return _header(HEADER_ISSUE_ID) or os.environ.get("PAPERCLIP_TASK_ID", "").strip()
 
 
 def _get_base_url() -> str:
@@ -97,10 +122,10 @@ def _get_base_url() -> str:
 
 
 def _get_company_id() -> str:
-    """Company id từ PAPERCLIP_COMPANY_ID, nếu thiếu thì giải mã từ JWT của API key."""
-    from_env = os.environ.get("PAPERCLIP_COMPANY_ID", "").strip()
-    if from_env:
-        return from_env
+    """Company id từ header x-paperclip-company-id, rồi PAPERCLIP_COMPANY_ID, nếu thiếu thì giải mã từ JWT của API key."""
+    from_request = _header(HEADER_COMPANY_ID) or os.environ.get("PAPERCLIP_COMPANY_ID", "").strip()
+    if from_request:
+        return from_request
     extracted = _decode_jwt_claims(_api_key()).get("company_id")
     if extracted:
         return str(extracted).strip()
@@ -590,9 +615,9 @@ async def upload_issue_attachment(
         file_path: Đường dẫn tuyệt đối hoặc tương đối đến file trên máy (ví dụ: 'bc10_6_2026.md' hoặc 'C:/data/report.pdf').
         issue_id: Tùy chọn: UUID hoặc mã Task (ví dụ 'KHT-58'). Mặc định lấy từ $env:PAPERCLIP_TASK_ID.
     """
-    effective_issue_id = issue_id.strip() or os.environ.get("PAPERCLIP_TASK_ID", "").strip()
+    effective_issue_id = issue_id.strip() or _task_id()
     if not effective_issue_id:
-        return _err("Thiếu issue_id: Không tìm thấy issue_id trong tham số và không có biến môi trường PAPERCLIP_TASK_ID.")
+        return _err("Thiếu issue_id: Không tìm thấy issue_id trong tham số, header x-paperclip-issue-id hay biến môi trường PAPERCLIP_TASK_ID.")
 
     try:
         result = await _upload_file_to_issue(
@@ -1646,12 +1671,8 @@ async def _resolve_current_task_id() -> str:
         except Exception as ex:
             log.warning("Không thể tra cứu run qua /heartbeat-runs/%s: %s", active_run_id, ex)
 
-    # Cách 3: Kiểm tra biến môi trường
-    env_task = os.environ.get("PAPERCLIP_TASK_ID", "").strip()
-    if env_task:
-        return env_task
-
-    return ""
+    # Cách 3: Kiểm tra header của request hoặc biến môi trường
+    return _task_id()
 
 
 def _pick_attachment_by_name(attachments: Any, file_name: str) -> dict[str, Any] | None:
@@ -1709,12 +1730,13 @@ async def finish_task_and_reply_telegram(
     steps.start(f"Tham số nhận vào: status='{status}', file_path='{file_path}'")
 
     # 1. Xác định Task ID
-    effective_task_id = os.environ.get("PAPERCLIP_TASK_ID", "").strip()
+    effective_task_id = _task_id()
     if not effective_task_id:
         steps.fail(
             1,
-            "Thiếu task_id: không có biến môi trường PAPERCLIP_TASK_ID. "
-            "Hướng dẫn khắc phục: gọi tool này trong run của một task (Paperclip tự đặt PAPERCLIP_TASK_ID).",
+            "Thiếu task_id: không có header x-paperclip-issue-id và không có biến môi trường PAPERCLIP_TASK_ID. "
+            "Hướng dẫn khắc phục: gọi tool này trong run của một task (Paperclip tự đặt PAPERCLIP_TASK_ID; "
+            "với MCP HTTP, bật headerPolicy.metadata.forward có issue_id trong connection).",
         )
     steps.ok(1, f"Xác định được Task ID: {effective_task_id}")
 
@@ -2370,8 +2392,8 @@ def main() -> None:
         help=(
             # ASCII: argparse in help ra console Windows (cp1252), ký tự tiếng Việt làm --help lỗi.
             "MCP transport protocol. Default 'stdio': each Codex session gets its own MCP process "
-            "with that run's environment. 'streamable-http'/'sse' share one process, so per-agent "
-            "identity cannot be told apart."
+            "with that run's environment. 'streamable-http'/'sse' share one process, so run identity "
+            "is read per request from the x-paperclip-* headers forwarded by the Paperclip gateway."
         ),
     )
     args = parser.parse_args()
@@ -2380,8 +2402,9 @@ def main() -> None:
         mcp.run(transport="stdio")
     else:
         log.warning(
-            "Transport %s dùng một tiến trình chung: API key/run id/company id lấy từ env của "
-            "tiến trình này, không phân biệt từng agent. Dùng --transport stdio cho Codex.",
+            "Transport %s dùng một tiến trình chung: API key/run id/company id/task id lấy từ header "
+            "x-paperclip-* của từng request (connection phải bật headerPolicy.metadata.forward), thiếu "
+            "header thì mới dùng env của tiến trình này và khi đó không phân biệt được từng agent.",
             args.transport,
         )
         # Thêm stateless_http=True để cho phép Paperclip gọi kiểm tra trực tiếp
