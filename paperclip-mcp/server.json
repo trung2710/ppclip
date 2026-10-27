@@ -1,0 +1,45 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/registry/server.json",
+  "name": "paperclip-mcp",
+  "description": "MCP server for the Paperclip AI agent orchestration platform. Manage issues, agents, goals, approvals, and costs via natural language.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "installation": {
+    "type": "pypi",
+    "package_name": "paperclip-mcp"
+  },
+  "execution": {
+    "command": "paperclip-mcp",
+    "args": []
+  },
+  "environment": {
+    "PAPERCLIP_API_KEY": {
+      "description": "Agent API key — generate in Paperclip UI: Settings → API Keys → New Key.",
+      "required": true,
+      "secret": true
+    },
+    "PAPERCLIP_COMPANY_ID": {
+      "description": "Company UUID — visible in the Paperclip UI URL: /companies/{uuid}.",
+      "required": true,
+      "secret": false
+    },
+    "PAPERCLIP_BASE_URL": {
+      "description": "Base URL of the Paperclip API. Default: http://localhost:3100/api",
+      "required": false,
+      "secret": false,
+      "default": "http://localhost:3100/api"
+    }
+  },
+  "capabilities": {
+    "tools": [
+      "list_issues", "get_issue", "create_issue", "update_issue",
+      "checkout_issue", "release_issue", "comment_on_issue", "delete_issue",
+      "upload_issue_attachment", "finish_task_and_reply_telegram",
+      "read_file_universal", "get_recent_tasks_by_chat",
+      "list_agents", "get_agent", "invoke_agent_heartbeat",
+      "list_goals", "create_goal", "update_goal",
+      "list_approvals", "approve", "reject", "request_approval_revision",
+      "get_cost_summary", "get_dashboard", "list_activity"
+    ]
+  }
+}
