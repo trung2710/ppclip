@@ -11,8 +11,11 @@ describe("server package build script", () => {
     };
     const buildScript = packageJson.scripts?.build ?? "";
 
-    expect(buildScript).toContain("mkdir -p dist/onboarding-assets dist/built-ins");
-    expect(buildScript).toContain("cp -R src/onboarding-assets/. dist/onboarding-assets/");
-    expect(buildScript).toContain("cp -R src/built-ins/. dist/built-ins/");
+    // Copied with node's fs.cpSync so the script also runs under cmd.exe on Windows.
+    expect(buildScript).toMatch(/^tsc && node -e /);
+    expect(buildScript).toContain("fs.cpSync('src/'+d,'dist/'+d,{recursive:true})");
+    expect(buildScript).toContain("'onboarding-assets'");
+    expect(buildScript).toContain("'built-ins'");
+    expect(buildScript).not.toMatch(/\b(mkdir -p|cp -R)\b/);
   });
 });
