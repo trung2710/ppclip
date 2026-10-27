@@ -72,6 +72,18 @@ export async function assertPublicRemoteHttpEndpoint(
   }
 }
 
+/**
+ * True only for endpoints on this machine (localhost, 127.0.0.0/8, ::1), judged by the
+ * literal hostname without DNS. Used to gate sending a run's agent JWT to a remote MCP
+ * server: a hostname that merely resolves to loopback does not count.
+ */
+export function isLoopbackHttpEndpoint(endpoint: URL): boolean {
+  const hostname = endpoint.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "::1") return true;
+  const ipv4 = isIP(hostname) === 4 ? parseIpv4Address(hostname) : null;
+  return ipv4 !== null && ipv4[0] === 127;
+}
+
 function defaultLookup(hostname: string): Promise<LookupResult[]> {
   return dnsLookup(hostname, { all: true, verbatim: true });
 }

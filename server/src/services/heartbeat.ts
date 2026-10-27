@@ -83,7 +83,7 @@ import type {
   AdapterSessionCodec,
   UsageSummary,
 } from "../adapters/index.js";
-import { createLocalAgentJwt } from "../agent-auth-jwt.js";
+import { createLocalAgentJwt, localAgentJwtScopeForIssue } from "../agent-auth-jwt.js";
 import { parseObject, asBoolean, asNumber, appendWithByteCap, MAX_EXCERPT_BYTES } from "../adapters/utils.js";
 import { costService } from "./costs.js";
 import { trackAgentFirstHeartbeat } from "@paperclipai/shared/telemetry";
@@ -13530,10 +13530,7 @@ export function heartbeatService(db: Db, options: HeartbeatServiceOptions = {}) 
         };
 
         const adapter = getServerAdapter(agent.adapterType);
-        const localAgentJwtScope =
-          issueRef?.workMode === "skill_test"
-            ? { kind: "skill_test" as const, issueId: issueRef.id }
-            : { kind: "standard" as const };
+        const localAgentJwtScope = localAgentJwtScopeForIssue(issueRef);
         const authToken = adapter.supportsLocalAgentJwt
           ? createLocalAgentJwt(
             agent.id,

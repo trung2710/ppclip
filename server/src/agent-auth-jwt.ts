@@ -113,6 +113,19 @@ function safeCompare(a: string, b: string) {
   return timingSafeEqual(left, right);
 }
 
+/**
+ * Key scope for a run's local agent JWT. Shared by the heartbeat (which injects
+ * PAPERCLIP_API_KEY) and the tool gateway (which can mint the same run token for a
+ * local MCP server), so both always scope the token identically.
+ */
+export function localAgentJwtScopeForIssue(
+  issue: { id: string; workMode?: string | null } | null | undefined,
+): AgentApiKeyScope {
+  return issue?.workMode === "skill_test"
+    ? { kind: "skill_test", issueId: issue.id }
+    : { kind: "standard" };
+}
+
 export function createLocalAgentJwt(
   agentId: string,
   companyId: string,

@@ -54,7 +54,8 @@ import type { AgentToolDescriptor, PluginToolDispatcher } from "./plugin-tool-di
 import { logActivity, type LogActivityInput } from "./activity-log.js";
 import { secretService } from "./secrets.js";
 import { mcpHttpRequestHeaders, parseMcpHttpResponseBody } from "./mcp-http.js";
-import { assertPublicRemoteHttpEndpoint, parseRemoteHttpEndpoint } from "./remote-http-endpoint-guard.js";
+import { assertPublicRemoteHttpEndpoint, isLoopbackHttpEndpoint, parseRemoteHttpEndpoint } from "./remote-http-endpoint-guard.js";
+import { createLocalAgentJwt, localAgentJwtScopeForIssue } from "../agent-auth-jwt.js";
 import { toolAccessPolicyService } from "./tool-access-policy.js";
 import { issueThreadInteractionService } from "./issue-thread-interactions.js";
 import {
@@ -216,6 +217,9 @@ type HeaderPolicyConfig = {
   staticHeaders: Array<{ name: string; value: string }>;
   passthroughAllowlist: string[];
   metadataHeaders: Array<"company_id" | "agent_id" | "issue_id" | "project_id" | "run_id" | "gateway_session_id" | "correlation_id">;
+  // Send the calling run's agent JWT as `Authorization: Bearer`, the same token the
+  // heartbeat injects as PAPERCLIP_API_KEY. Loopback endpoints only, off by default.
+  runCredential: boolean;
 };
 
 type HeaderPolicySummary = {
@@ -2185,7 +2189,72 @@ export function createToolGatewayService(
       staticHeaders: parsedStaticHeaders,
       passthroughAllowlist: [...new Set(passthroughAllowlist)],
       metadataHeaders: [...new Set(metadataHeaders)],
+      runCredential: rawPolicy.runCredential === true,
     };
+  }
+
+  /**
+   * Mints the calling run's agent JWT for a connection that opted into
+   * `headerPolicy.runCredential`. Fails closed: the call is refused rather than
+   * sent without the credential, or sent somewhere off this machine.
+   */
+  async function resolveRunCredentialHeaders(input: {
+    session: ToolGatewaySession;
+    connection: typeof toolConnections.$inferSelect;
+    endpoint: string;
+    credentialHeaders: Record<string, string>;
+  }): Promise<Record<string, string>> {
+    if (!readHeaderPolicy(input.connection).runCredential) return {};
+    const refuse = (message: string, reasonCode: string) =>
+      new ToolGatewayHttpError(422, message, reasonCode, { connectionId: input.connection.id });
+
+    if (!isLoopbackHttpEndpoint(new URL(input.endpoint))) {
+      throw refuse("Run credentials are only sent to MCP servers on this machine", "run_credential_requires_loopback");
+    }
+    if (Object.keys(input.credentialHeaders).some((name) => name.toLowerCase() === "authorization")) {
+      throw refuse("Run credential and a stored Authorization credential cannot both be set", "run_credential_conflict");
+    }
+    const runId = input.session.runId;
+    if (!runId) {
+      throw refuse("Run credentials need a calling heartbeat run", "run_credential_requires_run");
+    }
+    const [run] = await db
+      .select({
+        companyId: heartbeatRuns.companyId,
+        agentId: heartbeatRuns.agentId,
+        status: heartbeatRuns.status,
+        responsibleUserId: heartbeatRuns.responsibleUserId,
+        adapterType: agents.adapterType,
+      })
+      .from(heartbeatRuns)
+      .innerJoin(agents, eq(agents.id, heartbeatRuns.agentId))
+      .where(eq(heartbeatRuns.id, runId))
+      .limit(1);
+    if (!run || run.companyId !== input.session.companyId || run.agentId !== input.session.agentId) {
+      throw refuse("Calling run does not match the gateway session", "run_credential_run_mismatch");
+    }
+    if (!ACTIVE_GATEWAY_RUN_STATUSES.has(run.status)) {
+      throw refuse("Run credentials are only minted while the run is active", "run_credential_run_inactive");
+    }
+    const [issue] = input.session.issueId
+      ? await db
+        .select({ id: issues.id, workMode: issues.workMode })
+        .from(issues)
+        .where(and(eq(issues.id, input.session.issueId), eq(issues.companyId, run.companyId)))
+        .limit(1)
+      : [];
+    const token = createLocalAgentJwt(
+      run.agentId,
+      run.companyId,
+      run.adapterType,
+      runId,
+      run.responsibleUserId,
+      localAgentJwtScopeForIssue(issue),
+    );
+    if (!token) {
+      throw refuse("Run credentials need the agent JWT secret to be configured", "run_credential_unavailable");
+    }
+    return { authorization: `Bearer ${token}` };
   }
 
   function readOnDemandToolsEnabled(connectionOrConfig: typeof toolConnections.$inferSelect | Record<string, unknown>): boolean {
@@ -3011,7 +3080,11 @@ export function createToolGatewayService(
   ): Promise<RemoteHttpExecutionResult> {
     const { entry, connection } = await resolveConnectedRemoteTool(session, tool);
     const endpoint = await assertRemoteEndpointAllowed(connection.config ?? {});
-    const credentialHeaders = await resolveCredentialHeaders(connection);
+    const storedCredentialHeaders = await resolveCredentialHeaders(connection);
+    const credentialHeaders = {
+      ...storedCredentialHeaders,
+      ...await resolveRunCredentialHeaders({ session, connection, endpoint, credentialHeaders: storedCredentialHeaders }),
+    };
     const { headers, summary: headerSummary } = buildRemoteHeaders({
       session,
       connection,

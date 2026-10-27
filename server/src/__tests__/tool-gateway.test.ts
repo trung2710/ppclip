@@ -41,6 +41,7 @@ import type { PluginToolDispatcher } from "../services/plugin-tool-dispatcher.js
 import { mcpGatewayProtocolRoutes, toolGatewayRoutes } from "../routes/tool-gateway.js";
 import { toolAccessService } from "../services/tool-access.js";
 import { createToolGatewayService, ToolGatewayHttpError } from "../services/tool-gateway.js";
+import { verifyLocalAgentJwt } from "../agent-auth-jwt.js";
 import { secretService } from "../services/secrets.js";
 import { createKvDemoHttpServer, type KvDemoHttpServer } from "../../../packages/kv-demo-mcp-server/src/http.js";
 import {
@@ -1609,6 +1610,205 @@ rl.on("line", (line) => {
     } finally {
       await fake.close();
     }
+  });
+
+  describe("headerPolicy.runCredential", () => {
+    const jwtSecretEnv = "PAPERCLIP_AGENT_JWT_SECRET";
+    let previousJwtSecret: string | undefined;
+
+    beforeAll(() => {
+      previousJwtSecret = process.env[jwtSecretEnv];
+      process.env[jwtSecretEnv] = `run-credential-test-secret-${randomUUID()}`;
+    });
+
+    afterAll(() => {
+      if (previousJwtSecret === undefined) delete process.env[jwtSecretEnv];
+      else process.env[jwtSecretEnv] = previousJwtSecret;
+    });
+
+    async function setupRunCredentialCall(input: {
+      url?: string;
+      headerPolicy: Record<string, unknown>;
+      credentialValue?: string;
+      onRequest?: (request: FakeMcpRequest) => void;
+    }) {
+      const company = await createCompany(db);
+      const agent = await createAgent(db, company.id);
+      const { issue, run } = await createIssueAndRun(db, company.id, agent.id);
+      const fake = await startFakeRemoteMcpServer((fakeRequest) => {
+        input.onRequest?.(fakeRequest);
+        return {
+          body: { jsonrpc: "2.0", id: fakeRequest.body?.id, result: { content: [{ type: "text", text: "ok" }] } },
+        };
+      });
+      const secret = input.credentialValue
+        ? await secretService(db).create(company.id, {
+          name: `Run credential conflict ${randomUUID()}`,
+          key: `run_credential_conflict_${randomUUID().replace(/-/g, "")}`,
+          provider: "local_encrypted",
+          value: input.credentialValue,
+        })
+        : null;
+      const url = input.url ?? fake.url;
+      const remoteTool = await createRemoteMcpTool(db, company.id, {
+        url,
+        toolName: "kv_get",
+        riskLevel: "read",
+        ...(secret
+          ? {
+            credentialRefs: [{
+              name: "authorization",
+              secretId: secret.id,
+              version: "latest",
+              placement: "header",
+              key: "Authorization",
+              prefix: "Bearer ",
+            }],
+          }
+          : {}),
+      });
+      await db.update(toolConnections)
+        .set({ config: { url, headerPolicy: input.headerPolicy } })
+        .where(eq(toolConnections.id, remoteTool.connection.id));
+      await allowAllToolsForAgent(db, company.id, agent.id);
+      const gateway = createTestToolGatewayService(db);
+      const session = await gateway.createSession({ companyId: company.id, agentId: agent.id, runId: run.id });
+      const connectedTool = (await gateway.listToolsForSession(session.token))
+        .find((tool) => tool.connectionId === remoteTool.connection.id);
+      expect(connectedTool).toBeTruthy();
+      const call = () => gateway.executeTool({
+        sessionToken: session.token,
+        tool: connectedTool!.name,
+        parameters: { key: "alpha" },
+        callerHeaders: { authorization: "Bearer caller-must-not-win" },
+      });
+      return { company, agent, issue, run, fake, call };
+    }
+
+    it("sends the calling run's agent JWT and never persists it", async () => {
+      let authorization: string | undefined;
+      let runIdHeader: string | undefined;
+      const ctx = await setupRunCredentialCall({
+        headerPolicy: { runCredential: true, metadata: { forward: ["run_id"] } },
+        onRequest: (fakeRequest) => {
+          authorization = fakeRequest.headers.authorization as string | undefined;
+          runIdHeader = fakeRequest.headers["x-paperclip-run-id"] as string | undefined;
+        },
+      });
+      try {
+        await ctx.call();
+
+        expect(authorization).toMatch(/^Bearer /);
+        const token = authorization!.slice("Bearer ".length);
+        expect(token).not.toBe("caller-must-not-win");
+        const claims = verifyLocalAgentJwt(token);
+        expect(claims).toMatchObject({
+          sub: ctx.agent.id,
+          company_id: ctx.company.id,
+          run_id: ctx.run.id,
+        });
+        expect(claims?.key_scope).toBeUndefined();
+        expect(runIdHeader).toBe(ctx.run.id);
+
+        const persisted = JSON.stringify({
+          invocations: await db.select().from(toolInvocations),
+          callEvents: await db.select().from(toolCallEvents),
+          audits: await db.select().from(toolAccessAuditEvents),
+          activity: await db.select().from(activityLog),
+        });
+        expect(persisted).not.toContain(token);
+      } finally {
+        await ctx.fake.close();
+      }
+    });
+
+    it("scopes the run JWT to the skill test issue like the heartbeat does", async () => {
+      let authorization: string | undefined;
+      const ctx = await setupRunCredentialCall({
+        headerPolicy: { runCredential: true },
+        onRequest: (fakeRequest) => {
+          authorization = fakeRequest.headers.authorization as string | undefined;
+        },
+      });
+      try {
+        await db.update(issues).set({ workMode: "skill_test" }).where(eq(issues.id, ctx.issue.id));
+        await ctx.call();
+
+        const claims = verifyLocalAgentJwt(authorization!.slice("Bearer ".length));
+        expect(claims?.key_scope).toEqual({ kind: "skill_test", issueId: ctx.issue.id });
+      } finally {
+        await ctx.fake.close();
+      }
+    });
+
+    it("sends no Authorization when runCredential is off", async () => {
+      let authorization: string | undefined = "unset";
+      const ctx = await setupRunCredentialCall({
+        headerPolicy: { metadata: { forward: ["run_id"] } },
+        onRequest: (fakeRequest) => {
+          authorization = fakeRequest.headers.authorization as string | undefined;
+        },
+      });
+      try {
+        await ctx.call();
+        expect(authorization).toBeUndefined();
+      } finally {
+        await ctx.fake.close();
+      }
+    });
+
+    it("refuses to send the run JWT to an endpoint off this machine", async () => {
+      const ctx = await setupRunCredentialCall({
+        url: "https://mcp.example.test/mcp",
+        headerPolicy: { runCredential: true },
+        onRequest: () => {
+          throw new Error("must not be called");
+        },
+      });
+      try {
+        await expect(ctx.call()).rejects.toMatchObject({
+          status: 422,
+          reasonCode: "run_credential_requires_loopback",
+        });
+        expect(ctx.fake.requests).toHaveLength(0);
+      } finally {
+        await ctx.fake.close();
+      }
+    });
+
+    it("refuses when a stored Authorization credential is also configured", async () => {
+      const ctx = await setupRunCredentialCall({
+        headerPolicy: { runCredential: true },
+        credentialValue: `stored-${randomUUID()}`,
+      });
+      try {
+        await expect(ctx.call()).rejects.toMatchObject({
+          status: 422,
+          reasonCode: "run_credential_conflict",
+        });
+        expect(ctx.fake.requests).toHaveLength(0);
+      } finally {
+        await ctx.fake.close();
+      }
+    });
+
+    it("refuses when the agent JWT secret is not configured", async () => {
+      const ctx = await setupRunCredentialCall({ headerPolicy: { runCredential: true } });
+      const saved = { jwt: process.env[jwtSecretEnv], auth: process.env.BETTER_AUTH_SECRET };
+      delete process.env[jwtSecretEnv];
+      delete process.env.BETTER_AUTH_SECRET;
+      try {
+        await expect(ctx.call()).rejects.toMatchObject({
+          status: 422,
+          reasonCode: "run_credential_unavailable",
+        });
+        expect(ctx.fake.requests).toHaveLength(0);
+      } finally {
+        process.env[jwtSecretEnv] = saved.jwt;
+        if (saved.auth !== undefined) process.env.BETTER_AUTH_SECRET = saved.auth;
+        await ctx.fake.close();
+      }
+    });
   });
 
   it("keeps managed credentials authoritative even when legacy override flags are set", async () => {
