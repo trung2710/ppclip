@@ -187,6 +187,25 @@ curl -fsS -X PATCH -H "Authorization: Bearer $BOARD_API_KEY" -H "Content-Type: a
 
 Connection statuses: `draft`, `active`, `disabled`, `archived`. Health statuses: `ok`, `unchecked`, `degraded`, `failed`, `error`, `missing_secret`.
 
+### Run identity and run token for your own local MCP server
+
+A `remote_http` connection that points at an MCP server you run yourself (for example one that calls the Paperclip API back) usually needs to know which run is calling. Both settings live in `config.headerPolicy` and are off by default. In the UI they are the **Send run identity** and **Send run token** switches on the app's **Advanced** tab.
+
+| Setting | What the upstream server receives |
+| --- | --- |
+| `headerPolicy.metadata.forward: ["run_id", "issue_id", "company_id", "agent_id"]` | `x-paperclip-run-id`, `x-paperclip-issue-id`, `x-paperclip-company-id`, `x-paperclip-agent-id`, taken from the gateway session (the run's gateway token), never from the caller |
+| `headerPolicy.runCredential: true` | `Authorization: Bearer <run agent JWT>`, the same token the heartbeat injects as `PAPERCLIP_API_KEY`, minted per call |
+
+Rules for `runCredential`, all fail closed (the call is refused, nothing is sent):
+
+- The connection URL must be on this machine (`localhost`, `127.0.0.0/8`, `::1`, judged by the literal hostname). Otherwise `run_credential_requires_loopback`.
+- It cannot be combined with a stored `credentialRefs` entry for `Authorization`: `run_credential_conflict`.
+- The gateway session must belong to an active heartbeat run of the same agent and company: `run_credential_requires_run`, `run_credential_run_mismatch`, `run_credential_run_inactive`. Test-tab calls have no run, so they are refused while this is on.
+- The agent JWT secret must be configured: `run_credential_unavailable`.
+- The token is scoped like the heartbeat's (`skill_test` issues get the skill-test scope) and never appears in activity, audit, or `headerSummary` (credential header names are redacted).
+
+The caller's own `authorization` and `x-paperclip-*` headers are still always dropped, so an agent cannot inject a different identity or token.
+
 ## Catalog and risk classification
 
 Each tool discovered on a connection becomes a **catalog entry** with a risk level Paperclip infers from MCP annotations:

@@ -3,6 +3,8 @@
 Ngày lập: 2026-10-20
 Trạng thái: **kế hoạch, chưa triển khai**. Tài liệu này ghi lại kết quả tìm hiểu và các bước định làm để không bỏ sót.
 
+Cập nhật 2026-10-27: đã thử và đã sửa bước 1. Cách truyền API key (mục 4.3) và các phương án thay thế xem [2026-10-27-truyen-danh-tinh-run-cho-mcp-server.md](./2026-10-27-truyen-danh-tinh-run-cho-mcp-server.md).
+
 ## 1. Mục tiêu
 
 Hiện tại MCP server `paperclip` (`paperclip-mcp/src/paperclip_mcp/server.py`) được Codex khởi động như tiến trình con (stdio) theo mục `[mcp_servers.paperclip]` trong `~/.codex/config.toml`. Mỗi run Codex tạo một tiến trình mới và truyền biến môi trường qua `env_vars`.
