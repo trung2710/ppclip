@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, statSync } from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -250,6 +251,17 @@ function selectSerializedSuites(routeTests, shardIndex, shardCount) {
   return routeTests.filter((_, index) => index % shardCount === shardIndex);
 }
 
+// Run the root workspace's vitest CLI with node directly (what `pnpm exec vitest`
+// resolves to). A bare spawnSync("pnpm") cannot find pnpm.cmd on Windows, and
+// routing through cmd.exe would hit its ~8K command-line limit with the
+// serialized-suite exclude list.
+const vitestCli = (() => {
+  const requireFromRoot = createRequire(path.join(repoRoot, "package.json"));
+  const packageJsonPath = requireFromRoot.resolve("vitest/package.json");
+  const { bin } = requireFromRoot(packageJsonPath);
+  return path.join(path.dirname(packageJsonPath), typeof bin === "string" ? bin : bin.vitest);
+})();
+
 function runVitest(args, label) {
   console.log(`\n[test:run] ${label}`);
   invocationIndex += 1;
@@ -265,7 +277,7 @@ function runVitest(args, label) {
   };
   mkdirSync(env.PAPERCLIP_HOME, { recursive: true });
   mkdirSync(env.TMPDIR, { recursive: true });
-  const result = spawnSync("pnpm", ["exec", "vitest", "run", ...args], {
+  const result = spawnSync(process.execPath, [vitestCli, "run", ...args], {
     cwd: repoRoot,
     env,
     stdio: "inherit",
