@@ -4005,8 +4005,8 @@ rl.on("line", (line) => {
     );
     expect((await gateway.listToolsForSession(session.token))
       .find((tool) => tool.name === "mcp-remote-fixture:echo")?.description).toBe(
-      "Remote HTTP MCP fixture that echoes a message without spawning a local process.",
-    );
+        "Remote HTTP MCP fixture that echoes a message without spawning a local process.",
+      );
 
     await gateway.executeTool({
       sessionToken: session.token,
@@ -4042,8 +4042,8 @@ rl.on("line", (line) => {
     const { run, project } = await createIssueAndRun(db, company.id, agent.id);
     const calls: unknown[] = [];
     const dispatcher: PluginToolDispatcher = {
-      initialize: async () => {},
-      teardown: () => {},
+      initialize: async () => { },
+      teardown: () => { },
       listToolsForAgent: () => [
         {
           name: "demo-plugin:read_status",
@@ -4062,8 +4062,8 @@ rl.on("line", (line) => {
           result: { content: "plugin ok", data: { ok: true } },
         };
       },
-      registerPluginTools: () => {},
-      unregisterPluginTools: () => {},
+      registerPluginTools: () => { },
+      unregisterPluginTools: () => { },
       toolCount: () => 1,
       getRegistry: () => {
         throw new Error("not used");
